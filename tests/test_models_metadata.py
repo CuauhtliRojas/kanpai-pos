@@ -2,7 +2,7 @@
 import app.models  # noqa: F401
 
 
-def test_catalog_sync_and_operation_tables_are_registered() -> None:
+def test_catalog_sync_operation_and_inventory_tables_are_registered() -> None:
     expected_tables = {
         "audit_events",
         "authorizations",
@@ -15,6 +15,7 @@ def test_catalog_sync_and_operation_tables_are_registered() -> None:
         "employee_roles",
         "folio_sequences",
         "inventory_items",
+        "inventory_movements",
         "menu_categories",
         "payment_methods",
         "payments",
@@ -29,11 +30,14 @@ def test_catalog_sync_and_operation_tables_are_registered() -> None:
         "product_recipes",
         "product_station_assignments",
         "production_stations",
+        "purchase_receipt_lines",
+        "purchase_receipts",
         "roles",
         "role_permissions",
         "service_zones",
         "station_orders",
         "station_order_lines",
+        "stock_alerts",
         "sync_inbox",
         "sync_outbox",
         "sync_watermarks",
@@ -42,6 +46,7 @@ def test_catalog_sync_and_operation_tables_are_registered() -> None:
         "ticket_line_notes",
         "ticket_lines",
         "tickets",
+        "unit_conversions",
         "units",
     }
 

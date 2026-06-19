@@ -14,6 +14,13 @@
     RolePermission,
     Unit,
 )
+from app.models.inventory import (
+    InventoryMovement,
+    PurchaseReceipt,
+    PurchaseReceiptLine,
+    StockAlert,
+    UnitConversion,
+)
 from app.models.operations import (
     AuditEvent,
     Authorization,
@@ -52,6 +59,7 @@ __all__ = [
     "EmployeeRole",
     "FolioSequence",
     "InventoryItem",
+    "InventoryMovement",
     "MenuCategory",
     "Payment",
     "PaymentMethod",
@@ -66,11 +74,14 @@ __all__ = [
     "ProductRecipe",
     "ProductStationAssignment",
     "ProductionStation",
+    "PurchaseReceipt",
+    "PurchaseReceiptLine",
     "Role",
     "RolePermission",
     "ServiceZone",
     "StationOrder",
     "StationOrderLine",
+    "StockAlert",
     "SyncInbox",
     "SyncOutbox",
     "SyncWatermark",
@@ -80,4 +91,5 @@ __all__ = [
     "TicketLine",
     "TicketLineNote",
     "Unit",
+    "UnitConversion",
 ]
