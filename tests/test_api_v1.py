@@ -51,6 +51,18 @@ def test_api_v1_catalog_stations() -> None:
     assert len(response.json()) >= 1
 
 
+def test_api_v1_catalog_products() -> None:
+    run_seed()
+
+    response = client.get("/api/v1/catalog/products")
+
+    assert response.status_code == 200
+    products = response.json()
+    assert {"DEV-CHELA", "DEV-SAKE", "DEV-CHELA-SAKE"} <= {
+        product["sku"] for product in products
+    }
+
+
 def test_api_v1_operations_tables() -> None:
     run_seed()
 

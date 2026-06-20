@@ -1,7 +1,17 @@
 ﻿from sqlalchemy import select
 
 from app.db.seed import run_seed
-from app.models import BusinessSetting, DiningTable, Employee, FolioSequence, PaymentMethod, Role
+from app.models import (
+    BusinessSetting,
+    DiningTable,
+    Employee,
+    FolioSequence,
+    PaymentMethod,
+    Product,
+    ProductPackage,
+    ProductPackageItem,
+    Role,
+)
 from app.core.database import SessionLocal
 
 
@@ -32,6 +42,21 @@ def test_seed_initial_data_is_idempotent() -> None:
             ).scalars().all()
         )
         table_count = len(session.execute(select(DiningTable)).scalars().all())
+        demo_products = session.execute(
+            select(Product).where(
+                Product.sku.in_(("DEV-CHELA", "DEV-SAKE", "DEV-CHELA-SAKE"))
+            )
+        ).scalars().all()
+        package = session.execute(
+            select(ProductPackage).join(Product).where(Product.sku == "DEV-CHELA-SAKE")
+        ).scalar_one()
+        package_item_count = len(
+            session.execute(
+                select(ProductPackageItem).where(
+                    ProductPackageItem.package_id == package.id
+                )
+            ).scalars().all()
+        )
 
     assert business_count == 1
     assert ticket_sequence_count == 1
@@ -39,3 +64,5 @@ def test_seed_initial_data_is_idempotent() -> None:
     assert admin_count == 1
     assert admin_role_count == 1
     assert table_count >= 20
+    assert len(demo_products) == 3
+    assert package_item_count == 2

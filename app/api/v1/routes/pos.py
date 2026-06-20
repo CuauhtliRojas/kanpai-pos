@@ -6,6 +6,9 @@ from app.schemas import (
     BusinessErrorResponse,
     CashShiftOpenRequest,
     CashShiftResponse,
+    TicketLineCreateRequest,
+    TicketLineResponse,
+    TicketLinesCreatedResponse,
     TicketOpenRequest,
     TicketResponse,
 )
@@ -17,6 +20,7 @@ from app.services.exceptions import (
     InvalidBusinessDataError,
 )
 from app.services.ticket_service import get_ticket, open_ticket_for_table
+from app.services.product_service import add_product_to_ticket, get_ticket_lines
 
 router = APIRouter(prefix="/pos", tags=["pos"])
 
@@ -118,6 +122,61 @@ def get_ticket_endpoint(
 ) -> TicketResponse:
     try:
         return TicketResponse.model_validate(get_ticket(db, ticket_id))
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/tickets/{ticket_id}/lines",
+    response_model=list[TicketLineResponse],
+    responses={404: {"model": BusinessErrorResponse}},
+)
+def get_ticket_lines_endpoint(
+    ticket_id: int, db: Session = Depends(get_db)
+) -> list[TicketLineResponse]:
+    try:
+        return [
+            TicketLineResponse.model_validate(line)
+            for line in get_ticket_lines(db, ticket_id)
+        ]
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/tickets/{ticket_id}/lines",
+    response_model=TicketLinesCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def add_product_to_ticket_endpoint(
+    ticket_id: int,
+    payload: TicketLineCreateRequest,
+    db: Session = Depends(get_db),
+) -> TicketLinesCreatedResponse:
+    try:
+        lines = add_product_to_ticket(
+            db,
+            ticket_id=ticket_id,
+            product_id=payload.product_id,
+            employee_id=payload.employee_id,
+            quantity=payload.quantity,
+            note=payload.note,
+        )
+        ticket = get_ticket(db, ticket_id)
+        db.commit()
+        return TicketLinesCreatedResponse(
+            ticket_id=ticket.id,
+            lines_created=[TicketLineResponse.model_validate(line) for line in lines],
+            ticket_totals={
+                "subtotal_cents": ticket.subtotal_cents,
+                "discount_cents": ticket.discount_cents,
+                "tax_cents": ticket.tax_cents,
+                "total_cents": ticket.total_cents,
+            },
+        )
     except BusinessError as error:
         db.rollback()
         raise _to_http_exception(error) from None

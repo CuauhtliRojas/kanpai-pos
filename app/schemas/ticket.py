@@ -28,3 +28,46 @@ class TicketResponse(BaseModel):
     discount_cents: int
     tax_cents: int
     total_cents: int
+
+
+class TicketLineCreateRequest(BaseModel):
+    product_id: int
+    employee_id: int
+    quantity: int = 1
+    note: str | None = None
+
+
+class TicketLineResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ticket_id: int
+    parent_ticket_line_id: int | None
+    package_id: int | None
+    package_item_id: int | None
+    product_id: int
+    line_type: str
+    quantity: int
+    unit_price_cents: int
+    line_total_cents: int
+    price_mode: str
+    product_name_snapshot: str
+    product_sku_snapshot: str | None
+    category_id_snapshot: int | None
+    station_id_snapshot: int | None
+    note: str | None
+    status: str
+    created_by_employee_id: int
+
+
+class TicketTotalsResponse(BaseModel):
+    subtotal_cents: int
+    discount_cents: int
+    tax_cents: int
+    total_cents: int
+
+
+class TicketLinesCreatedResponse(BaseModel):
+    ticket_id: int
+    lines_created: list[TicketLineResponse]
+    ticket_totals: TicketTotalsResponse

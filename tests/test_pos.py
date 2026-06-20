@@ -15,6 +15,7 @@ from app.models import (
     Employee,
     Payment,
     PrintJob,
+    Product,
     StationOrder,
     StationOrderLine,
     TableStatusEvent,
@@ -25,6 +26,8 @@ from app.models import (
 )
 from app.services.cash_shift_service import get_current_cash_shift, open_cash_shift
 from app.services.exceptions import BusinessConflictError
+from app.services.exceptions import InvalidBusinessDataError
+from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
 
 
@@ -72,6 +75,16 @@ def _employee_and_table(db: Session) -> tuple[Employee, DiningTable]:
     assert employee is not None
     assert table is not None
     return employee, table
+
+
+def _open_ticket(db: Session) -> tuple[Employee, Ticket]:
+    """Crea el contexto operativo mínimo para pruebas de captura."""
+    employee, table = _employee_and_table(db)
+    open_cash_shift(db, employee.id, 0)
+    db.commit()
+    ticket = open_ticket_for_table(db, table.id, employee.id)
+    db.commit()
+    return employee, ticket
 
 
 def test_open_cash_shift_successfully() -> None:
@@ -194,3 +207,154 @@ def test_pos_endpoints_with_test_client() -> None:
         json={"employee_id": employee_id, "opening_cash_cents": 0},
     )
     assert conflict_response.status_code == 409
+
+
+def test_add_simple_product_updates_ticket_and_captured_line() -> None:
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        product = db.execute(
+            select(Product).where(Product.sku == "DEV-CHELA")
+        ).scalar_one()
+
+        lines = add_product_to_ticket(db, ticket.id, product.id, employee.id, 2, "Fría")
+        db.commit()
+
+        assert len(lines) == 1
+        assert lines[0].line_type == "SIMPLE"
+        assert lines[0].status == "CAPTURED"
+        assert lines[0].line_total_cents == product.price_cents * 2
+        assert lines[0].station_id_snapshot is not None
+        assert ticket.subtotal_cents == product.price_cents * 2
+        assert ticket.total_cents == product.price_cents * 2
+        assert db.scalar(
+            select(AuditEvent.event_type).where(
+                AuditEvent.event_type == "TICKET_LINE_ADDED"
+            )
+        ) == "TICKET_LINE_ADDED"
+
+
+def test_rejects_zero_quantity() -> None:
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        product = db.execute(
+            select(Product).where(Product.sku == "DEV-CHELA")
+        ).scalar_one()
+
+        with pytest.raises(InvalidBusinessDataError):
+            add_product_to_ticket(db, ticket.id, product.id, employee.id, 0)
+
+
+@pytest.mark.parametrize("field", ["active", "visible_pos"])
+def test_rejects_inactive_or_hidden_product(field: str) -> None:
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        product = db.execute(
+            select(Product).where(Product.sku == "DEV-CHELA")
+        ).scalar_one()
+        setattr(product, field, False)
+        db.flush()
+
+        with pytest.raises(InvalidBusinessDataError):
+            add_product_to_ticket(db, ticket.id, product.id, employee.id, 1)
+
+        db.rollback()
+
+
+def test_add_package_creates_parent_components_and_only_charges_parent() -> None:
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        package_product = db.execute(
+            select(Product).where(Product.sku == "DEV-CHELA-SAKE")
+        ).scalar_one()
+
+        lines = add_product_to_ticket(
+            db, ticket.id, package_product.id, employee.id, 2
+        )
+        db.commit()
+
+        parent = lines[0]
+        components = lines[1:]
+        assert parent.line_type == "PACKAGE_PARENT"
+        assert parent.status == "CAPTURED"
+        assert len(components) == 2
+        assert {line.line_type for line in components} == {"PACKAGE_COMPONENT"}
+        assert all(line.parent_ticket_line_id == parent.id for line in components)
+        assert all(line.line_total_cents == 0 for line in components)
+        assert all(line.status == "CAPTURED" for line in components)
+        assert ticket.subtotal_cents == package_product.price_cents * 2
+        assert ticket.total_cents == package_product.price_cents * 2
+        assert db.scalar(
+            select(AuditEvent.event_type).where(
+                AuditEvent.event_type == "PACKAGE_LINE_ADDED"
+            )
+        ) == "PACKAGE_LINE_ADDED"
+
+
+def test_rejects_product_when_ticket_is_not_open() -> None:
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        product = db.execute(
+            select(Product).where(Product.sku == "DEV-CHELA")
+        ).scalar_one()
+        ticket.status = "IN_PAYMENT"
+        db.commit()
+
+        with pytest.raises(BusinessConflictError):
+            add_product_to_ticket(db, ticket.id, product.id, employee.id, 1)
+
+
+def test_ticket_line_endpoints_add_and_list_product() -> None:
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        product = db.execute(
+            select(Product).where(Product.sku == "DEV-SAKE")
+        ).scalar_one()
+        employee_id = employee.id
+        ticket_id = ticket.id
+        product_id = product.id
+        expected_total = product.price_cents * 2
+
+    response = client.post(
+        f"/api/v1/pos/tickets/{ticket_id}/lines",
+        json={
+            "product_id": product_id,
+            "employee_id": employee_id,
+            "quantity": 2,
+            "note": "Tibio",
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["ticket_id"] == ticket_id
+    assert payload["lines_created"][0]["status"] == "CAPTURED"
+    assert payload["ticket_totals"]["total_cents"] == expected_total
+
+    list_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/lines")
+    assert list_response.status_code == 200
+    assert len(list_response.json()) == 1
+
+
+def test_ticket_line_endpoint_maps_business_errors() -> None:
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        product = db.execute(
+            select(Product).where(Product.sku == "DEV-CHELA")
+        ).scalar_one()
+        employee_id = employee.id
+        ticket_id = ticket.id
+        product_id = product.id
+
+    invalid_quantity = client.post(
+        f"/api/v1/pos/tickets/{ticket_id}/lines",
+        json={"product_id": product_id, "employee_id": employee_id, "quantity": 0},
+    )
+    missing_product = client.post(
+        f"/api/v1/pos/tickets/{ticket_id}/lines",
+        json={"product_id": -1, "employee_id": employee_id, "quantity": 1},
+    )
+
+    assert invalid_quantity.status_code == 400
+    assert missing_product.status_code == 404

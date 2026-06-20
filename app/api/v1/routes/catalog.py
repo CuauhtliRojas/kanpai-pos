@@ -5,8 +5,16 @@ from fastapi import APIRouter, Depends
 
 from app.core.database import get_db
 from app.models import MenuCategory, PaymentMethod, ProductionStation
+from app.schemas import ProductResponse
+from app.services.product_service import list_pos_products
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+
+@router.get("/products", response_model=list[ProductResponse])
+def list_products(db: Session = Depends(get_db)) -> list[ProductResponse]:
+    """Expone el catálogo activo y visible para captura en POS."""
+    return [ProductResponse.model_validate(product) for product in list_pos_products(db)]
 
 
 @router.get("/categories")

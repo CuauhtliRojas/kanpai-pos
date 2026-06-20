@@ -12,6 +12,10 @@ from app.models import (
     PaymentMethod,
     Permission,
     PosDevice,
+    Product,
+    ProductPackage,
+    ProductPackageItem,
+    ProductStationAssignment,
     ProductionStation,
     Role,
     RolePermission,
@@ -225,6 +229,104 @@ def seed_categories_and_stations(session: Session) -> None:
         )
 
 
+def seed_development_products(session: Session) -> None:
+    """Crea productos temporales para probar captura simple y paquetes."""
+    beer_category = session.execute(
+        select(MenuCategory).where(MenuCategory.name == "Cervezas")
+    ).scalar_one()
+    sake_category = session.execute(
+        select(MenuCategory).where(MenuCategory.name == "Sake")
+    ).scalar_one()
+    cold_bar = session.execute(
+        select(ProductionStation).where(
+            ProductionStation.station_key == "BARRA_FRIA"
+        )
+    ).scalar_one()
+    hot_bar = session.execute(
+        select(ProductionStation).where(
+            ProductionStation.station_key == "BARRA_CALIENTE"
+        )
+    ).scalar_one()
+
+    beer, _ = get_or_create(
+        session,
+        Product,
+        {"sku": "DEV-CHELA"},
+        {
+            "product_type": "SIMPLE",
+            "name": "Chela desarrollo",
+            "display_name": "Chela desarrollo",
+            "category_id": beer_category.id,
+            "price_cents": 7_000,
+            "active": True,
+            "visible_pos": True,
+            "sync_status": "ACTIVE",
+        },
+    )
+    sake, _ = get_or_create(
+        session,
+        Product,
+        {"sku": "DEV-SAKE"},
+        {
+            "product_type": "SIMPLE",
+            "name": "Sake desarrollo",
+            "display_name": "Sake desarrollo",
+            "category_id": sake_category.id,
+            "price_cents": 6_000,
+            "active": True,
+            "visible_pos": True,
+            "sync_status": "ACTIVE",
+        },
+    )
+    package_product, _ = get_or_create(
+        session,
+        Product,
+        {"sku": "DEV-CHELA-SAKE"},
+        {
+            "product_type": "PACKAGE",
+            "name": "Chela + Sake",
+            "display_name": "Chela + Sake",
+            "category_id": beer_category.id,
+            "price_cents": 12_000,
+            "active": True,
+            "visible_pos": True,
+            "sync_status": "ACTIVE",
+        },
+    )
+
+    for product, station in ((beer, cold_bar), (sake, hot_bar)):
+        get_or_create(
+            session,
+            ProductStationAssignment,
+            {"product_id": product.id, "station_id": station.id},
+            {"is_primary": True, "active": True, "sync_status": "ACTIVE"},
+        )
+
+    package, _ = get_or_create(
+        session,
+        ProductPackage,
+        {"package_product_id": package_product.id},
+        {"active": True, "sync_status": "ACTIVE"},
+    )
+    get_or_create(
+        session,
+        ProductPackageItem,
+        {"package_id": package.id, "component_product_id": beer.id},
+        {"quantity": 1, "sort_order": 1, "active": True, "sync_status": "ACTIVE"},
+    )
+    get_or_create(
+        session,
+        ProductPackageItem,
+        {"package_id": package.id, "component_product_id": sake.id},
+        {
+            "quantity": 1,
+            "sort_order": 2,
+            "station_id_override": hot_bar.id,
+            "active": True,
+            "sync_status": "ACTIVE",
+        },
+    )
+
 def seed_roles_permissions_and_admin(session: Session) -> None:
     permission_defs = [
         ("DISCOUNT_AUTHORIZE", "Autorizar descuentos"),
@@ -300,6 +402,7 @@ def run_seed() -> None:
         seed_pos_devices(session)
         seed_units(session)
         seed_categories_and_stations(session)
+        seed_development_products(session)
         seed_roles_permissions_and_admin(session)
         session.commit()
 
