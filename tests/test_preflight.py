@@ -27,7 +27,7 @@ sequence = count(1)
 @pytest.fixture(autouse=True)
 def clean_preflight_data() -> None:
     """Preserve seed catalogs and isolate every preflight invariant test."""
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()
@@ -97,6 +97,12 @@ def test_preflight_is_ok_with_clean_seed() -> None:
     payload = client.get("/api/v1/preflight/local-backend").json()
     assert payload["status"] == "OK"
     assert all(check["status"] == "OK" for check in payload["checks"])
+    assert {
+        "catalog_products",
+        "catalog_categories",
+        "catalog_stations",
+        "catalog_inventory",
+    } <= set(_checks(payload))
 
 
 def test_preflight_detects_more_than_one_open_cash_shift() -> None:

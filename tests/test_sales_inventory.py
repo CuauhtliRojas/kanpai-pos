@@ -70,7 +70,7 @@ def _clean_operational_data(db: Session) -> None:
 
 @pytest.fixture(autouse=True)
 def clean_sales_inventory_data() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         _clean_operational_data(db)
     yield
@@ -123,8 +123,8 @@ def _sales_movements(db: Session, ticket_id: int) -> list[InventoryMovement]:
 
 
 def test_seed_creates_demo_recipes_without_duplicates() -> None:
-    run_seed()
-    run_seed()
+    run_seed(include_development_data=True)
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         recipes = db.scalars(
             select(ProductRecipe)

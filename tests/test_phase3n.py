@@ -42,7 +42,7 @@ def _clean(db) -> None:
 
 @pytest.fixture(autouse=True)
 def phase3n_data():
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         _clean(db)
     yield

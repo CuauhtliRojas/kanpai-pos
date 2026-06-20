@@ -14,11 +14,12 @@ from app.models import (
     Role,
 )
 from app.core.database import SessionLocal
+from scripts.deactivate_demo_catalog import deactivate_demo_catalog
 
 
 def test_seed_initial_data_is_idempotent() -> None:
-    run_seed()
-    run_seed()
+    run_seed(include_development_data=True)
+    run_seed(include_development_data=True)
 
     with SessionLocal() as session:
         business_count = len(session.execute(select(BusinessSetting)).scalars().all())
@@ -97,3 +98,16 @@ def test_seed_initial_data_is_idempotent() -> None:
     assert len(demo_products) == 3
     assert package_item_count == 2
     assert logical_printer_count == 5
+
+
+def test_operational_seed_does_not_reactivate_demo_catalog() -> None:
+    deactivate_demo_catalog()
+    run_seed()
+
+    with SessionLocal() as session:
+        demo_products = session.scalars(
+            select(Product).where(Product.sku.like("DEV-%"))
+        ).all()
+
+    assert len(demo_products) == 4
+    assert all(not product.active and not product.visible_pos for product in demo_products)

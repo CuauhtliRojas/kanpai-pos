@@ -24,12 +24,14 @@ from app.models import (
     FolioSequence,
     InventoryItem,
     InventoryMovement,
+    MenuCategory,
     Payment,
     PaymentMethod,
     PrintJob,
     Printer,
     Product,
     ProductRecipe,
+    ProductionStation,
     Role,
     StockAlert,
     Ticket,
@@ -68,8 +70,15 @@ REQUIRED_PRINTERS = (
     "COCTELERIA",
     "BARRA_CALIENTE",
 )
-DEMO_PRODUCTS = ("DEV-CHELA", "DEV-SAKE", "DEV-CHELA-SAKE")
-DEMO_INVENTORY_ITEMS = ("INV-ARROZ", "INV-SAKE", "INV-LIMON")
+REQUIRED_PRODUCTION_STATIONS = (
+    "BARRA_FRIA",
+    "COCTELERIA",
+    "BARRA_CALIENTE",
+)
+MIN_VISIBLE_PRODUCTS = 30
+MIN_ACTIVE_CATEGORIES = 6
+MIN_ACTIVE_TABLES = 17
+MIN_ACTIVE_INVENTORY_ITEMS = 95
 
 
 def _count(db: Session, model, *conditions) -> int:
@@ -188,9 +197,10 @@ def run_local_backend_preflight(db: Session) -> dict:
             ),
             _check(
                 "seed_tables",
-                "Active dining tables are present",
-                "Dining table seed is missing",
-                lambda: _count(db, DiningTable, DiningTable.active.is_(True)) > 0,
+                "At least 17 operational dining tables are active",
+                "Imported catalog has fewer than 17 active dining tables",
+                lambda: _count(db, DiningTable, DiningTable.active.is_(True))
+                >= MIN_ACTIVE_TABLES,
             ),
             _check(
                 "seed_folios",
@@ -217,24 +227,43 @@ def run_local_backend_preflight(db: Session) -> dict:
                 ),
             ),
             _check(
-                "seed_demo_products",
-                "Demo products are present",
-                "Demo product seed is incomplete",
-                lambda: _required_values_present(
-                    db, Product, Product.sku, DEMO_PRODUCTS, Product.active.is_(True)
+                "catalog_products",
+                "At least 30 imported products are active and visible in POS",
+                "Imported catalog has fewer than 30 active visible products",
+                lambda: _count(
+                    db, Product, Product.active.is_(True), Product.visible_pos.is_(True)
+                )
+                >= MIN_VISIBLE_PRODUCTS,
+            ),
+            _check(
+                "catalog_categories",
+                "At least 6 menu categories are active",
+                "Imported catalog has fewer than 6 active menu categories",
+                lambda: _count(db, MenuCategory, MenuCategory.active.is_(True))
+                >= MIN_ACTIVE_CATEGORIES,
+            ),
+            _check(
+                "catalog_stations",
+                "The 3 required production stations are the active station set",
+                "Active production stations do not match the imported catalog",
+                lambda: _count(
+                    db, ProductionStation, ProductionStation.active.is_(True)
+                )
+                == len(REQUIRED_PRODUCTION_STATIONS)
+                and _required_values_present(
+                    db,
+                    ProductionStation,
+                    ProductionStation.station_key,
+                    REQUIRED_PRODUCTION_STATIONS,
+                    ProductionStation.active.is_(True),
                 ),
             ),
             _check(
-                "seed_demo_inventory",
-                "Demo inventory items are present",
-                "Demo inventory item seed is incomplete",
-                lambda: _required_values_present(
-                    db,
-                    InventoryItem,
-                    InventoryItem.item_code,
-                    DEMO_INVENTORY_ITEMS,
-                    InventoryItem.active.is_(True),
-                ),
+                "catalog_inventory",
+                "At least 95 imported inventory items are active",
+                "Imported catalog has fewer than 95 active inventory items",
+                lambda: _count(db, InventoryItem, InventoryItem.active.is_(True))
+                >= MIN_ACTIVE_INVENTORY_ITEMS,
             ),
         )
     )

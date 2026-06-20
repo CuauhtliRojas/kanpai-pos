@@ -48,7 +48,9 @@ def list_products(db: Session = Depends(get_db)) -> list[ProductResponse]:
 def list_categories(db: Session = Depends(get_db)) -> list[dict]:
     categories = (
         db.execute(
-            select(MenuCategory).order_by(MenuCategory.sort_order, MenuCategory.name)
+            select(MenuCategory)
+            .where(MenuCategory.active.is_(True))
+            .order_by(MenuCategory.sort_order, MenuCategory.name)
         )
         .scalars()
         .all()
@@ -73,7 +75,7 @@ def list_stations(db: Session = Depends(get_db)) -> list[dict]:
             select(ProductionStation).order_by(
                 ProductionStation.sort_order,
                 ProductionStation.name,
-            )
+            ).where(ProductionStation.active.is_(True))
         )
         .scalars()
         .all()

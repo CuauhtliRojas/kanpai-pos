@@ -76,7 +76,7 @@ def _clean_operational_data(db: Session) -> None:
 
 @pytest.fixture(autouse=True)
 def clean_inventory_data() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         _clean_operational_data(db)
     yield
@@ -130,8 +130,8 @@ def _receipt(db: Session, paid: int = 0) -> PurchaseReceipt:
 
 
 def test_seed_creates_demo_inventory_items_without_duplicates() -> None:
-    run_seed()
-    run_seed()
+    run_seed(include_development_data=True)
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         count = db.scalar(
             select(func.count(InventoryItem.id)).where(
@@ -142,8 +142,8 @@ def test_seed_creates_demo_inventory_items_without_duplicates() -> None:
 
 
 def test_seed_creates_unit_conversions_without_duplicates() -> None:
-    run_seed()
-    run_seed()
+    run_seed(include_development_data=True)
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         pairs = db.execute(
             select(UnitConversion.from_unit_id, UnitConversion.to_unit_id)

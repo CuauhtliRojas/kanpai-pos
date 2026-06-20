@@ -1,3 +1,5 @@
+import argparse
+
 from sqlalchemy import select
 from decimal import Decimal
 
@@ -145,7 +147,7 @@ def seed_service_zones_and_tables(session: Session) -> None:
         {"name": "Para llevar", "sort_order": 3, "active": True},
     )
 
-    for number in range(2, 21):
+    for number in range(1, 18):
         get_or_create(
             session,
             DiningTable,
@@ -160,31 +162,33 @@ def seed_service_zones_and_tables(session: Session) -> None:
             },
         )
 
-    get_or_create(
-        session,
-        DiningTable,
-        {"table_code": "B01"},
-        {
-            "display_name": "Barra 1",
-            "zone_id": barra.id,
-            "sort_order": 1,
-            "status_cache": TableStatus.FREE,
-            "active": True,
-        },
-    )
 
-    get_or_create(
-        session,
-        DiningTable,
-        {"table_code": "TAKEOUT"},
-        {
-            "display_name": "Para llevar",
-            "zone_id": para_llevar.id,
-            "sort_order": 1,
-            "status_cache": TableStatus.FREE,
-            "active": True,
-        },
+
+def seed_development_tables(session: Session) -> None:
+    zones = {
+        zone.zone_key: zone for zone in session.scalars(select(ServiceZone)).all()
+    }
+    tables = (
+        ("B01", "Barra 1", "BARRA", 1),
+        ("TAKEOUT", "Para llevar", "PARA_LLEVAR", 1),
+        ("M18", "Mesa 18", "SALON", 18),
+        ("M19", "Mesa 19", "SALON", 19),
+        ("M20", "Mesa 20", "SALON", 20),
     )
+    for table_code, display_name, zone_key, sort_order in tables:
+        table, _ = get_or_create(
+            session,
+            DiningTable,
+            {"table_code": table_code},
+            {
+                "display_name": display_name,
+                "zone_id": zones[zone_key].id,
+                "sort_order": sort_order,
+                "status_cache": TableStatus.FREE,
+                "active": True,
+            },
+        )
+        table.active = True
 
 
 def seed_pos_devices(session: Session) -> None:
@@ -268,13 +272,12 @@ def seed_development_inventory_items(session: Session) -> None:
 
 def seed_categories_and_stations(session: Session) -> None:
     categories = [
-        ("Yakitori", 1),
-        ("Ramen", 2),
-        ("Onigiri", 3),
-        ("Cervezas", 4),
-        ("Sake", 5),
-        ("Cocteleria", 6),
-        ("Refrescos", 7),
+        ("Bebidas alcohol", 1),
+        ("Bebidas sin alcohol", 2),
+        ("Cervezas", 3),
+        ("Sake", 4),
+        ("Refrescos", 5),
+        ("Yakitori", 6),
     ]
 
     for name, sort_order in categories:
@@ -290,10 +293,9 @@ def seed_categories_and_stations(session: Session) -> None:
         )
 
     stations = [
-        ("COCINA", "Cocina", "COCINA", 1),
-        ("BARRA_FRIA", "Barra fria", "BARRA_FRIA", 2),
-        ("COCTELERIA", "Cocteleria", "COCTELERIA", 3),
-        ("BARRA_CALIENTE", "Barra caliente", "BARRA_CALIENTE", 4),
+        ("BARRA_FRIA", "Barra fria", "BARRA_FRIA", 1),
+        ("COCTELERIA", "Cocteleria", "COCTELERIA", 2),
+        ("BARRA_CALIENTE", "Barra caliente", "BARRA_CALIENTE", 3),
     ]
 
     for station_key, name, printer_key, sort_order in stations:
@@ -342,6 +344,19 @@ def seed_logical_printers(session: Session) -> None:
 
 def seed_development_products(session: Session) -> None:
     """Crea productos temporales para probar captura simple y paquetes."""
+    kitchen, _ = get_or_create(
+        session,
+        ProductionStation,
+        {"station_key": "COCINA"},
+        {
+            "name": "Cocina",
+            "printer_key": "COCINA",
+            "sort_order": 4,
+            "active": False,
+            "sync_status": CatalogStatus.ACTIVE,
+        },
+    )
+    kitchen.active = False
     beer_category = session.execute(
         select(MenuCategory).where(MenuCategory.name == "Cervezas")
     ).scalar_one()
@@ -359,10 +374,6 @@ def seed_development_products(session: Session) -> None:
     yakitori_category = session.execute(
         select(MenuCategory).where(MenuCategory.name == "Yakitori")
     ).scalar_one()
-    kitchen = session.execute(
-        select(ProductionStation).where(ProductionStation.station_key == "COCINA")
-    ).scalar_one()
-
     beer, _ = get_or_create(
         session,
         Product,
@@ -608,7 +619,7 @@ def seed_notification_channels(session: Session) -> None:
     )
 
 
-def run_seed() -> None:
+def run_seed(*, include_development_data: bool = False) -> None:
     with SessionLocal() as session:
         seed_business_settings(session)
         seed_folio_sequences(session)
@@ -617,16 +628,70 @@ def run_seed() -> None:
         seed_pos_devices(session)
         seed_units(session)
         seed_unit_conversions(session)
-        seed_development_inventory_items(session)
         seed_categories_and_stations(session)
         seed_logical_printers(session)
-        seed_development_products(session)
-        seed_development_recipes(session)
+        if include_development_data:
+            seed_development_tables(session)
+            seed_development_inventory_items(session)
+            seed_development_products(session)
+            seed_development_recipes(session)
+            _activate_development_catalog(session)
         seed_roles_permissions_and_admin(session)
         seed_notification_channels(session)
         session.commit()
 
 
+def _activate_development_catalog(session: Session) -> None:
+    """Enable test-only catalog rows, including rows disabled by the QA migration."""
+    demo_skus = (
+        "DEV-CHELA",
+        "DEV-SAKE",
+        "DEV-CHELA-SAKE",
+        "DEV-YAKITORI-ORDEN-3",
+    )
+    demo_item_codes = ("INV-ARROZ", "INV-SAKE", "INV-LIMON")
+    products = list(session.scalars(select(Product).where(Product.sku.in_(demo_skus))))
+    for product in products:
+        product.active = True
+        product.visible_pos = True
+
+    for item in session.scalars(
+        select(InventoryItem).where(InventoryItem.item_code.in_(demo_item_codes))
+    ):
+        item.active = True
+
+    product_ids = [product.id for product in products]
+    if not product_ids:
+        return
+    for model in (ProductRecipe, ProductStationAssignment, ProductVariantGroup):
+        for row in session.scalars(select(model).where(model.product_id.in_(product_ids))):
+            row.active = True
+    for package in session.scalars(
+        select(ProductPackage).where(ProductPackage.package_product_id.in_(product_ids))
+    ):
+        package.active = True
+        for item in package.items:
+            item.active = True
+    group_ids = list(
+        session.scalars(
+            select(ProductVariantGroup.id).where(
+                ProductVariantGroup.product_id.in_(product_ids)
+            )
+        )
+    )
+    if group_ids:
+        for option in session.scalars(
+            select(ProductVariantOption).where(
+                ProductVariantOption.variant_group_id.in_(group_ids)
+            )
+        ):
+            option.active = True
+
+
 if __name__ == "__main__":
-    run_seed()
-    print("Seed inicial aplicado correctamente.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--include-development-data", action="store_true")
+    args = parser.parse_args()
+    run_seed(include_development_data=args.include_development_data)
+    mode = "con fixtures de desarrollo" if args.include_development_data else "sin catalogo demo"
+    print(f"Seed operativo aplicado correctamente ({mode}).")

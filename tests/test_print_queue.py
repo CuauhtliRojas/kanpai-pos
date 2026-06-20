@@ -77,7 +77,7 @@ def _clean_operational_data(db: Session) -> None:
 
 @pytest.fixture(autouse=True)
 def clean_print_queue_data() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         _clean_operational_data(db)
     yield

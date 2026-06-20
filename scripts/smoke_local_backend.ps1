@@ -29,7 +29,7 @@ try {
     $env:DATABASE_URL = "sqlite:///./$temporaryDatabase"
     uv run alembic upgrade head
     if ($LASTEXITCODE -ne 0) { throw "temporary test database migration failed" }
-    uv run python -m app.db.seed
+    uv run python -m app.db.seed --include-development-data
     if ($LASTEXITCODE -ne 0) { throw "temporary test database seed failed" }
     uv run pytest
     if ($LASTEXITCODE -ne 0) { throw "pytest failed" }
@@ -63,7 +63,6 @@ $table = Invoke-Api -Method Get -Path "/api/v1/operations/tables" |
     Where-Object { $_.active -and $_.status -eq "FREE" } |
     Select-Object -First 1
 $product = Invoke-Api -Method Get -Path "/api/v1/catalog/products" |
-    Where-Object { $_.sku -eq "DEV-CHELA" } |
     Select-Object -First 1
 $cashMethod = Invoke-Api -Method Get -Path "/api/v1/catalog/payment-methods" |
     Where-Object { $_.active -and $_.method_key -eq "CASH" } |

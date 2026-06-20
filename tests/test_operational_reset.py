@@ -23,7 +23,7 @@ sequence = count(1)
 
 @pytest.fixture(autouse=True)
 def clean_reset_data() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()

@@ -90,7 +90,9 @@ def get_current_stock(db: Session, inventory_item_id: int) -> dict:
 def list_inventory_items_with_stock(db: Session) -> list[dict]:
     """Lista insumos y agrega su stock calculado desde el ledger local."""
     items = db.execute(
-        select(InventoryItem).order_by(InventoryItem.item_code)
+        select(InventoryItem)
+        .where(InventoryItem.active.is_(True))
+        .order_by(InventoryItem.item_code)
     ).scalars()
     result = []
     for item in items:

@@ -10,7 +10,7 @@ from scripts.reset_operational_data import reset_operational_data
 
 @pytest.fixture(autouse=True)
 def clean_invariant_data() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()

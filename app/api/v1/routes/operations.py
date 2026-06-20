@@ -13,7 +13,9 @@ router = APIRouter(prefix="/operations", tags=["operations"])
 def list_tables(db: Session = Depends(get_db)) -> list[dict]:
     tables = (
         db.execute(
-            select(DiningTable).order_by(DiningTable.sort_order, DiningTable.table_code)
+            select(DiningTable)
+            .where(DiningTable.active.is_(True))
+            .order_by(DiningTable.sort_order, DiningTable.table_code)
         )
         .scalars()
         .all()

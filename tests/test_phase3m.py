@@ -41,7 +41,7 @@ sequence = count(1)
 
 @pytest.fixture(autouse=True)
 def clean_phase_3m_data() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
     with SessionLocal() as db:
         reset_operational_data(db)
         db.execute(delete(Employee).where(Employee.employee_code.like("QA-NOPERM-%")))

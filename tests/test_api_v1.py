@@ -16,7 +16,7 @@ def test_api_v1_system_db() -> None:
 
 
 def test_api_v1_seed_summary() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
 
     response = client.get("/api/v1/system/seed-summary")
 
@@ -32,7 +32,7 @@ def test_api_v1_seed_summary() -> None:
 
 
 def test_api_v1_catalog_categories() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
 
     response = client.get("/api/v1/catalog/categories")
 
@@ -42,7 +42,7 @@ def test_api_v1_catalog_categories() -> None:
 
 
 def test_api_v1_catalog_stations() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
 
     response = client.get("/api/v1/catalog/stations")
 
@@ -52,7 +52,7 @@ def test_api_v1_catalog_stations() -> None:
 
 
 def test_api_v1_catalog_products() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
 
     response = client.get("/api/v1/catalog/products")
 
@@ -64,10 +64,10 @@ def test_api_v1_catalog_products() -> None:
 
 
 def test_api_v1_operations_tables() -> None:
-    run_seed()
+    run_seed(include_development_data=True)
 
     response = client.get("/api/v1/operations/tables")
 
     assert response.status_code == 200
     assert isinstance(response.json(), list)
-    assert len(response.json()) >= 20
+    assert len(response.json()) >= 17
