@@ -7,7 +7,7 @@ import json
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -58,6 +58,7 @@ DEFAULT_AIRTABLE_SCHEMA = Path("airtable/schema/kanpai_airtable_schema.v1.json")
 DEFAULT_REPORT = Path("airtable/reports/sqlite_to_airtable_push_report.md")
 SYNC_STATE = "Sincronizado"
 PENDING_LINK_PREFIX = "pending:"
+SQLITE_LOCAL_TIMEZONE = timezone(timedelta(hours=-6), name="America/Mexico_City")
 
 
 @dataclass(frozen=True)
@@ -196,7 +197,12 @@ def _identity(value: Any) -> str:
 
 
 def _airtable_value(value: Any) -> Any:
-    if isinstance(value, (datetime, date)):
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=SQLITE_LOCAL_TIMEZONE)
+        value = value.astimezone(timezone.utc).replace(tzinfo=None)
+        return f"{value.isoformat(timespec='milliseconds')}Z"
+    if isinstance(value, date):
         return value.isoformat()
     if isinstance(value, Decimal):
         return float(value)

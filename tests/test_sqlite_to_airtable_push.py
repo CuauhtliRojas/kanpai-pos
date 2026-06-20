@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,7 @@ from airtable.scripts.push_sqlite_to_airtable import (
     CONFIRM_TEXT,
     TABLE_SPECS,
     PushPlan,
+    _airtable_value,
     apply_plan,
     main,
     plan_push,
@@ -73,6 +75,16 @@ def _seed_shift(session: Session) -> CashShift:
 
 def test_contract_matches_schema_and_models():
     assert validate_contract(_field_map(), _schema()) == []
+
+
+def test_datetime_serialization_matches_airtable_utc_milliseconds():
+    assert _airtable_value(datetime(2026, 6, 20, 12, 34, 56, 715179)) == (
+        "2026-06-20T18:34:56.715Z"
+    )
+    offset = timezone(timedelta(hours=-6))
+    assert _airtable_value(datetime(2026, 6, 20, 6, 34, 56, 715999, tzinfo=offset)) == (
+        "2026-06-20T12:34:56.715Z"
+    )
 
 
 def test_dry_run_plans_without_writing_sqlite():

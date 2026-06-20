@@ -37,6 +37,7 @@ data/*.db-shm
 data/*.db-wal
 data/*.sqlite
 data/*.sqlite3
+data/backups/
 
 
 # Tests / tooling
@@ -55,4 +56,3 @@ Thumbs.db
 
 # Airtable live import artifacts
 airtable/seeds/kanpai_seed.generated.json
-
