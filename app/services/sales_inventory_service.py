@@ -4,12 +4,19 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    InventoryMovementType,
+    InventorySourceType,
+    TicketLineStatus,
+    TicketLineType,
+    TicketStatus,
+)
 from app.models import InventoryMovement, ProductRecipe, Ticket, TicketLine
 from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 from app.services.inventory_service import create_inventory_movement
 
-CONSUMABLE_LINE_TYPES = ("SIMPLE", "PACKAGE_COMPONENT")
-CANCELLED_LINE_STATUSES = ("CANCELLED", "CANCELED", "CANCELADO")
+CONSUMABLE_LINE_TYPES = (TicketLineType.SIMPLE, TicketLineType.PACKAGE_COMPONENT)
+CANCELLED_LINE_STATUSES = (TicketLineStatus.CANCELLED,)
 
 
 def consume_inventory_for_paid_ticket(
@@ -25,10 +32,8 @@ def consume_inventory_for_paid_ticket(
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
         raise EntityNotFoundError("El ticket no existe.")
-    if ticket.status != "PAID":
-        raise BusinessConflictError(
-            "El inventario solo se consume en tickets pagados."
-        )
+    if ticket.status != TicketStatus.PAID:
+        raise BusinessConflictError("El inventario solo se consume en tickets pagados.")
     if ticket.inventory_consumed_at is not None:
         return []
 
@@ -71,12 +76,12 @@ def consume_inventory_for_paid_ticket(
                 create_inventory_movement(
                     db,
                     inventory_item_id=recipe.inventory_item_id,
-                    movement_type="SALE_CONSUMPTION",
+                    movement_type=InventoryMovementType.SALE_CONSUMPTION,
                     quantity_base=quantity,
                     employee_id=employee_id,
                     reason=f"Venta ticket {ticket.folio}",
                     unit_cost_cents=recipe.inventory_item.unit_cost_cents,
-                    source_type="TICKET_LINE",
+                    source_type=InventorySourceType.TICKET_LINE,
                     source_id=line.id,
                     ticket_line_id=line.id,
                     require_adjust_permission=False,
@@ -99,8 +104,9 @@ def list_ticket_inventory_movements(
         db.scalars(
             select(InventoryMovement)
             .where(
-                InventoryMovement.movement_type == "SALE_CONSUMPTION",
-                InventoryMovement.source_type == "TICKET_LINE",
+                InventoryMovement.movement_type
+                == InventoryMovementType.SALE_CONSUMPTION,
+                InventoryMovement.source_type == InventorySourceType.TICKET_LINE,
                 InventoryMovement.source_id.in_(line_ids),
             )
             .order_by(InventoryMovement.id)

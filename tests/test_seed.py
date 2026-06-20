@@ -1,4 +1,4 @@
-﻿from sqlalchemy import select
+from sqlalchemy import select
 
 from app.db.seed import run_seed
 from app.models import (
@@ -25,29 +25,39 @@ def test_seed_initial_data_is_idempotent() -> None:
         ticket_sequence_count = len(
             session.execute(
                 select(FolioSequence).where(FolioSequence.sequence_key == "TICKET")
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
         cash_method_count = len(
             session.execute(
-                select(PaymentMethod).where(PaymentMethod.method_key == "CASH")
-            ).scalars().all()
+                select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo")
+            )
+            .scalars()
+            .all()
         )
         admin_count = len(
             session.execute(
                 select(Employee).where(Employee.employee_code == "EMP-0001")
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
         admin_role_count = len(
-            session.execute(
-                select(Role).where(Role.role_key == "ADMIN")
-            ).scalars().all()
+            session.execute(select(Role).where(Role.role_key == "ADMIN"))
+            .scalars()
+            .all()
         )
         table_count = len(session.execute(select(DiningTable)).scalars().all())
-        demo_products = session.execute(
-            select(Product).where(
-                Product.sku.in_(("DEV-CHELA", "DEV-SAKE", "DEV-CHELA-SAKE"))
+        demo_products = (
+            session.execute(
+                select(Product).where(
+                    Product.sku.in_(("DEV-CHELA", "DEV-SAKE", "DEV-CHELA-SAKE"))
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         package = session.execute(
             select(ProductPackage).join(Product).where(Product.sku == "DEV-CHELA-SAKE")
         ).scalar_one()
@@ -56,7 +66,9 @@ def test_seed_initial_data_is_idempotent() -> None:
                 select(ProductPackageItem).where(
                     ProductPackageItem.package_id == package.id
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
         logical_printer_count = len(
             session.execute(
@@ -71,7 +83,9 @@ def test_seed_initial_data_is_idempotent() -> None:
                         )
                     )
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
 
     assert business_count == 1

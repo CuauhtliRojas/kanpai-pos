@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from unicodedata import normalize
 
+from app.domain.constants import PrintJobType, PrintStatus
 from app.models import (
     CashShift,
     Payment,
@@ -26,6 +27,7 @@ def sanitize_print_content(content: str) -> str:
     acentos. El resultado solo contiene caracteres ASCII visibles y ``\n``;
     tabuladores, emojis y otros controles no se envían a la impresora.
     """
+
     def repair_mojibake(match: re.Match[str]) -> str:
         """Repara un token dañado sin afectar texto Unicode válido alrededor."""
         try:
@@ -50,13 +52,9 @@ def get_active_printer(db: Session, printer_key: str) -> Printer:
         select(Printer).where(Printer.printer_key == printer_key)
     ).scalar_one_or_none()
     if printer is None:
-        raise EntityNotFoundError(
-            f"No existe la impresora con clave {printer_key}."
-        )
+        raise EntityNotFoundError(f"No existe la impresora con clave {printer_key}.")
     if not printer.active:
-        raise BusinessConflictError(
-            f"La impresora {printer_key} está inactiva."
-        )
+        raise BusinessConflictError(f"La impresora {printer_key} está inactiva.")
     return printer
 
 
@@ -65,7 +63,7 @@ def list_pending_print_jobs(db: Session) -> list[PrintJob]:
     return list(
         db.execute(
             select(PrintJob)
-            .where(PrintJob.status == "PENDING")
+            .where(PrintJob.status == PrintStatus.PENDING)
             .order_by(PrintJob.created_at, PrintJob.id)
         ).scalars()
     )
@@ -94,13 +92,13 @@ def create_ticket_print_job(
     )
     print_job = PrintJob(
         folio=generate_folio(db, "IMPRESION"),
-        job_type="TICKET",
+        job_type=PrintJobType.TICKET,
         printer_id=printer.id,
         printer_key_snapshot="CAJA",
         ticket_id=ticket.id,
         cash_shift_id=ticket.cash_shift_id,
         content_snapshot=sanitize_print_content(content),
-        status="PENDING",
+        status=PrintStatus.PENDING,
         attempts=0,
         idempotency_key=f"TICKET:{ticket.id}",
     )
@@ -137,12 +135,12 @@ def create_cash_shift_print_job(
     )
     print_job = PrintJob(
         folio=generate_folio(db, "IMPRESION"),
-        job_type="CORTE",
+        job_type=PrintJobType.CASH_SHIFT,
         printer_id=printer.id,
         printer_key_snapshot="CAJA",
         cash_shift_id=cash_shift.id,
         content_snapshot=sanitize_print_content(content),
-        status="PENDING",
+        status=PrintStatus.PENDING,
         attempts=0,
         idempotency_key=idempotency_key,
     )
@@ -200,14 +198,14 @@ def create_cancellation_print_job(
     )
     print_job = PrintJob(
         folio=generate_folio(db, "IMPRESION"),
-        job_type="CANCELACION_COMANDA",
+        job_type=PrintJobType.COMMAND_CANCELLATION,
         printer_id=printer.id,
         printer_key_snapshot=printer.printer_key,
         ticket_id=ticket.id,
         cash_shift_id=ticket.cash_shift_id,
         station_order_id=station_order_id,
         content_snapshot=sanitize_print_content(content),
-        status="PENDING",
+        status=PrintStatus.PENDING,
         attempts=0,
         idempotency_key=idempotency_key,
     )

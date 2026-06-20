@@ -71,7 +71,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -89,7 +89,7 @@ def _job(
     db: Session,
     printer_key: str = "BARRA_FRIA",
     *,
-    status: str = "PENDING",
+    status: str = "Pendiente",
     created_at: datetime | None = None,
     next_retry_at: datetime | None = None,
 ) -> PrintJob:
@@ -99,7 +99,7 @@ def _job(
     assert printer is not None
     print_job = PrintJob(
         folio=f"QA-PRINT-{number:06d}",
-        job_type="COMANDA",
+        job_type="Comanda",
         printer_id=printer.id,
         printer_key_snapshot=printer_key,
         content_snapshot="KANPAI\nQA",
@@ -117,9 +117,7 @@ def _job(
 
 def _open_ticket_with_line(db: Session, note: str) -> Ticket:
     """Abre una venta mínima para comprobar generación real de PrintJob."""
-    employee = db.scalar(
-        select(Employee).where(Employee.employee_code == "EMP-0001")
-    )
+    employee = db.scalar(select(Employee).where(Employee.employee_code == "EMP-0001"))
     table = db.scalar(
         select(DiningTable).where(DiningTable.active.is_(True)).order_by(DiningTable.id)
     )
@@ -155,7 +153,7 @@ def test_claim_takes_oldest_changes_status_and_increments_attempts() -> None:
         claimed = claim_next_print_job(db, "BARRA_FRIA", "local-daemon-01")
         assert claimed is not None
         assert claimed.id == old_job.id
-        assert claimed.status == "CLAIMED"
+        assert claimed.status == "Tomado"
         assert claimed.attempts == 1
         assert claimed.claimed_by == "local-daemon-01"
         assert claimed.claimed_at is not None
@@ -183,7 +181,7 @@ def test_mark_printed_changes_claimed_job_to_printed() -> None:
         db.commit()
         claim_next_print_job(db, "BARRA_FRIA", "worker")
         printed = mark_print_job_printed(db, print_job.id, "worker")
-        assert printed.status == "PRINTED"
+        assert printed.status == "Impreso"
         assert printed.printed_at is not None
         assert printed.last_error is None
 
@@ -212,7 +210,7 @@ def test_mark_failed_records_error_and_retry_time() -> None:
         claim_next_print_job(db, "BARRA_FRIA", "worker")
         before = datetime.utcnow() + timedelta(seconds=59)
         failed = mark_print_job_failed(db, print_job.id, "worker", "Sin papel")
-        assert failed.status == "FAILED"
+        assert failed.status == "Fallido"
         assert failed.failed_at is not None
         assert failed.last_error == "Sin papel"
         assert failed.next_retry_at is not None
@@ -223,7 +221,7 @@ def test_retry_failed_requeues_due_jobs_and_preserves_error() -> None:
     with SessionLocal() as db:
         print_job = _job(
             db,
-            status="FAILED",
+            status="Fallido",
             next_retry_at=datetime.utcnow() - timedelta(seconds=1),
         )
         print_job.claimed_by = "worker"
@@ -231,7 +229,7 @@ def test_retry_failed_requeues_due_jobs_and_preserves_error() -> None:
         print_job.last_error = "Sin papel"
         db.commit()
         assert retry_failed_print_jobs(db) == 1
-        assert print_job.status == "PENDING"
+        assert print_job.status == "Pendiente"
         assert print_job.claimed_by is None
         assert print_job.claimed_at is None
         assert print_job.last_error == "Sin papel"
@@ -239,12 +237,12 @@ def test_retry_failed_requeues_due_jobs_and_preserves_error() -> None:
 
 def test_retry_failed_filters_by_printer() -> None:
     with SessionLocal() as db:
-        cold_job = _job(db, status="FAILED")
-        caja_job = _job(db, "CAJA", status="FAILED")
+        cold_job = _job(db, status="Fallido")
+        caja_job = _job(db, "CAJA", status="Fallido")
         db.commit()
         assert retry_failed_print_jobs(db, "BARRA_FRIA", reset_all=True) == 1
-        assert cold_job.status == "PENDING"
-        assert caja_job.status == "FAILED"
+        assert cold_job.status == "Pendiente"
+        assert caja_job.status == "Fallido"
 
 
 def test_sanitize_print_content_produces_safe_ascii() -> None:
@@ -276,7 +274,7 @@ def test_claim_next_endpoint() -> None:
     )
     assert response.status_code == 200
     assert response.json()["job"]["id"] == job_id
-    assert response.json()["job"]["status"] == "CLAIMED"
+    assert response.json()["job"]["status"] == "Tomado"
 
 
 def test_printed_endpoint() -> None:
@@ -290,7 +288,7 @@ def test_printed_endpoint() -> None:
         f"/api/v1/printing/jobs/{job_id}/printed", json={"worker_id": "daemon"}
     )
     assert response.status_code == 200
-    assert response.json()["status"] == "PRINTED"
+    assert response.json()["status"] == "Impreso"
 
 
 def test_failed_endpoint() -> None:
@@ -305,13 +303,13 @@ def test_failed_endpoint() -> None:
         json={"worker_id": "daemon", "error_message": "Sin papel"},
     )
     assert response.status_code == 200
-    assert response.json()["status"] == "FAILED"
+    assert response.json()["status"] == "Fallido"
     assert response.json()["last_error"] == "Sin papel"
 
 
 def test_retry_failed_endpoint() -> None:
     with SessionLocal() as db:
-        _job(db, status="FAILED")
+        _job(db, status="Fallido")
         db.commit()
     response = TestClient(app).post(
         "/api/v1/printing/jobs/retry-failed",

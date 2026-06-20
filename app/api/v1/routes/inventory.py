@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.domain.constants import InventorySourceType
 from app.models import InventoryItem, InventoryMovement, PurchaseReceipt
 from app.schemas import (
     BusinessErrorResponse,
@@ -154,7 +155,7 @@ def create_inventory_movement_endpoint(
             employee_id=payload.employee_id,
             reason=payload.reason,
             unit_cost_cents=payload.unit_cost_cents,
-            source_type="MANUAL",
+            source_type=InventorySourceType.MANUAL,
         )
         response = _movement_response(movement)
         db.commit()

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
+from app.domain.constants import PrintStatus
 from app.models import PrintJob
 from app.services.exceptions import (
     BusinessConflictError,
@@ -26,13 +27,15 @@ def list_pending_print_jobs(
     db: Session, printer_key: str | None = None, limit: int = 100
 ) -> list[PrintJob]:
     """Lista trabajos pendientes en FIFO, opcionalmente para una impresora."""
-    query = select(PrintJob).where(PrintJob.status == "PENDING")
+    query = select(PrintJob).where(PrintJob.status == PrintStatus.PENDING)
     if printer_key is not None:
         printer_key = _required_text(printer_key, "printer_key")
         get_active_printer(db, printer_key)
         query = query.where(PrintJob.printer_key_snapshot == printer_key)
     return list(
-        db.execute(query.order_by(PrintJob.created_at, PrintJob.id).limit(limit)).scalars()
+        db.execute(
+            query.order_by(PrintJob.created_at, PrintJob.id).limit(limit)
+        ).scalars()
     )
 
 
@@ -53,7 +56,7 @@ def claim_next_print_job(
     candidate_id = (
         select(PrintJob.id)
         .where(
-            PrintJob.status == "PENDING",
+            PrintJob.status == PrintStatus.PENDING,
             PrintJob.printer_key_snapshot == printer_key,
             or_(PrintJob.next_retry_at.is_(None), PrintJob.next_retry_at <= now),
         )
@@ -63,9 +66,9 @@ def claim_next_print_job(
     )
     claimed_id = db.execute(
         update(PrintJob)
-        .where(PrintJob.id == candidate_id, PrintJob.status == "PENDING")
+        .where(PrintJob.id == candidate_id, PrintJob.status == PrintStatus.PENDING)
         .values(
-            status="CLAIMED",
+            status=PrintStatus.CLAIMED,
             claimed_at=now,
             claimed_by=worker_id,
             attempts=PrintJob.attempts + 1,
@@ -82,19 +85,17 @@ def _claimed_job(db: Session, print_job_id: int, worker_id: str) -> PrintJob:
     print_job = db.get(PrintJob, print_job_id)
     if print_job is None:
         raise EntityNotFoundError("El trabajo de impresión no existe.")
-    if print_job.status != "CLAIMED":
+    if print_job.status != PrintStatus.CLAIMED:
         raise BusinessConflictError("El trabajo de impresión no está reclamado.")
     if print_job.claimed_by and print_job.claimed_by != worker_id:
         raise BusinessConflictError("El trabajo fue reclamado por otro worker.")
     return print_job
 
 
-def mark_print_job_printed(
-    db: Session, print_job_id: int, worker_id: str
-) -> PrintJob:
+def mark_print_job_printed(db: Session, print_job_id: int, worker_id: str) -> PrintJob:
     """Finaliza como impreso un trabajo reclamado por el mismo worker."""
     print_job = _claimed_job(db, print_job_id, worker_id)
-    print_job.status = "PRINTED"
+    print_job.status = PrintStatus.PRINTED
     print_job.printed_at = datetime.utcnow()
     print_job.last_error = None
     db.flush()
@@ -108,7 +109,7 @@ def mark_print_job_failed(
     error_message = _required_text(error_message, "error_message")
     print_job = _claimed_job(db, print_job_id, worker_id)
     now = datetime.utcnow()
-    print_job.status = "FAILED"
+    print_job.status = PrintStatus.FAILED
     print_job.failed_at = now
     print_job.last_error = error_message
     print_job.next_retry_at = now + timedelta(seconds=PRINT_RETRY_DELAY_SECONDS)
@@ -124,7 +125,7 @@ def retry_failed_print_jobs(
     Se conserva ``last_error`` para diagnóstico. ``next_retry_at`` se limpia al
     reencolar para que los resets manuales queden disponibles inmediatamente.
     """
-    query = select(PrintJob).where(PrintJob.status == "FAILED")
+    query = select(PrintJob).where(PrintJob.status == PrintStatus.FAILED)
     if printer_key is not None:
         printer_key = _required_text(printer_key, "printer_key")
         get_active_printer(db, printer_key)
@@ -134,7 +135,7 @@ def retry_failed_print_jobs(
 
     jobs = list(db.execute(query).scalars())
     for print_job in jobs:
-        print_job.status = "PENDING"
+        print_job.status = PrintStatus.PENDING
         print_job.claimed_at = None
         print_job.claimed_by = None
         print_job.next_retry_at = None

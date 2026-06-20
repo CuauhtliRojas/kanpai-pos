@@ -2,6 +2,7 @@ import json
 
 from sqlalchemy.orm import Session
 
+from app.domain.constants import ActiveStatus, audit_event
 from app.models import AuditEvent, CashExpense, PaymentMethod
 from app.services.cash_shift_service import get_current_cash_shift
 from app.services.exceptions import (
@@ -10,7 +11,10 @@ from app.services.exceptions import (
     InvalidBusinessDataError,
 )
 from app.services.folio_service import generate_folio
-from app.services.permission_service import get_active_employee, require_employee_permission
+from app.services.permission_service import (
+    get_active_employee,
+    require_employee_permission,
+)
 
 
 def create_cash_expense(
@@ -56,13 +60,13 @@ def create_cash_expense(
         category=category.strip() if category and category.strip() else None,
         payment_method_id=payment_method_id,
         note=note.strip() if note and note.strip() else None,
-        status="ACTIVE",
+        status=ActiveStatus.ACTIVE,
     )
     db.add(expense)
     db.flush()
     db.add(
         AuditEvent(
-            event_type="CASH_EXPENSE_CREATED",
+            event_type=audit_event("CASH_EXPENSE_CREATED"),
             entity_type="CashExpense",
             entity_id=expense.id,
             actor_employee_id=employee_id,

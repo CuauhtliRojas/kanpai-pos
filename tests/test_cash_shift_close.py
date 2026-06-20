@@ -57,7 +57,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -87,13 +87,15 @@ def _table(db: Session) -> DiningTable:
     return table
 
 
-def _method(db: Session, key: str = "CASH") -> PaymentMethod:
+def _method(db: Session, key: str = "Efectivo") -> PaymentMethod:
     return db.execute(
         select(PaymentMethod).where(PaymentMethod.method_key == key)
     ).scalar_one()
 
 
-def _open_shift(db: Session, opening_cash_cents: int = 10_000) -> tuple[Employee, CashShift]:
+def _open_shift(
+    db: Session, opening_cash_cents: int = 10_000
+) -> tuple[Employee, CashShift]:
     employee = _employee(db)
     cash_shift = open_cash_shift(db, employee.id, opening_cash_cents)
     db.flush()
@@ -103,12 +105,12 @@ def _open_shift(db: Session, opening_cash_cents: int = 10_000) -> tuple[Employee
 def _ticket(db: Session, employee: Employee, status: str) -> Ticket:
     ticket = open_ticket_for_table(db, _table(db).id, employee.id)
     ticket.status = status
-    if status == "PAID":
-        ticket.payment_status = "PAID"
+    if status == "Cobrado":
+        ticket.payment_status = "Cobrado"
         ticket.total_cents = 8_000
-    elif status == "CANCELLED":
-        ticket.payment_status = "CANCELLED"
-        ticket.table.status_cache = "FREE"
+    elif status == "Cancelado":
+        ticket.payment_status = "Cancelado"
+        ticket.table.status_cache = "Libre"
     db.flush()
     return ticket
 
@@ -123,12 +125,15 @@ def test_create_expense_with_open_shift() -> None:
 
         assert expense.cash_shift_id == cash_shift.id
         assert expense.folio.startswith("G")
-        assert expense.status == "ACTIVE"
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "CASH_EXPENSE_CREATED"
+        assert expense.status == "Activo"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Gasto de caja creado"
+                )
             )
-        ) == "CASH_EXPENSE_CREATED"
+            == "Gasto de caja creado"
+        )
 
 
 def test_cannot_create_expense_without_open_shift() -> None:
@@ -156,9 +161,9 @@ def test_cannot_create_expense_without_permission() -> None:
 
 def _summary_context(db: Session) -> tuple[Employee, CashShift]:
     employee, cash_shift = _open_shift(db)
-    ticket = _ticket(db, employee, "PAID")
+    ticket = _ticket(db, employee, "Cobrado")
     cash = _method(db)
-    card = _method(db, "CARD")
+    card = _method(db, "Tarjeta")
     db.add_all(
         [
             Payment(
@@ -168,7 +173,7 @@ def _summary_context(db: Session) -> tuple[Employee, CashShift]:
                 payment_method_id=cash.id,
                 cashier_employee_id=employee.id,
                 amount_cents=5_000,
-                status="ACTIVE",
+                status="Activo",
             ),
             Payment(
                 folio="PG-SUM-CARD",
@@ -177,7 +182,7 @@ def _summary_context(db: Session) -> tuple[Employee, CashShift]:
                 payment_method_id=card.id,
                 cashier_employee_id=employee.id,
                 amount_cents=3_000,
-                status="ACTIVE",
+                status="Activo",
             ),
         ]
     )
@@ -204,10 +209,12 @@ def test_summary_calculates_expected_cash() -> None:
     with SessionLocal() as db:
         _, cash_shift = _summary_context(db)
 
-        assert get_cash_shift_summary(db, cash_shift.id)["expected_cash_cents"] == 13_000
+        assert (
+            get_cash_shift_summary(db, cash_shift.id)["expected_cash_cents"] == 13_000
+        )
 
 
-@pytest.mark.parametrize("ticket_status", ["OPEN", "IN_PAYMENT"])
+@pytest.mark.parametrize("ticket_status", ["Abierto", "En cobro"])
 def test_cannot_close_with_active_ticket(ticket_status: str) -> None:
     with SessionLocal() as db:
         employee, cash_shift = _open_shift(db)
@@ -220,19 +227,21 @@ def test_cannot_close_with_active_ticket(ticket_status: str) -> None:
 def test_close_with_paid_tickets() -> None:
     with SessionLocal() as db:
         employee, cash_shift = _open_shift(db)
-        _ticket(db, employee, "PAID")
+        _ticket(db, employee, "Cobrado")
 
         closed = close_cash_shift(db, cash_shift.id, employee.id, 10_000)
 
-        assert closed.status == "CLOSED"
+        assert closed.status == "Cerrado"
 
 
 def test_close_with_cancelled_tickets() -> None:
     with SessionLocal() as db:
         employee, cash_shift = _open_shift(db)
-        _ticket(db, employee, "CANCELLED")
+        _ticket(db, employee, "Cancelado")
 
-        assert close_cash_shift(db, cash_shift.id, employee.id, 10_000).status == "CLOSED"
+        assert (
+            close_cash_shift(db, cash_shift.id, employee.id, 10_000).status == "Cerrado"
+        )
 
 
 def test_close_calculates_cash_difference() -> None:
@@ -249,9 +258,11 @@ def test_close_creates_cash_shift_print_job() -> None:
         employee, cash_shift = _open_shift(db)
         close_cash_shift(db, cash_shift.id, employee.id, 10_000)
 
-        job = db.execute(select(PrintJob).where(PrintJob.job_type == "CORTE")).scalar_one()
+        job = db.execute(
+            select(PrintJob).where(PrintJob.job_type == "Corte")
+        ).scalar_one()
         assert job.printer_key_snapshot == "CAJA"
-        assert job.status == "PENDING"
+        assert job.status == "Pendiente"
         assert job.idempotency_key == f"CORTE:{cash_shift.id}"
         assert "KANPAI\nCORTE" in job.content_snapshot
         job.content_snapshot.encode("ascii")
@@ -266,7 +277,7 @@ def test_close_persists_closed_status() -> None:
 
         persisted = db.get(CashShift, cash_shift_id)
         assert persisted is not None
-        assert persisted.status == "CLOSED"
+        assert persisted.status == "Cerrado"
         assert persisted.closed_at is not None
         assert persisted.closing_note == "Cierre QA"
 
@@ -339,5 +350,5 @@ def test_close_cash_shift_endpoint() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["closed"] is True
-    assert payload["cash_shift"]["status"] == "CLOSED"
-    assert payload["print_job"]["job_type"] == "CORTE"
+    assert payload["cash_shift"]["status"] == "Cerrado"
+    assert payload["print_job"]["job_type"] == "Corte"

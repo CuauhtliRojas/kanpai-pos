@@ -49,9 +49,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(
-        DiningTable.__table__.update().values(status_cache="FREE")
-    )
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -66,12 +64,22 @@ def clean_pos_data() -> None:
 
 
 def _employee_and_table(db: Session) -> tuple[Employee, DiningTable]:
-    employee = db.execute(
-        select(Employee).where(Employee.active.is_(True)).order_by(Employee.id)
-    ).scalars().first()
-    table = db.execute(
-        select(DiningTable).where(DiningTable.active.is_(True)).order_by(DiningTable.id)
-    ).scalars().first()
+    employee = (
+        db.execute(
+            select(Employee).where(Employee.active.is_(True)).order_by(Employee.id)
+        )
+        .scalars()
+        .first()
+    )
+    table = (
+        db.execute(
+            select(DiningTable)
+            .where(DiningTable.active.is_(True))
+            .order_by(DiningTable.id)
+        )
+        .scalars()
+        .first()
+    )
     assert employee is not None
     assert table is not None
     return employee, table
@@ -94,10 +102,10 @@ def test_open_cash_shift_successfully() -> None:
         cash_shift = open_cash_shift(db, employee.id, 150_00)
         db.commit()
 
-        assert cash_shift.status == "OPEN"
+        assert cash_shift.status == "Abierto"
         assert cash_shift.folio.startswith("CC")
         assert cash_shift.opening_cash_cents == 150_00
-        assert db.scalar(select(AuditEvent.event_type)) == "CASH_SHIFT_OPENED"
+        assert db.scalar(select(AuditEvent.event_type)) == "Corte abierto"
 
 
 def test_cannot_open_two_cash_shifts() -> None:
@@ -137,8 +145,8 @@ def test_open_ticket_on_free_table() -> None:
         )
         db.commit()
 
-        assert ticket.status == "OPEN"
-        assert ticket.payment_status == "UNPAID"
+        assert ticket.status == "Abierto"
+        assert ticket.payment_status == "Sin pagar"
         assert ticket.cash_shift_id == cash_shift.id
         assert ticket.folio.startswith("TK")
 
@@ -152,8 +160,8 @@ def test_open_ticket_marks_table_as_occupied() -> None:
         open_ticket_for_table(db, table.id, employee.id)
         db.commit()
 
-        assert table.status_cache == "OCCUPIED"
-        assert db.scalar(select(TableStatusEvent.to_status)) == "OCCUPIED"
+        assert table.status_cache == "Ocupada"
+        assert db.scalar(select(TableStatusEvent.to_status)) == "Ocupada"
 
 
 def test_cannot_open_second_active_ticket_on_same_table() -> None:
@@ -165,7 +173,7 @@ def test_cannot_open_second_active_ticket_on_same_table() -> None:
         db.commit()
 
         # Simula un cache desincronizado para verificar también la consulta de tickets.
-        table.status_cache = "FREE"
+        table.status_cache = "Libre"
         db.commit()
 
         with pytest.raises(BusinessConflictError):
@@ -184,7 +192,7 @@ def test_pos_endpoints_with_test_client() -> None:
         json={"employee_id": employee_id, "opening_cash_cents": 100_00},
     )
     assert shift_response.status_code == 201
-    assert shift_response.json()["status"] == "OPEN"
+    assert shift_response.json()["status"] == "Abierto"
 
     current_response = client.get("/api/v1/pos/cash-shifts/current")
     assert current_response.status_code == 200
@@ -220,17 +228,20 @@ def test_add_simple_product_updates_ticket_and_captured_line() -> None:
         db.commit()
 
         assert len(lines) == 1
-        assert lines[0].line_type == "SIMPLE"
-        assert lines[0].status == "CAPTURED"
+        assert lines[0].line_type == "Simple"
+        assert lines[0].status == "Capturado"
         assert lines[0].line_total_cents == product.price_cents * 2
         assert lines[0].station_id_snapshot is not None
         assert ticket.subtotal_cents == product.price_cents * 2
         assert ticket.total_cents == product.price_cents * 2
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "TICKET_LINE_ADDED"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Linea de ticket agregada"
+                )
             )
-        ) == "TICKET_LINE_ADDED"
+            == "Linea de ticket agregada"
+        )
 
 
 def test_rejects_zero_quantity() -> None:
@@ -267,27 +278,28 @@ def test_add_package_creates_parent_components_and_only_charges_parent() -> None
             select(Product).where(Product.sku == "DEV-CHELA-SAKE")
         ).scalar_one()
 
-        lines = add_product_to_ticket(
-            db, ticket.id, package_product.id, employee.id, 2
-        )
+        lines = add_product_to_ticket(db, ticket.id, package_product.id, employee.id, 2)
         db.commit()
 
         parent = lines[0]
         components = lines[1:]
-        assert parent.line_type == "PACKAGE_PARENT"
-        assert parent.status == "CAPTURED"
+        assert parent.line_type == "Paquete padre"
+        assert parent.status == "Capturado"
         assert len(components) == 2
-        assert {line.line_type for line in components} == {"PACKAGE_COMPONENT"}
+        assert {line.line_type for line in components} == {"Componente de paquete"}
         assert all(line.parent_ticket_line_id == parent.id for line in components)
         assert all(line.line_total_cents == 0 for line in components)
-        assert all(line.status == "CAPTURED" for line in components)
+        assert all(line.status == "Capturado" for line in components)
         assert ticket.subtotal_cents == package_product.price_cents * 2
         assert ticket.total_cents == package_product.price_cents * 2
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "PACKAGE_LINE_ADDED"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Paquete agregado"
+                )
             )
-        ) == "PACKAGE_LINE_ADDED"
+            == "Paquete agregado"
+        )
 
 
 def test_rejects_product_when_ticket_is_not_open() -> None:
@@ -296,7 +308,7 @@ def test_rejects_product_when_ticket_is_not_open() -> None:
         product = db.execute(
             select(Product).where(Product.sku == "DEV-CHELA")
         ).scalar_one()
-        ticket.status = "IN_PAYMENT"
+        ticket.status = "En cobro"
         db.commit()
 
         with pytest.raises(BusinessConflictError):
@@ -328,7 +340,7 @@ def test_ticket_line_endpoints_add_and_list_product() -> None:
     assert response.status_code == 201
     payload = response.json()
     assert payload["ticket_id"] == ticket_id
-    assert payload["lines_created"][0]["status"] == "CAPTURED"
+    assert payload["lines_created"][0]["status"] == "Capturado"
     assert payload["ticket_totals"]["total_cents"] == expected_total
 
     list_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/lines")

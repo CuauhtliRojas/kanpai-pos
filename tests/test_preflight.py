@@ -48,7 +48,7 @@ def _shift(db: Session) -> CashShift:
     employee, _ = _catalog(db)
     shift = CashShift(
         folio=f"QA-PREFLIGHT-SHIFT-{next(sequence)}",
-        status="OPEN",
+        status="Abierto",
         opened_by_employee_id=employee.id,
         opening_cash_cents=0,
     )
@@ -65,7 +65,7 @@ def _ticket(db: Session, shift: CashShift, table: DiningTable, status: str) -> T
         table_id=table.id,
         opened_by_employee_id=employee.id,
         status=status,
-        payment_status="UNPAID",
+        payment_status="Sin pagar",
     )
     db.add(ticket)
     db.flush()
@@ -113,8 +113,8 @@ def test_preflight_detects_more_than_one_active_ticket_for_table() -> None:
     with SessionLocal() as db:
         _, table = _catalog(db)
         shift = _shift(db)
-        _ticket(db, shift, table, "OPEN")
-        _ticket(db, shift, table, "IN_PAYMENT")
+        _ticket(db, shift, table, "Abierto")
+        _ticket(db, shift, table, "En cobro")
         db.commit()
     payload = client.get("/api/v1/preflight/local-backend").json()
     assert _checks(payload)["single_active_ticket_per_table"]["status"] == "ERROR"
@@ -128,11 +128,11 @@ def test_preflight_detects_print_job_without_printer_key() -> None:
         db.add(
             PrintJob(
                 folio=f"QA-PREFLIGHT-PRINT-{number}",
-                job_type="TICKET",
+                job_type="Ticket",
                 printer_id=printer.id,
                 printer_key_snapshot="",
                 content_snapshot="QA",
-                status="PENDING",
+                status="Pendiente",
                 idempotency_key=f"QA-PREFLIGHT-PRINT:{number}",
             )
         )
@@ -145,9 +145,9 @@ def test_preflight_detects_active_payment_for_cancelled_ticket() -> None:
     with SessionLocal() as db:
         employee, table = _catalog(db)
         shift = _shift(db)
-        ticket = _ticket(db, shift, table, "CANCELLED")
+        ticket = _ticket(db, shift, table, "Cancelado")
         method = db.scalar(
-            select(PaymentMethod).where(PaymentMethod.method_key == "CASH")
+            select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo")
         )
         assert method is not None
         db.add(
@@ -158,7 +158,7 @@ def test_preflight_detects_active_payment_for_cancelled_ticket() -> None:
                 payment_method_id=method.id,
                 cashier_employee_id=employee.id,
                 amount_cents=100,
-                status="ACTIVE",
+                status="Activo",
             )
         )
         db.commit()

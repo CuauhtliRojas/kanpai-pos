@@ -12,6 +12,7 @@ from sqlalchemy import delete  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.core.database import SessionLocal  # noqa: E402
+from app.domain.constants import TableStatus  # noqa: E402
 from app.models import (  # noqa: E402
     AuditEvent,
     CashExpense,
@@ -64,7 +65,7 @@ def reset_operational_data(db: Session) -> dict[str, int]:
     for model in OPERATIONAL_MODELS:
         result = db.execute(delete(model))
         deleted[model.__tablename__] = result.rowcount or 0
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache=TableStatus.FREE))
     return deleted
 
 
@@ -78,14 +79,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     if not args.yes:
-        print("WARNING: no data was deleted. Re-run with --yes to confirm the QA reset.")
+        print(
+            "WARNING: no data was deleted. Re-run with --yes to confirm the QA reset."
+        )
         return 0
 
     with SessionLocal() as db:
         deleted = reset_operational_data(db)
         db.commit()
     print(f"Operational QA reset complete: {sum(deleted.values())} rows deleted.")
-    print("All dining tables were returned to FREE. Catalogs were preserved.")
+    print("All dining tables were returned to Libre. Catalogs were preserved.")
     return 0
 
 

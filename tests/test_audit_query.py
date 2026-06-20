@@ -61,7 +61,7 @@ def _clean_operational_data(db: Session) -> None:
         PurchaseReceipt,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -93,8 +93,8 @@ def _context(db: Session):
         cash_shift_id=shift.id,
         table_id=table.id,
         opened_by_employee_id=employee.id,
-        status="PAID",
-        payment_status="PAID",
+        status="Cobrado",
+        payment_status="Cobrado",
         total_cents=500,
     )
     db.add(ticket)
@@ -120,16 +120,16 @@ def test_audit_events_lists_with_pagination_and_filter() -> None:
         db.add_all(
             [
                 AuditEvent(
-                    event_type="TICKET_OPENED",
+                    event_type="Ticket abierto",
                     entity_type="Ticket",
                     entity_id=ticket.id,
                     actor_employee_id=employee.id,
                     ticket_id=ticket.id,
                     cash_shift_id=shift.id,
-                    after_snapshot='{"status": "OPEN"}',
+                    after_snapshot='{"status": "Abierto"}',
                 ),
                 AuditEvent(
-                    event_type="TICKET_PAID",
+                    event_type="Ticket cobrado",
                     entity_type="Ticket",
                     entity_id=ticket.id,
                     actor_employee_id=employee.id,
@@ -143,16 +143,16 @@ def test_audit_events_lists_with_pagination_and_filter() -> None:
     assert page["total"] == 2
     assert len(page["items"]) == 1
     assert page["limit"] == 1
-    filtered = client.get("/api/v1/audit/events?event_type=TICKET_PAID").json()
+    filtered = client.get("/api/v1/audit/events?event_type=Ticket%20cobrado").json()
     assert filtered["total"] == 1
-    assert filtered["items"][0]["event_type"] == "TICKET_PAID"
+    assert filtered["items"][0]["event_type"] == "Ticket cobrado"
 
 
 def test_audit_ticket_returns_complete_cycle() -> None:
     with SessionLocal() as db:
         employee, shift, ticket, line = _context(db)
         method = db.scalar(
-            select(PaymentMethod).where(PaymentMethod.method_key == "CASH")
+            select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo")
         )
         printer = db.scalar(select(Printer).order_by(Printer.id))
         item = db.scalar(select(InventoryItem).order_by(InventoryItem.id))
@@ -170,7 +170,7 @@ def test_audit_ticket_returns_complete_cycle() -> None:
                 ),
                 PrintJob(
                     folio=f"QA-A-PRINT-{number}",
-                    job_type="TICKET",
+                    job_type="Ticket",
                     printer_id=printer.id,
                     printer_key_snapshot=printer.printer_key,
                     ticket_id=ticket.id,
@@ -180,7 +180,7 @@ def test_audit_ticket_returns_complete_cycle() -> None:
                 InventoryMovement(
                     folio=f"QA-A-MOV-{number}",
                     inventory_item_id=item.id,
-                    movement_type="SALE_CONSUMPTION",
+                    movement_type="Consumo venta",
                     quantity_base=Decimal("1"),
                     signed_quantity_base=Decimal("-1"),
                     ticket_line_id=line.id,
@@ -202,7 +202,7 @@ def test_audit_cash_shift_returns_financial_context() -> None:
     with SessionLocal() as db:
         employee, shift, ticket, _ = _context(db)
         method = db.scalar(
-            select(PaymentMethod).where(PaymentMethod.method_key == "CASH")
+            select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo")
         )
         assert method
         number = next(sequence)

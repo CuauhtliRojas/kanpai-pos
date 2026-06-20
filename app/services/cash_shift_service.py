@@ -4,6 +4,14 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    ActiveStatus,
+    CashShiftStatus,
+    PaymentMethodValue,
+    PrintStatus,
+    TicketStatus,
+    audit_event,
+)
 from app.models import (
     AuditEvent,
     CashExpense,
@@ -20,15 +28,24 @@ from app.services.exceptions import (
     InvalidBusinessDataError,
 )
 from app.services.folio_service import generate_folio
-from app.services.permission_service import get_active_employee, require_employee_permission
+from app.services.permission_service import (
+    get_active_employee,
+    require_employee_permission,
+)
 from app.services.print_service import create_cash_shift_print_job
 
 
 def get_current_cash_shift(db: Session) -> CashShift | None:
     """Devuelve el único corte abierto actual, o ``None`` si no existe."""
-    return db.execute(
-        select(CashShift).where(CashShift.status == "OPEN").order_by(CashShift.id)
-    ).scalars().first()
+    return (
+        db.execute(
+            select(CashShift)
+            .where(CashShift.status == CashShiftStatus.OPEN)
+            .order_by(CashShift.id)
+        )
+        .scalars()
+        .first()
+    )
 
 
 def open_cash_shift(
@@ -41,15 +58,13 @@ def open_cash_shift(
     if not employee.active:
         raise BusinessConflictError("El empleado está inactivo.")
     if opening_cash_cents < 0:
-        raise InvalidBusinessDataError(
-            "El efectivo inicial no puede ser negativo."
-        )
+        raise InvalidBusinessDataError("El efectivo inicial no puede ser negativo.")
     if get_current_cash_shift(db) is not None:
         raise BusinessConflictError("Ya existe un corte de caja abierto.")
 
     cash_shift = CashShift(
         folio=generate_folio(db, "CORTE"),
-        status="OPEN",
+        status=CashShiftStatus.OPEN,
         opened_by_employee_id=employee_id,
         opening_cash_cents=opening_cash_cents,
     )
@@ -57,7 +72,7 @@ def open_cash_shift(
     db.flush()
     db.add(
         AuditEvent(
-            event_type="CASH_SHIFT_OPENED",
+            event_type=audit_event("CASH_SHIFT_OPENED"),
             entity_type="CashShift",
             entity_id=cash_shift.id,
             actor_employee_id=employee_id,
@@ -94,14 +109,14 @@ def get_cash_shift_summary(db: Session, cash_shift_id: int) -> dict:
         db,
         select(func.sum(Ticket.total_cents)).where(
             Ticket.cash_shift_id == cash_shift_id,
-            Ticket.status == "PAID",
+            Ticket.status == TicketStatus.PAID,
         ),
     )
     total_paid = _sum_cents(
         db,
         select(func.sum(Payment.amount_cents)).where(
             Payment.cash_shift_id == cash_shift_id,
-            Payment.status == "ACTIVE",
+            Payment.status == ActiveStatus.ACTIVE,
         ),
     )
 
@@ -112,7 +127,7 @@ def get_cash_shift_summary(db: Session, cash_shift_id: int) -> dict:
             .join(PaymentMethod, PaymentMethod.id == Payment.payment_method_id)
             .where(
                 Payment.cash_shift_id == cash_shift_id,
-                Payment.status == "ACTIVE",
+                Payment.status == ActiveStatus.ACTIVE,
                 PaymentMethod.method_key == method_key,
             ),
         )
@@ -121,10 +136,10 @@ def get_cash_shift_summary(db: Session, cash_shift_id: int) -> dict:
         db,
         select(func.sum(CashExpense.amount_cents)).where(
             CashExpense.cash_shift_id == cash_shift_id,
-            CashExpense.status == "ACTIVE",
+            CashExpense.status == ActiveStatus.ACTIVE,
         ),
     )
-    total_cash = payment_total("CASH")
+    total_cash = payment_total(PaymentMethodValue.CASH)
     status_counts = dict(
         db.execute(
             select(Ticket.status, func.count(Ticket.id))
@@ -137,7 +152,7 @@ def get_cash_shift_summary(db: Session, cash_shift_id: int) -> dict:
         db.scalar(
             select(func.count(CashExpense.id)).where(
                 CashExpense.cash_shift_id == cash_shift_id,
-                CashExpense.status == "ACTIVE",
+                CashExpense.status == ActiveStatus.ACTIVE,
             )
         )
         or 0
@@ -146,7 +161,7 @@ def get_cash_shift_summary(db: Session, cash_shift_id: int) -> dict:
         db.scalar(
             select(func.count(PrintJob.id)).where(
                 PrintJob.cash_shift_id == cash_shift_id,
-                PrintJob.status == "PENDING",
+                PrintJob.status == PrintStatus.PENDING,
             )
         )
         or 0
@@ -161,13 +176,13 @@ def get_cash_shift_summary(db: Session, cash_shift_id: int) -> dict:
         "total_sales_cents": total_sales,
         "total_paid_cents": total_paid,
         "total_cash_cents": total_cash,
-        "total_card_cents": payment_total("CARD"),
-        "total_transfer_cents": payment_total("TRANSFER"),
+        "total_card_cents": payment_total(PaymentMethodValue.CARD),
+        "total_transfer_cents": payment_total(PaymentMethodValue.TRANSFER),
         "total_expenses_cents": total_expenses,
         "expected_cash_cents": expected_cash,
         "ticket_count": ticket_count,
-        "paid_ticket_count": status_counts.get("PAID", 0),
-        "cancelled_ticket_count": status_counts.get("CANCELLED", 0),
+        "paid_ticket_count": status_counts.get(TicketStatus.PAID, 0),
+        "cancelled_ticket_count": status_counts.get(TicketStatus.CANCELLED, 0),
         "active_expense_count": active_expense_count,
         "pending_print_jobs_count": pending_print_jobs_count,
     }
@@ -189,36 +204,32 @@ def close_cash_shift(
     cash_shift = db.get(CashShift, cash_shift_id)
     if cash_shift is None:
         raise EntityNotFoundError("El corte de caja no existe.")
-    if cash_shift.status != "OPEN":
+    if cash_shift.status != CashShiftStatus.OPEN:
         raise BusinessConflictError("El corte de caja no está abierto.")
 
     get_active_employee(db, employee_id)
     require_employee_permission(db, employee_id, "CASH_SHIFT_CLOSE")
     if declared_cash_cents < 0:
-        raise InvalidBusinessDataError(
-            "El efectivo declarado no puede ser negativo."
-        )
+        raise InvalidBusinessDataError("El efectivo declarado no puede ser negativo.")
 
     blocking_ticket_count = int(
         db.scalar(
             select(func.count(Ticket.id)).where(
                 Ticket.cash_shift_id == cash_shift_id,
-                Ticket.status.in_(("OPEN", "IN_PAYMENT")),
+                Ticket.status.in_((CashShiftStatus.OPEN, TicketStatus.IN_PAYMENT)),
             )
         )
         or 0
     )
     if blocking_ticket_count:
-        raise BusinessConflictError(
-            "El corte tiene tickets abiertos o en cobro."
-        )
+        raise BusinessConflictError("El corte tiene tickets abiertos o en cobro.")
 
     summary = get_cash_shift_summary(db, cash_shift_id)
     if not allow_pending_print_jobs and summary["pending_print_jobs_count"]:
         raise BusinessConflictError("El corte tiene impresiones pendientes.")
 
     expected_cash = summary["expected_cash_cents"]
-    cash_shift.status = "CLOSED"
+    cash_shift.status = CashShiftStatus.CLOSED
     cash_shift.closed_by_employee_id = employee_id
     cash_shift.closed_at = datetime.utcnow()
     cash_shift.declared_cash_cents = declared_cash_cents
@@ -229,15 +240,15 @@ def close_cash_shift(
     create_cash_shift_print_job(db, cash_shift, summary)
     db.add(
         AuditEvent(
-            event_type="CASH_SHIFT_CLOSED",
+            event_type=audit_event("CASH_SHIFT_CLOSED"),
             entity_type="CashShift",
             entity_id=cash_shift.id,
             actor_employee_id=employee_id,
             cash_shift_id=cash_shift.id,
-            before_snapshot=json.dumps({"status": "OPEN"}),
+            before_snapshot=json.dumps({"status": CashShiftStatus.OPEN}),
             after_snapshot=json.dumps(
                 {
-                    "status": "CLOSED",
+                    "status": CashShiftStatus.CLOSED,
                     "declared_cash_cents": declared_cash_cents,
                     "expected_cash_cents": expected_cash,
                     "cash_difference_cents": cash_shift.cash_difference_cents,

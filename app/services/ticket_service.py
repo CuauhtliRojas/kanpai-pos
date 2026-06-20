@@ -3,6 +3,14 @@ import json
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    TableStatus,
+    TicketLineStatus,
+    TicketLineType,
+    TicketPaymentStatus,
+    TicketStatus,
+    audit_event,
+)
 from app.models import (
     AuditEvent,
     Employee,
@@ -21,7 +29,9 @@ from app.services.folio_service import generate_folio
 from app.services.table_service import get_free_active_table
 
 
-def get_active_employee(db: Session, employee_id: int, label: str = "El empleado") -> Employee:
+def get_active_employee(
+    db: Session, employee_id: int, label: str = "El empleado"
+) -> Employee:
     """Obtiene un empleado activo o reporta una regla de dominio estable."""
     employee = db.get(Employee, employee_id)
     if employee is None:
@@ -44,8 +54,10 @@ def recalculate_ticket_totals(db: Session, ticket: Ticket) -> None:
     subtotal = db.execute(
         select(func.coalesce(func.sum(TicketLine.line_total_cents), 0)).where(
             TicketLine.ticket_id == ticket.id,
-            TicketLine.line_type.in_(("SIMPLE", "PACKAGE_PARENT")),
-            TicketLine.status.not_in(("CANCELLED", "CANCELED", "CANCELADO")),
+            TicketLine.line_type.in_(
+                (TicketLineType.SIMPLE, TicketLineType.PACKAGE_PARENT)
+            ),
+            TicketLine.status != TicketLineStatus.CANCELLED,
         )
     ).scalar_one()
     discount = db.execute(
@@ -88,7 +100,7 @@ def open_ticket_for_table(
     active_ticket = db.execute(
         select(Ticket.id).where(
             Ticket.table_id == table_id,
-            Ticket.status.in_(("OPEN", "IN_PAYMENT")),
+            Ticket.status.in_((TicketStatus.OPEN, TicketStatus.IN_PAYMENT)),
         )
     ).scalar_one_or_none()
     if active_ticket is not None:
@@ -97,8 +109,8 @@ def open_ticket_for_table(
     previous_status = table.status_cache
     ticket = Ticket(
         folio=generate_folio(db, "TICKET"),
-        status="OPEN",
-        payment_status="UNPAID",
+        status=TicketStatus.OPEN,
+        payment_status=TicketPaymentStatus.UNPAID,
         cash_shift_id=cash_shift.id,
         table_id=table_id,
         opened_by_employee_id=employee_id,
@@ -109,20 +121,20 @@ def open_ticket_for_table(
     db.add(ticket)
     db.flush()
 
-    table.status_cache = "OCCUPIED"
+    table.status_cache = TableStatus.OCCUPIED
     db.add(
         TableStatusEvent(
             table_id=table_id,
             ticket_id=ticket.id,
             actor_employee_id=employee_id,
             from_status=previous_status,
-            to_status="OCCUPIED",
-            reason="TICKET_OPENED",
+            to_status=TableStatus.OCCUPIED,
+            reason=audit_event("TICKET_OPENED"),
         )
     )
     db.add(
         AuditEvent(
-            event_type="TICKET_OPENED",
+            event_type=audit_event("TICKET_OPENED"),
             entity_type="Ticket",
             entity_id=ticket.id,
             actor_employee_id=employee_id,

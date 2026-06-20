@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.audit import AuditEventPage, CashShiftAuditResponse, TicketAuditResponse
+from app.schemas.audit import (
+    AuditEventPage,
+    CashShiftAuditResponse,
+    TicketAuditResponse,
+)
 from app.services.audit_query_service import (
     get_cash_shift_audit,
     get_ticket_audit,

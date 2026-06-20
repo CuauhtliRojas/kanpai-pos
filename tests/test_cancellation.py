@@ -53,7 +53,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -98,7 +98,7 @@ def _pay_ticket(db: Session, ticket: Ticket, employee: Employee) -> None:
     send_round(db, ticket.id, employee.id)
     start_payment(db, ticket.id, employee.id)
     cash = db.execute(
-        select(PaymentMethod).where(PaymentMethod.method_key == "CASH")
+        select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo")
     ).scalar_one()
     create_payment(db, ticket.id, employee.id, cash.id, ticket.total_cents)
     db.commit()
@@ -112,16 +112,19 @@ def test_cancel_captured_line() -> None:
         result = cancel_ticket_line(db, line.id, employee.id, "Error de captura")
         db.commit()
 
-        assert result.status == "CANCELLED"
+        assert result.status == "Cancelado"
         assert result.cancelled_by_employee_id == employee.id
         assert result.cancel_reason == "Error de captura"
         assert result.cancelled_at is not None
         assert db.scalar(select(func.count(PrintJob.id))) == 0
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "TICKET_LINE_CANCELLED"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Linea de ticket cancelada"
+                )
             )
-        ) == "TICKET_LINE_CANCELLED"
+            == "Linea de ticket cancelada"
+        )
 
 
 def test_cancel_captured_line_recalculates_totals() -> None:
@@ -148,7 +151,7 @@ def test_cancel_sent_line_creates_cancellation_print_job() -> None:
         db.commit()
 
         job = db.execute(
-            select(PrintJob).where(PrintJob.job_type == "CANCELACION_COMANDA")
+            select(PrintJob).where(PrintJob.job_type == "Cancelacion comanda")
         ).scalar_one()
         assert job.idempotency_key == f"CANCEL_LINE:{line.id}"
         assert job.station_order_id is not None
@@ -164,7 +167,7 @@ def test_cancel_sent_line_changes_status() -> None:
 
         cancel_ticket_line(db, line.id, employee.id)
 
-        assert line.status == "CANCELLED"
+        assert line.status == "Cancelado"
 
 
 def test_cannot_cancel_line_from_paid_ticket() -> None:
@@ -212,13 +215,16 @@ def test_cancel_package_parent_cancels_components() -> None:
         cancel_ticket_line(db, lines[0].id, employee.id)
         db.commit()
 
-        assert all(line.status == "CANCELLED" for line in lines)
+        assert all(line.status == "Cancelado" for line in lines)
         assert ticket.total_cents == 0
-        assert db.scalar(
-            select(func.count(PrintJob.id)).where(
-                PrintJob.job_type == "CANCELACION_COMANDA"
+        assert (
+            db.scalar(
+                select(func.count(PrintJob.id)).where(
+                    PrintJob.job_type == "Cancelacion comanda"
+                )
             )
-        ) == 2
+            == 2
+        )
 
 
 def test_cancel_open_ticket() -> None:
@@ -230,16 +236,19 @@ def test_cancel_open_ticket() -> None:
         result = cancel_ticket(db, ticket.id, employee.id, "Cliente canceló")
         db.commit()
 
-        assert result.status == "CANCELLED"
-        assert result.payment_status == "CANCELLED"
+        assert result.status == "Cancelado"
+        assert result.payment_status == "Cancelado"
         assert result.cancelled_at is not None
-        assert line.status == "CANCELLED"
+        assert line.status == "Cancelado"
         assert result.total_cents == historical_total
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "TICKET_CANCELLED"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Ticket cancelado"
+                )
             )
-        ) == "TICKET_CANCELLED"
+            == "Ticket cancelado"
+        )
 
 
 def test_cancel_ticket_with_sent_lines_creates_jobs() -> None:
@@ -255,9 +264,7 @@ def test_cancel_ticket_with_sent_lines_creates_jobs() -> None:
 
         jobs = list(
             db.execute(
-                select(PrintJob).where(
-                    PrintJob.job_type == "CANCELACION_COMANDA"
-                )
+                select(PrintJob).where(PrintJob.job_type == "Cancelacion comanda")
             ).scalars()
         )
         assert {job.idempotency_key for job in jobs} == {
@@ -274,14 +281,14 @@ def test_cancel_ticket_releases_table() -> None:
         cancel_ticket(db, ticket.id, employee.id)
         db.commit()
 
-        assert ticket.table.status_cache == "FREE"
+        assert ticket.table.status_cache == "Libre"
         event = db.execute(
             select(TableStatusEvent)
-            .where(TableStatusEvent.reason == "TICKET_CANCELLED")
+            .where(TableStatusEvent.reason == "Ticket cancelado")
             .order_by(TableStatusEvent.id.desc())
         ).scalar_one()
-        assert event.from_status == "OCCUPIED"
-        assert event.to_status == "FREE"
+        assert event.from_status == "Ocupada"
+        assert event.to_status == "Libre"
 
 
 def test_cancel_in_payment_ticket_cancels_active_payments() -> None:
@@ -291,7 +298,7 @@ def test_cancel_in_payment_ticket_cancels_active_payments() -> None:
         send_round(db, ticket.id, employee.id)
         start_payment(db, ticket.id, employee.id)
         cash = db.execute(
-            select(PaymentMethod).where(PaymentMethod.method_key == "CASH")
+            select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo")
         ).scalar_one()
         payment = create_payment(db, ticket.id, employee.id, cash.id, 100)
         db.commit()
@@ -299,10 +306,10 @@ def test_cancel_in_payment_ticket_cancels_active_payments() -> None:
         cancel_ticket(db, ticket.id, employee.id, "Cambio de decisión")
         db.commit()
 
-        assert payment.status == "CANCELLED"
+        assert payment.status == "Cancelado"
         assert payment.cancelled_by_employee_id == employee.id
         assert payment.cancelled_at is not None
-        assert ticket.status == "CANCELLED"
+        assert ticket.status == "Cancelado"
 
 
 def test_cannot_cancel_paid_ticket() -> None:
@@ -340,7 +347,7 @@ def test_cancel_line_endpoint() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["line"]["status"] == "CANCELLED"
+    assert response.json()["line"]["status"] == "Cancelado"
     assert response.json()["ticket"]["total_cents"] == 0
     assert response.json()["print_jobs_created"] == 0
 
@@ -358,7 +365,7 @@ def test_cancel_ticket_endpoint() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["ticket"]["status"] == "CANCELLED"
+    assert response.json()["ticket"]["status"] == "Cancelado"
     assert response.json()["lines_cancelled"] == 1
     assert response.json()["payments_cancelled"] == 0
     assert response.json()["table_released"] is True

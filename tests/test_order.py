@@ -50,7 +50,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -65,12 +65,22 @@ def clean_order_data() -> None:
 
 
 def _open_ticket(db: Session) -> tuple[Employee, Ticket]:
-    employee = db.execute(
-        select(Employee).where(Employee.active.is_(True)).order_by(Employee.id)
-    ).scalars().first()
-    table = db.execute(
-        select(DiningTable).where(DiningTable.active.is_(True)).order_by(DiningTable.id)
-    ).scalars().first()
+    employee = (
+        db.execute(
+            select(Employee).where(Employee.active.is_(True)).order_by(Employee.id)
+        )
+        .scalars()
+        .first()
+    )
+    table = (
+        db.execute(
+            select(DiningTable)
+            .where(DiningTable.active.is_(True))
+            .order_by(DiningTable.id)
+        )
+        .scalars()
+        .first()
+    )
     assert employee is not None
     assert table is not None
     open_cash_shift(db, employee.id, 0)
@@ -98,10 +108,10 @@ def test_send_simple_line_creates_complete_logical_command() -> None:
         station_order = db.scalar(
             select(StationOrder).where(StationOrder.command_batch_id == batch.id)
         )
-        assert batch.batch_type == "ORDER"
+        assert batch.batch_type == "Pedido"
         assert batch.round_number == 1
         assert station_order is not None
-        assert station_order.status == "QUEUED"
+        assert station_order.status == "En cola"
 
         order_line = db.scalar(
             select(StationOrderLine).where(
@@ -112,27 +122,30 @@ def test_send_simple_line_creates_complete_logical_command() -> None:
         assert order_line.ticket_line_id == line.id
         assert order_line.quantity == 2
         assert order_line.note_snapshot == "Muy fría"
-        assert order_line.line_action == "ADD"
+        assert order_line.line_action == "Agregar"
 
         print_job = db.scalar(
             select(PrintJob).where(PrintJob.command_batch_id == batch.id)
         )
         assert print_job is not None
-        assert print_job.status == "PENDING"
+        assert print_job.status == "Pendiente"
         assert print_job.attempts == 0
         assert "KANPAI\nCOMANDA" in print_job.content_snapshot
         assert ticket.folio in print_job.content_snapshot
         assert "Muy fria" in print_job.content_snapshot
 
         db.refresh(line)
-        assert line.status == "ENVIADO_COMANDA"
+        assert line.status == "Enviado a comanda"
         assert line.round_number == 1
         assert line.sent_at is not None
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "ROUND_SENT"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Ronda enviada"
+                )
             )
-        ) == "ROUND_SENT"
+            == "Ronda enviada"
+        )
 
 
 def test_second_round_only_sends_new_captured_lines() -> None:
@@ -144,7 +157,9 @@ def test_second_round_only_sends_new_captured_lines() -> None:
         first_batch = send_round(db, ticket.id, employee.id)
         db.commit()
 
-        second_line = add_product_to_ticket(db, ticket.id, product.id, employee.id, 3)[0]
+        second_line = add_product_to_ticket(db, ticket.id, product.id, employee.id, 3)[
+            0
+        ]
         db.commit()
         second_batch = send_round(db, ticket.id, employee.id)
         db.commit()
@@ -196,8 +211,8 @@ def test_package_sends_components_but_not_parent() -> None:
         )
         assert parent.id not in produced_line_ids
         assert produced_line_ids == {line.id for line in components}
-        assert parent.status == "IMPRESO"
-        assert all(line.status == "ENVIADO_COMANDA" for line in components)
+        assert parent.status == "Impreso"
+        assert all(line.status == "Enviado a comanda" for line in components)
 
 
 def test_line_without_station_is_marked_printed_without_command() -> None:
@@ -219,17 +234,23 @@ def test_line_without_station_is_marked_printed_without_command() -> None:
         try:
             batch = send_round(db, ticket.id, employee.id)
             db.commit()
-            assert line.status == "IMPRESO"
-            assert db.scalar(
-                select(func.count(StationOrder.id)).where(
-                    StationOrder.command_batch_id == batch.id
+            assert line.status == "Impreso"
+            assert (
+                db.scalar(
+                    select(func.count(StationOrder.id)).where(
+                        StationOrder.command_batch_id == batch.id
+                    )
                 )
-            ) == 0
-            assert db.scalar(
-                select(func.count(PrintJob.id)).where(
-                    PrintJob.command_batch_id == batch.id
+                == 0
+            )
+            assert (
+                db.scalar(
+                    select(func.count(PrintJob.id)).where(
+                        PrintJob.command_batch_id == batch.id
+                    )
                 )
-            ) == 0
+                == 0
+            )
         finally:
             assignment.active = True
             db.commit()
@@ -258,9 +279,7 @@ def test_send_round_and_query_endpoints() -> None:
         "lines_sent": 1,
     }
 
-    orders_response = client.get(
-        f"/api/v1/pos/tickets/{ticket_id}/station-orders"
-    )
+    orders_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/station-orders")
     assert orders_response.status_code == 200
     assert len(orders_response.json()) == 1
     assert len(orders_response.json()[0]["lines"]) == 1
@@ -268,4 +287,4 @@ def test_send_round_and_query_endpoints() -> None:
     jobs_response = client.get("/api/v1/pos/print-jobs/pending")
     assert jobs_response.status_code == 200
     assert len(jobs_response.json()) == 1
-    assert jobs_response.json()[0]["status"] == "PENDING"
+    assert jobs_response.json()[0]["status"] == "Pendiente"

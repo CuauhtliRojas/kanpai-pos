@@ -62,7 +62,7 @@ def _clean_operational_data(db: Session) -> None:
         PurchaseReceipt,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -84,7 +84,7 @@ def _catalog(db: Session):
     return employee, table, product
 
 
-def _shift(db: Session, status: str = "OPEN") -> CashShift:
+def _shift(db: Session, status: str = "Abierto") -> CashShift:
     employee, _, _ = _catalog(db)
     number = next(sequence)
     shift = CashShift(
@@ -107,9 +107,9 @@ def _ticket(db: Session, shift: CashShift, status: str, total: int = 1000) -> Ti
         table_id=table.id,
         opened_by_employee_id=employee.id,
         status=status,
-        payment_status="PAID" if status == "PAID" else "UNPAID",
+        payment_status="Cobrado" if status == "Cobrado" else "Sin pagar",
         total_cents=total,
-        paid_at=datetime.utcnow() if status == "PAID" else None,
+        paid_at=datetime.utcnow() if status == "Cobrado" else None,
     )
     db.add(ticket)
     db.flush()
@@ -120,7 +120,7 @@ def _line(
     db: Session,
     ticket: Ticket,
     *,
-    line_type: str = "SIMPLE",
+    line_type: str = "Simple",
     quantity: int = 1,
     total: int = 1000,
 ) -> TicketLine:
@@ -141,7 +141,7 @@ def _line(
     return line
 
 
-def _print_job(db: Session, status: str, job_type: str = "TICKET") -> PrintJob:
+def _print_job(db: Session, status: str, job_type: str = "Ticket") -> PrintJob:
     printer = db.scalar(select(Printer).order_by(Printer.id))
     assert printer
     number = next(sequence)
@@ -180,8 +180,8 @@ def test_operational_summary_has_complete_structure() -> None:
 def test_operational_summary_counts_paid_and_cancelled_tickets() -> None:
     with SessionLocal() as db:
         shift = _shift(db)
-        _ticket(db, shift, "PAID", 2500)
-        _ticket(db, shift, "CANCELLED", 900)
+        _ticket(db, shift, "Cobrado", 2500)
+        _ticket(db, shift, "Cancelado", 900)
         db.commit()
     payload = client.get("/api/v1/reports/operational-summary").json()
     assert payload["total_sales_cents"] == 2500
@@ -191,15 +191,15 @@ def test_operational_summary_counts_paid_and_cancelled_tickets() -> None:
 
 def test_operational_summary_counts_print_jobs_and_stock_alerts() -> None:
     with SessionLocal() as db:
-        _print_job(db, "PENDING")
-        _print_job(db, "FAILED")
+        _print_job(db, "Pendiente")
+        _print_job(db, "Fallido")
         item = db.scalar(select(InventoryItem).order_by(InventoryItem.id))
         assert item
         db.add(
             StockAlert(
                 inventory_item_id=item.id,
-                alert_type="LOW_STOCK",
-                status="OPEN",
+                alert_type="Stock bajo",
+                status="Abierta",
                 message="QA",
             )
         )
@@ -213,11 +213,11 @@ def test_operational_summary_counts_print_jobs_and_stock_alerts() -> None:
 def test_sales_by_payment_method_groups_active_methods() -> None:
     with SessionLocal() as db:
         shift = _shift(db)
-        ticket = _ticket(db, shift, "PAID", 600)
+        ticket = _ticket(db, shift, "Cobrado", 600)
         employee, _, _ = _catalog(db)
         methods = db.scalars(
             select(PaymentMethod).where(
-                PaymentMethod.method_key.in_(("CASH", "CARD", "TRANSFER"))
+                PaymentMethod.method_key.in_(("Efectivo", "Tarjeta", "Transferencia"))
             )
         ).all()
         for method in methods:
@@ -230,21 +230,25 @@ def test_sales_by_payment_method_groups_active_methods() -> None:
                     payment_method_id=method.id,
                     cashier_employee_id=employee.id,
                     amount_cents=200,
-                    status="ACTIVE",
+                    status="Activo",
                 )
             )
         db.commit()
     payload = client.get("/api/v1/reports/sales-by-payment-method").json()
-    assert {item["method_key"] for item in payload} == {"CASH", "CARD", "TRANSFER"}
+    assert {item["method_key"] for item in payload} == {
+        "Efectivo",
+        "Tarjeta",
+        "Transferencia",
+    }
     assert all(item["total_cents"] == 200 for item in payload)
 
 
 def test_sales_by_product_sums_simple_and_ignores_package_components() -> None:
     with SessionLocal() as db:
         shift = _shift(db)
-        ticket = _ticket(db, shift, "PAID", 3000)
+        ticket = _ticket(db, shift, "Cobrado", 3000)
         _line(db, ticket, quantity=2, total=2000)
-        _line(db, ticket, line_type="PACKAGE_COMPONENT", total=1000)
+        _line(db, ticket, line_type="Componente de paquete", total=1000)
         db.commit()
     payload = client.get("/api/v1/reports/sales-by-product").json()
     assert len(payload) == 1
@@ -262,7 +266,7 @@ def test_inventory_consumption_defaults_to_sale_consumption() -> None:
             InventoryMovement(
                 folio=f"QA-R-MOV-{number}",
                 inventory_item_id=item.id,
-                movement_type="SALE_CONSUMPTION",
+                movement_type="Consumo venta",
                 quantity_base=Decimal("2.5"),
                 signed_quantity_base=Decimal("-2.5"),
                 registered_by_employee_id=employee.id,
@@ -270,13 +274,13 @@ def test_inventory_consumption_defaults_to_sale_consumption() -> None:
         )
         db.commit()
     payload = client.get("/api/v1/reports/inventory-consumption").json()
-    assert payload[0]["movement_type"] == "SALE_CONSUMPTION"
+    assert payload[0]["movement_type"] == "Consumo venta"
     assert Decimal(payload[0]["total_quantity_base"]) == Decimal("2.5")
 
 
 def test_print_jobs_summary_groups_by_status() -> None:
     with SessionLocal() as db:
-        for status in ("PENDING", "CLAIMED", "PRINTED", "FAILED", "CANCELLED"):
+        for status in ("Pendiente", "Tomado", "Impreso", "Fallido", "Cancelado"):
             _print_job(db, status)
         db.commit()
     payload = client.get("/api/v1/reports/print-jobs-summary").json()

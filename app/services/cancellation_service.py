@@ -4,6 +4,14 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    ActiveStatus,
+    TicketLineStatus,
+    TicketLineType,
+    TicketPaymentStatus,
+    TicketStatus,
+    audit_event,
+)
 from app.models import AuditEvent, Payment, Ticket, TicketLine
 from app.services.exceptions import (
     BusinessConflictError,
@@ -19,7 +27,7 @@ from app.services.ticket_service import (
     recalculate_ticket_totals,
 )
 
-SENT_LINE_STATUSES = ("ENVIADO_COMANDA", "IMPRESO")
+SENT_LINE_STATUSES = (TicketLineStatus.SENT_TO_KITCHEN, TicketLineStatus.PRINTED)
 
 
 def _normalize_reason(reason: str | None) -> str | None:
@@ -30,9 +38,7 @@ def _validate_authorized_employee(db: Session, employee_id: int) -> None:
     """Valida existencia, actividad y permiso operativo de cancelación."""
     get_active_employee(db, employee_id)
     if not employee_has_permission(db, employee_id, "TICKET_CANCEL"):
-        raise PermissionDeniedError(
-            "El empleado no tiene permiso TICKET_CANCEL."
-        )
+        raise PermissionDeniedError("El empleado no tiene permiso TICKET_CANCEL.")
 
 
 def _mark_line_cancelled(
@@ -41,7 +47,7 @@ def _mark_line_cancelled(
     reason: str | None,
     cancelled_at: datetime,
 ) -> None:
-    line.status = "CANCELLED"
+    line.status = TicketLineStatus.CANCELLED
     line.cancelled_by_employee_id = employee_id
     line.cancel_reason = reason
     line.cancelled_at = cancelled_at
@@ -67,28 +73,33 @@ def cancel_ticket_line(
     if ticket is None:
         raise EntityNotFoundError("El ticket no existe.")
     _validate_authorized_employee(db, employee_id)
-    if ticket.status == "PAID":
-        raise BusinessConflictError("No se puede cancelar una línea de un ticket pagado.")
-    if ticket.status == "CANCELLED":
+    if ticket.status == TicketStatus.PAID:
+        raise BusinessConflictError(
+            "No se puede cancelar una línea de un ticket pagado."
+        )
+    if ticket.status == TicketStatus.CANCELLED:
         raise BusinessConflictError("El ticket ya está cancelado.")
-    if line.status == "CANCELLED":
+    if line.status == TicketStatus.CANCELLED:
         raise BusinessConflictError("La línea ya está cancelada.")
-    if line.line_type == "PACKAGE_COMPONENT" and line.parent_ticket_line_id:
+    if (
+        line.line_type == TicketLineType.PACKAGE_COMPONENT
+        and line.parent_ticket_line_id
+    ):
         parent = db.get(TicketLine, line.parent_ticket_line_id)
-        if parent is not None and parent.status != "CANCELLED":
+        if parent is not None and parent.status != TicketStatus.CANCELLED:
             raise BusinessConflictError(
                 "El componente no puede cancelarse directamente; cancele el paquete padre."
             )
 
     normalized_reason = _normalize_reason(reason)
     targets = [line]
-    if line.line_type == "PACKAGE_PARENT":
+    if line.line_type == TicketLineType.PACKAGE_PARENT:
         targets.extend(
             db.execute(
                 select(TicketLine)
                 .where(
                     TicketLine.parent_ticket_line_id == line.id,
-                    TicketLine.status != "CANCELLED",
+                    TicketLine.status != TicketStatus.CANCELLED,
                 )
                 .order_by(TicketLine.id)
             ).scalars()
@@ -100,7 +111,7 @@ def cancel_ticket_line(
         previous_status = target.status
         _mark_line_cancelled(target, employee_id, normalized_reason, now)
         if (
-            target.line_type != "PACKAGE_PARENT"
+            target.line_type != TicketLineType.PACKAGE_PARENT
             and previous_status in SENT_LINE_STATUSES
             and target.station_id_snapshot is not None
         ):
@@ -116,7 +127,7 @@ def cancel_ticket_line(
     recalculate_ticket_totals(db, ticket)
     db.add(
         AuditEvent(
-            event_type="TICKET_LINE_CANCELLED",
+            event_type=audit_event("TICKET_LINE_CANCELLED"),
             entity_type="TicketLine",
             entity_id=line.id,
             actor_employee_id=employee_id,
@@ -124,7 +135,10 @@ def cancel_ticket_line(
             ticket_id=ticket.id,
             before_snapshot=json.dumps({"statuses": before_statuses}),
             after_snapshot=json.dumps(
-                {"line_ids": [target.id for target in targets], "status": "CANCELLED"}
+                {
+                    "line_ids": [target.id for target in targets],
+                    "status": TicketStatus.CANCELLED,
+                }
             ),
             reason=normalized_reason,
         )
@@ -147,9 +161,9 @@ def cancel_ticket(
     """
     ticket = get_ticket(db, ticket_id)
     _validate_authorized_employee(db, employee_id)
-    if ticket.status == "PAID":
+    if ticket.status == TicketStatus.PAID:
         raise BusinessConflictError("No se puede cancelar un ticket pagado.")
-    if ticket.status == "CANCELLED":
+    if ticket.status == TicketStatus.CANCELLED:
         raise BusinessConflictError("El ticket ya está cancelado.")
 
     normalized_reason = _normalize_reason(reason)
@@ -163,11 +177,11 @@ def cancel_ticket(
     )
     for line in lines:
         previous_status = line.status
-        if previous_status == "CANCELLED":
+        if previous_status == TicketStatus.CANCELLED:
             continue
         _mark_line_cancelled(line, employee_id, normalized_reason, now)
         if (
-            line.line_type != "PACKAGE_PARENT"
+            line.line_type != TicketLineType.PACKAGE_PARENT
             and previous_status in SENT_LINE_STATUSES
             and line.station_id_snapshot is not None
         ):
@@ -183,26 +197,26 @@ def cancel_ticket(
         db.execute(
             select(Payment).where(
                 Payment.ticket_id == ticket.id,
-                Payment.status == "ACTIVE",
+                Payment.status == ActiveStatus.ACTIVE,
             )
         ).scalars()
     )
     for payment in active_payments:
-        payment.status = "CANCELLED"
+        payment.status = ActiveStatus.CANCELLED
         payment.cancelled_by_employee_id = employee_id
         payment.cancel_reason = normalized_reason
         payment.cancelled_at = now
 
     previous_status = ticket.status
-    ticket.status = "CANCELLED"
-    ticket.payment_status = "CANCELLED"
+    ticket.status = TicketStatus.CANCELLED
+    ticket.payment_status = TicketPaymentStatus.CANCELLED
     ticket.cancelled_by_employee_id = employee_id
     ticket.cancel_reason = normalized_reason
     ticket.cancelled_at = now
     release_table_for_cancelled_ticket(db, ticket, employee_id)
     db.add(
         AuditEvent(
-            event_type="TICKET_CANCELLED",
+            event_type=audit_event("TICKET_CANCELLED"),
             entity_type="Ticket",
             entity_id=ticket.id,
             actor_employee_id=employee_id,
@@ -211,10 +225,8 @@ def cancel_ticket(
             before_snapshot=json.dumps({"status": previous_status}),
             after_snapshot=json.dumps(
                 {
-                    "status": "CANCELLED",
-                    "lines_cancelled": sum(
-                        line.cancelled_at == now for line in lines
-                    ),
+                    "status": TicketStatus.CANCELLED,
+                    "lines_cancelled": sum(line.cancelled_at == now for line in lines),
                     "payments_cancelled": len(active_payments),
                 }
             ),

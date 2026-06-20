@@ -3,6 +3,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.domain.constants import (
+    ActiveStatus,
+    PrintJobType,
+    TableStatus,
+    TicketLineStatus,
+    TicketStatus,
+)
 from app.models import InventoryMovement, Payment, PrintJob, TicketLine
 from app.schemas import (
     BusinessErrorResponse,
@@ -208,9 +215,7 @@ def close_cash_shift_endpoint(
             allow_pending_print_jobs=payload.allow_pending_print_jobs,
         )
         print_job = db.execute(
-            select(PrintJob).where(
-                PrintJob.idempotency_key == f"CORTE:{cash_shift_id}"
-            )
+            select(PrintJob).where(PrintJob.idempotency_key == f"CORTE:{cash_shift_id}")
         ).scalar_one()
         response = CashShiftCloseResponse(
             cash_shift=CashShiftResponse.model_validate(cash_shift),
@@ -318,7 +323,7 @@ def create_payment_endpoint(
             ticket=TicketResponse.model_validate(ticket),
             total_paid_cents=total_paid,
             remaining_cents=max(ticket.total_cents - total_paid, 0),
-            closed=ticket.status == "PAID",
+            closed=ticket.status == TicketStatus.PAID,
         )
         db.commit()
         return response
@@ -344,7 +349,7 @@ def list_ticket_payments_endpoint(
             payments=[PaymentResponse.model_validate(item) for item in payments],
             total_paid_cents=total_paid,
             remaining_cents=max(ticket.total_cents - total_paid, 0),
-            closed=ticket.status == "PAID",
+            closed=ticket.status == TicketStatus.PAID,
         )
     except BusinessError as error:
         raise _to_http_exception(error) from None
@@ -437,9 +442,7 @@ def send_round_endpoint(
     try:
         batch = send_round(db, ticket_id, payload.employee_id)
         print_jobs_created = db.scalar(
-            select(func.count(PrintJob.id)).where(
-                PrintJob.command_batch_id == batch.id
-            )
+            select(func.count(PrintJob.id)).where(PrintJob.command_batch_id == batch.id)
         )
         lines_sent = db.scalar(
             select(func.count(TicketLine.id)).where(
@@ -486,9 +489,7 @@ def list_ticket_station_orders_endpoint(
 def list_pending_print_jobs_endpoint(
     db: Session = Depends(get_db),
 ) -> list[PrintJobResponse]:
-    return [
-        PrintJobResponse.model_validate(job) for job in list_pending_print_jobs(db)
-    ]
+    return [PrintJobResponse.model_validate(job) for job in list_pending_print_jobs(db)]
 
 
 @router.post(
@@ -502,20 +503,24 @@ def cancel_ticket_line_endpoint(
     db: Session = Depends(get_db),
 ) -> TicketLineCancelResponse:
     try:
-        jobs_before = db.scalar(
-            select(func.count(PrintJob.id)).where(
-                PrintJob.job_type == "CANCELACION_COMANDA"
+        jobs_before = (
+            db.scalar(
+                select(func.count(PrintJob.id)).where(
+                    PrintJob.job_type == PrintJobType.COMMAND_CANCELLATION
+                )
             )
-        ) or 0
-        line = cancel_ticket_line(
-            db, line_id, payload.employee_id, payload.reason
+            or 0
         )
+        line = cancel_ticket_line(db, line_id, payload.employee_id, payload.reason)
         ticket = get_ticket(db, line.ticket_id)
-        jobs_after = db.scalar(
-            select(func.count(PrintJob.id)).where(
-                PrintJob.job_type == "CANCELACION_COMANDA"
+        jobs_after = (
+            db.scalar(
+                select(func.count(PrintJob.id)).where(
+                    PrintJob.job_type == PrintJobType.COMMAND_CANCELLATION
+                )
             )
-        ) or 0
+            or 0
+        )
         response = TicketLineCancelResponse(
             line=TicketLineResponse.model_validate(line),
             ticket=TicketResponse.model_validate(ticket),
@@ -539,37 +544,41 @@ def cancel_ticket_endpoint(
     db: Session = Depends(get_db),
 ) -> TicketCancelResponse:
     try:
-        jobs_before = db.scalar(
-            select(func.count(PrintJob.id)).where(
-                PrintJob.job_type == "CANCELACION_COMANDA"
+        jobs_before = (
+            db.scalar(
+                select(func.count(PrintJob.id)).where(
+                    PrintJob.job_type == PrintJobType.COMMAND_CANCELLATION
+                )
             )
-        ) or 0
+            or 0
+        )
         lines_to_cancel = db.scalar(
             select(func.count(TicketLine.id)).where(
                 TicketLine.ticket_id == ticket_id,
-                TicketLine.status != "CANCELLED",
+                TicketLine.status != TicketLineStatus.CANCELLED,
             )
         )
         payments_to_cancel = db.scalar(
             select(func.count(Payment.id)).where(
                 Payment.ticket_id == ticket_id,
-                Payment.status == "ACTIVE",
+                Payment.status == ActiveStatus.ACTIVE,
             )
         )
-        ticket = cancel_ticket(
-            db, ticket_id, payload.employee_id, payload.reason
-        )
-        jobs_after = db.scalar(
-            select(func.count(PrintJob.id)).where(
-                PrintJob.job_type == "CANCELACION_COMANDA"
+        ticket = cancel_ticket(db, ticket_id, payload.employee_id, payload.reason)
+        jobs_after = (
+            db.scalar(
+                select(func.count(PrintJob.id)).where(
+                    PrintJob.job_type == PrintJobType.COMMAND_CANCELLATION
+                )
             )
-        ) or 0
+            or 0
+        )
         response = TicketCancelResponse(
             ticket=TicketResponse.model_validate(ticket),
             lines_cancelled=lines_to_cancel or 0,
             payments_cancelled=payments_to_cancel or 0,
             print_jobs_created=jobs_after - jobs_before,
-            table_released=ticket.table.status_cache == "FREE",
+            table_released=ticket.table.status_cache == TableStatus.FREE,
         )
         db.commit()
         return response

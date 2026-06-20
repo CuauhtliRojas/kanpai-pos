@@ -13,4 +13,3 @@ class ProductResponse(BaseModel):
     price_cents: int
     active: bool
     visible_pos: bool
-

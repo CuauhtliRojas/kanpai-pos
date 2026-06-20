@@ -3,6 +3,14 @@ import json
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    PriceMode,
+    ProductType,
+    TicketLineStatus,
+    TicketLineType,
+    TicketStatus,
+    audit_event,
+)
 from app.models import (
     AuditEvent,
     Employee,
@@ -20,8 +28,8 @@ from app.services.exceptions import (
 )
 from app.services.ticket_service import recalculate_ticket_totals
 
-CHARGEABLE_LINE_TYPES = ("SIMPLE", "PACKAGE_PARENT")
-CANCELLED_LINE_STATUSES = ("CANCELLED", "CANCELED", "CANCELADO")
+CHARGEABLE_LINE_TYPES = (TicketLineType.SIMPLE, TicketLineType.PACKAGE_PARENT)
+CANCELLED_LINE_STATUSES = (TicketLineStatus.CANCELLED,)
 
 
 def list_pos_products(db: Session) -> list[Product]:
@@ -92,7 +100,7 @@ def _line_from_product(
         category_id_snapshot=product.category_id,
         station_id_snapshot=station_id,
         note=note,
-        status="CAPTURED",
+        status=TicketLineStatus.CAPTURED,
         created_by_employee_id=employee_id,
     )
 
@@ -115,7 +123,7 @@ def add_product_to_ticket(
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
         raise EntityNotFoundError("El ticket no existe.")
-    if ticket.status.upper() != "OPEN":
+    if ticket.status != TicketStatus.OPEN:
         raise BusinessConflictError("El ticket no está abierto para captura.")
 
     employee = db.get(Employee, employee_id)
@@ -137,8 +145,8 @@ def add_product_to_ticket(
         raise InvalidBusinessDataError("La cantidad debe ser un entero positivo.")
 
     lines: list[TicketLine] = []
-    event_type = "TICKET_LINE_ADDED"
-    if product.product_type.upper() == "PACKAGE":
+    event_type = audit_event("TICKET_LINE_ADDED")
+    if product.product_type == ProductType.PACKAGE:
         package = db.execute(
             select(ProductPackage).where(
                 ProductPackage.package_product_id == product.id,
@@ -166,9 +174,9 @@ def add_product_to_ticket(
             employee_id=employee_id,
             quantity=quantity,
             station_id=_primary_station_id(db, product.id),
-            line_type="PACKAGE_PARENT",
+            line_type=TicketLineType.PACKAGE_PARENT,
             unit_price_cents=product.price_cents,
-            price_mode="PACKAGE_PRICE",
+            price_mode=PriceMode.PACKAGE_PRICE,
             note=note,
             package_id=package.id,
         )
@@ -196,16 +204,16 @@ def add_product_to_ticket(
                     if item.station_id_override is not None
                     else _primary_station_id(db, component.id)
                 ),
-                line_type="PACKAGE_COMPONENT",
+                line_type=TicketLineType.PACKAGE_COMPONENT,
                 unit_price_cents=0,
-                price_mode="INCLUDED_IN_PACKAGE",
+                price_mode=PriceMode.INCLUDED_IN_PACKAGE,
                 package_id=package.id,
                 package_item_id=item.id,
                 parent_ticket_line_id=parent.id,
             )
             db.add(component_line)
             lines.append(component_line)
-        event_type = "PACKAGE_LINE_ADDED"
+        event_type = audit_event("PACKAGE_LINE_ADDED")
     else:
         line = _line_from_product(
             ticket=ticket,
@@ -213,9 +221,9 @@ def add_product_to_ticket(
             employee_id=employee_id,
             quantity=quantity,
             station_id=_primary_station_id(db, product.id),
-            line_type="SIMPLE",
+            line_type=TicketLineType.SIMPLE,
             unit_price_cents=product.price_cents,
-            price_mode="NORMAL",
+            price_mode=PriceMode.NORMAL,
             note=note,
         )
         db.add(line)

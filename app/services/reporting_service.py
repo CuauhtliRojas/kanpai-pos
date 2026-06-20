@@ -4,6 +4,16 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    ActiveStatus,
+    CashShiftStatus,
+    InventoryMovementType,
+    PrintStatus,
+    StockAlertStatus,
+    TicketLineStatus,
+    TicketLineType,
+    TicketStatus,
+)
 from app.models import (
     CashExpense,
     CashShift,
@@ -56,7 +66,9 @@ def parse_date_range(
     if start is not None and end is not None:
         invalid = start >= end if end_exclusive else start > end
         if invalid:
-            raise InvalidBusinessDataError("date_from no puede ser posterior a date_to.")
+            raise InvalidBusinessDataError(
+                "date_from no puede ser posterior a date_to."
+            )
     return start, end, end_exclusive
 
 
@@ -101,19 +113,19 @@ def get_operational_summary(
     total_sales = _sum(
         db,
         select(func.sum(Ticket.total_cents)).where(
-            Ticket.status == "PAID", *paid_ticket_dates
+            Ticket.status == TicketStatus.PAID, *paid_ticket_dates
         ),
     )
     total_paid = _sum(
         db,
         select(func.sum(Payment.amount_cents)).where(
-            Payment.status == "ACTIVE", *payment_dates
+            Payment.status == ActiveStatus.ACTIVE, *payment_dates
         ),
     )
     total_expenses = _sum(
         db,
         select(func.sum(CashExpense.amount_cents)).where(
-            CashExpense.status == "ACTIVE", *expense_dates
+            CashExpense.status == ActiveStatus.ACTIVE, *expense_dates
         ),
     )
     stock_totals = (
@@ -126,7 +138,11 @@ def get_operational_summary(
         .subquery()
     )
     negative_items = int(
-        db.scalar(select(func.count()).select_from(stock_totals).where(stock_totals.c.quantity < 0))
+        db.scalar(
+            select(func.count())
+            .select_from(stock_totals)
+            .where(stock_totals.c.quantity < 0)
+        )
         or 0
     )
     return {
@@ -135,17 +151,29 @@ def get_operational_summary(
         "total_expenses_cents": total_expenses,
         "net_cash_cents": total_paid - total_expenses,
         "paid_ticket_count": _count(
-            db, Ticket, Ticket.status == "PAID", *paid_ticket_dates
+            db, Ticket, Ticket.status == TicketStatus.PAID, *paid_ticket_dates
         ),
         "cancelled_ticket_count": _count(
-            db, Ticket, Ticket.status == "CANCELLED", *cancelled_ticket_dates
+            db, Ticket, Ticket.status == TicketStatus.CANCELLED, *cancelled_ticket_dates
         ),
-        "open_ticket_count": _count(db, Ticket, Ticket.status == "OPEN", *ticket_dates),
-        "in_payment_ticket_count": _count(db, Ticket, Ticket.status == "IN_PAYMENT", *ticket_dates),
-        "active_cash_shift_count": _count(db, CashShift, CashShift.status == "OPEN", *shift_dates),
-        "pending_print_jobs_count": _count(db, PrintJob, PrintJob.status == "PENDING", *print_dates),
-        "failed_print_jobs_count": _count(db, PrintJob, PrintJob.status == "FAILED", *print_dates),
-        "low_stock_alert_count": _count(db, StockAlert, StockAlert.status == "OPEN", *alert_dates),
+        "open_ticket_count": _count(
+            db, Ticket, Ticket.status == TicketStatus.OPEN, *ticket_dates
+        ),
+        "in_payment_ticket_count": _count(
+            db, Ticket, Ticket.status == TicketStatus.IN_PAYMENT, *ticket_dates
+        ),
+        "active_cash_shift_count": _count(
+            db, CashShift, CashShift.status == CashShiftStatus.OPEN, *shift_dates
+        ),
+        "pending_print_jobs_count": _count(
+            db, PrintJob, PrintJob.status == PrintStatus.PENDING, *print_dates
+        ),
+        "failed_print_jobs_count": _count(
+            db, PrintJob, PrintJob.status == PrintStatus.FAILED, *print_dates
+        ),
+        "low_stock_alert_count": _count(
+            db, StockAlert, StockAlert.status == StockAlertStatus.OPEN, *alert_dates
+        ),
         "inventory_negative_item_count": negative_items,
     }
 
@@ -164,7 +192,7 @@ def get_sales_by_payment_method(
             func.count(Payment.id),
         )
         .join(Payment, Payment.payment_method_id == PaymentMethod.id)
-        .where(Payment.status == "ACTIVE", *dates)
+        .where(Payment.status == ActiveStatus.ACTIVE, *dates)
         .group_by(PaymentMethod.id, PaymentMethod.method_key, PaymentMethod.name)
         .order_by(PaymentMethod.id)
     ).all()
@@ -200,9 +228,11 @@ def get_sales_by_product(
         .join(Ticket, Ticket.id == TicketLine.ticket_id)
         .join(Product, Product.id == TicketLine.product_id)
         .where(
-            Ticket.status == "PAID",
-            TicketLine.status != "CANCELLED",
-            TicketLine.line_type.in_(("SIMPLE", "PACKAGE_PARENT")),
+            Ticket.status == TicketStatus.PAID,
+            TicketLine.status != TicketLineStatus.CANCELLED,
+            TicketLine.line_type.in_(
+                (TicketLineType.SIMPLE, TicketLineType.PACKAGE_PARENT)
+            ),
             *dates,
         )
         .group_by(
@@ -226,7 +256,7 @@ def get_sales_by_product(
 
 def get_inventory_consumption(
     db: Session,
-    movement_type: str = "SALE_CONSUMPTION",
+    movement_type: str = InventoryMovementType.SALE_CONSUMPTION,
     date_from: str | None = None,
     date_to: str | None = None,
 ) -> list[dict]:
@@ -300,11 +330,11 @@ def get_print_jobs_summary(
     )
     return {
         "total_print_jobs": sum(status_counts.values()),
-        "pending_count": status_counts.get("PENDING", 0),
-        "claimed_count": status_counts.get("CLAIMED", 0),
-        "printed_count": status_counts.get("PRINTED", 0),
-        "failed_count": status_counts.get("FAILED", 0),
-        "cancelled_count": status_counts.get("CANCELLED", 0),
+        "pending_count": status_counts.get(PrintStatus.PENDING, 0),
+        "claimed_count": status_counts.get(PrintStatus.CLAIMED, 0),
+        "printed_count": status_counts.get(PrintStatus.PRINTED, 0),
+        "failed_count": status_counts.get(PrintStatus.FAILED, 0),
+        "cancelled_count": status_counts.get(TicketStatus.CANCELLED, 0),
         "by_printer": by_printer,
         "by_job_type": by_job_type,
     }

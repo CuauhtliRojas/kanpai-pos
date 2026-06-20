@@ -1,9 +1,10 @@
-﻿from app.core.database import Base
+from app.core.database import Base
+from app.domain.database_contract import TABLE_NAMES
 import app.models  # noqa: F401
 
 
 def test_catalog_sync_operation_and_inventory_tables_are_registered() -> None:
-    expected_tables = {
+    legacy_tables = {
         "audit_events",
         "authorizations",
         "business_settings",
@@ -50,4 +51,5 @@ def test_catalog_sync_operation_and_inventory_tables_are_registered() -> None:
         "units",
     }
 
+    expected_tables = {TABLE_NAMES[name] for name in legacy_tables}
     assert expected_tables.issubset(set(Base.metadata.tables.keys()))

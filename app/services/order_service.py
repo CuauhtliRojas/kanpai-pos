@@ -4,6 +4,15 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.domain.constants import (
+    CommandValue,
+    PrintJobType,
+    PrintStatus,
+    TicketLineStatus,
+    TicketLineType,
+    TicketStatus,
+    audit_event,
+)
 from app.models import (
     AuditEvent,
     CommandBatch,
@@ -24,8 +33,8 @@ from app.services.exceptions import (
 from app.services.folio_service import generate_folio
 from app.services.print_service import get_active_printer, sanitize_print_content
 
-SENDABLE_LINE_TYPES = ("SIMPLE", "PACKAGE_COMPONENT")
-SENDABLE_TICKET_STATUSES = ("OPEN", "IN_PAYMENT")
+SENDABLE_LINE_TYPES = (TicketLineType.SIMPLE, TicketLineType.PACKAGE_COMPONENT)
+SENDABLE_TICKET_STATUSES = (TicketStatus.OPEN, TicketStatus.IN_PAYMENT)
 
 
 def _resolve_station(db: Session, line: TicketLine) -> ProductionStation | None:
@@ -92,7 +101,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
     if not employee.active:
         raise BusinessConflictError("El empleado está inactivo.")
 
-    if ticket.status.upper() not in SENDABLE_TICKET_STATUSES:
+    if ticket.status not in SENDABLE_TICKET_STATUSES:
         raise BusinessConflictError("El ticket no admite el envío de rondas.")
 
     captured_lines = list(
@@ -100,7 +109,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
             select(TicketLine)
             .where(
                 TicketLine.ticket_id == ticket.id,
-                TicketLine.status == "CAPTURED",
+                TicketLine.status == TicketLineStatus.CAPTURED,
             )
             .order_by(TicketLine.id)
         ).scalars()
@@ -112,7 +121,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
     stations: dict[int, ProductionStation] = {}
     printers = {}
     for line in captured_lines:
-        if line.line_type.upper() not in SENDABLE_LINE_TYPES:
+        if line.line_type not in SENDABLE_LINE_TYPES:
             continue
         station = _resolve_station(db, line)
         if station is None:
@@ -136,7 +145,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
     batch = CommandBatch(
         ticket_id=ticket.id,
         round_number=round_number,
-        batch_type="ORDER",
+        batch_type=CommandValue.ORDER,
         created_by_employee_id=employee.id,
     )
     db.add(batch)
@@ -150,7 +159,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
             ticket_id=ticket.id,
             station_id=station.id,
             folio=generate_folio(db, "COMANDA"),
-            status="QUEUED",
+            status=CommandValue.QUEUED,
         )
         db.add(station_order)
         db.flush()
@@ -163,7 +172,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
                     quantity=line.quantity,
                     product_name_snapshot=line.product_name_snapshot,
                     note_snapshot=line.note,
-                    line_action="ADD",
+                    line_action=CommandValue.ADD,
                 )
             )
 
@@ -171,7 +180,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
         db.add(
             PrintJob(
                 folio=generate_folio(db, "IMPRESION"),
-                job_type="COMANDA",
+                job_type=PrintJobType.COMMAND,
                 printer_id=printer.id,
                 printer_key_snapshot=printer.printer_key,
                 ticket_id=ticket.id,
@@ -180,7 +189,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
                 content_snapshot=sanitize_print_content(
                     _command_content(ticket, station, round_number, lines)
                 ),
-                status="PENDING",
+                status=PrintStatus.PENDING,
                 attempts=0,
                 idempotency_key=(
                     f"COMANDA:{batch.id}:STATION_ORDER:{station_order.id}"
@@ -189,17 +198,19 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
         )
 
     now = datetime.utcnow()
-    station_line_ids = {
-        line.id for lines in station_lines.values() for line in lines
-    }
+    station_line_ids = {line.id for lines in station_lines.values() for line in lines}
     for line in captured_lines:
-        line.status = "ENVIADO_COMANDA" if line.id in station_line_ids else "IMPRESO"
+        line.status = (
+            TicketLineStatus.SENT_TO_KITCHEN
+            if line.id in station_line_ids
+            else TicketLineStatus.PRINTED
+        )
         line.round_number = round_number
         line.sent_at = now
 
     db.add(
         AuditEvent(
-            event_type="ROUND_SENT",
+            event_type=audit_event("ROUND_SENT"),
             entity_type="Ticket",
             entity_id=ticket.id,
             actor_employee_id=employee.id,

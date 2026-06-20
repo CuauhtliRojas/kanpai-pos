@@ -64,7 +64,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -89,7 +89,9 @@ def _product(db: Session, sku: str) -> Product:
 def _open_ticket(db: Session, sku: str = "DEV-CHELA", quantity: int = 1) -> Ticket:
     employee = _employee(db)
     table = db.scalar(
-        select(DiningTable).where(DiningTable.status_cache == "FREE").order_by(DiningTable.id)
+        select(DiningTable)
+        .where(DiningTable.status_cache == "Libre")
+        .order_by(DiningTable.id)
     )
     if db.scalar(select(func.count(CashShift.id))) == 0:
         open_cash_shift(db, employee.id, 0)
@@ -103,7 +105,7 @@ def _pay_ticket(db: Session, ticket: Ticket) -> None:
     send_round(db, ticket.id, employee.id)
     start_payment(db, ticket.id, employee.id)
     cash_id = db.scalar(
-        select(PaymentMethod.id).where(PaymentMethod.method_key == "CASH")
+        select(PaymentMethod.id).where(PaymentMethod.method_key == "Efectivo")
     )
     create_payment(db, ticket.id, employee.id, cash_id, ticket.total_cents)
 
@@ -113,7 +115,7 @@ def _sales_movements(db: Session, ticket_id: int) -> list[InventoryMovement]:
     return list(
         db.scalars(
             select(InventoryMovement).where(
-                InventoryMovement.movement_type == "SALE_CONSUMPTION",
+                InventoryMovement.movement_type == "Consumo venta",
                 InventoryMovement.source_id.in_(line_ids),
             )
         )
@@ -138,7 +140,7 @@ def test_paid_simple_ticket_creates_negative_sale_consumption() -> None:
         ticket = _open_ticket(db, quantity=2)
         _pay_ticket(db, ticket)
         movement = _sales_movements(db, ticket.id)[0]
-        assert movement.movement_type == "SALE_CONSUMPTION"
+        assert movement.movement_type == "Consumo venta"
         assert movement.quantity_base == Decimal("200")
         assert movement.signed_quantity_base == Decimal("-200")
         assert movement.ticket_line_id == movement.source_id
@@ -155,14 +157,16 @@ def test_package_consumes_components_and_not_parent() -> None:
             )
         ).all()
         assert sorted(movement.quantity_base for movement in movements) == [100, 120]
-        assert set(source_types) == {"PACKAGE_COMPONENT"}
+        assert set(source_types) == {"Componente de paquete"}
 
 
 def test_cancelled_line_does_not_consume() -> None:
     with SessionLocal() as db:
         ticket = _open_ticket(db)
         cancelled = ticket.lines[0]
-        add_product_to_ticket(db, ticket.id, _product(db, "DEV-SAKE").id, _employee(db).id, 1)
+        add_product_to_ticket(
+            db, ticket.id, _product(db, "DEV-SAKE").id, _employee(db).id, 1
+        )
         cancel_ticket_line(db, cancelled.id, _employee(db).id, "QA")
         _pay_ticket(db, ticket)
         movements = _sales_movements(db, ticket.id)
@@ -174,11 +178,13 @@ def test_product_without_recipe_does_not_fail_sale() -> None:
     with SessionLocal() as db:
         ticket = _open_ticket(db)
         for recipe in db.scalars(
-            select(ProductRecipe).where(ProductRecipe.product_id == _product(db, "DEV-CHELA").id)
+            select(ProductRecipe).where(
+                ProductRecipe.product_id == _product(db, "DEV-CHELA").id
+            )
         ):
             recipe.active = False
         _pay_ticket(db, ticket)
-        assert ticket.status == "PAID"
+        assert ticket.status == "Cobrado"
         assert _sales_movements(db, ticket.id) == []
 
 
@@ -188,9 +194,11 @@ def test_partial_payment_does_not_consume_inventory() -> None:
         employee = _employee(db)
         send_round(db, ticket.id, employee.id)
         start_payment(db, ticket.id, employee.id)
-        cash_id = db.scalar(select(PaymentMethod.id).where(PaymentMethod.method_key == "CASH"))
+        cash_id = db.scalar(
+            select(PaymentMethod.id).where(PaymentMethod.method_key == "Efectivo")
+        )
         create_payment(db, ticket.id, employee.id, cash_id, 100)
-        assert ticket.status == "IN_PAYMENT"
+        assert ticket.status == "En cobro"
         assert ticket.inventory_consumed_at is None
         assert _sales_movements(db, ticket.id) == []
 
@@ -218,7 +226,7 @@ def test_sale_opens_low_stock_alert_and_allows_negative_stock() -> None:
         alert = db.scalar(
             select(StockAlert).where(
                 StockAlert.inventory_item_id == movement.inventory_item_id,
-                StockAlert.status == "OPEN",
+                StockAlert.status == "Abierta",
             )
         )
         assert stock == Decimal("-100")
@@ -237,7 +245,7 @@ def test_inventory_movements_endpoint_lists_ticket_consumption() -> None:
     )
     assert response.status_code == 200
     assert len(response.json()) == 1
-    assert response.json()[0]["source_type"] == "TICKET_LINE"
+    assert response.json()[0]["source_type"] == "Linea ticket"
     assert Decimal(response.json()[0]["signed_quantity_base"]) < 0
 
 
@@ -246,7 +254,9 @@ def test_paid_ticket_still_creates_ticket_print_job() -> None:
         ticket = _open_ticket(db)
         _pay_ticket(db, ticket)
         job = db.scalar(
-            select(PrintJob).where(PrintJob.ticket_id == ticket.id, PrintJob.job_type == "TICKET")
+            select(PrintJob).where(
+                PrintJob.ticket_id == ticket.id, PrintJob.job_type == "Ticket"
+            )
         )
         assert job is not None
 

@@ -35,9 +35,13 @@ def clean_reset_data() -> None:
 
 def _create_operations() -> None:
     with SessionLocal() as db:
-        employee = db.scalar(select(Employee).where(Employee.employee_code == "EMP-0001"))
+        employee = db.scalar(
+            select(Employee).where(Employee.employee_code == "EMP-0001")
+        )
         table = db.scalar(select(DiningTable).where(DiningTable.active.is_(True)))
-        method = db.scalar(select(PaymentMethod).where(PaymentMethod.method_key == "CASH"))
+        method = db.scalar(
+            select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo")
+        )
         printer = db.scalar(select(Printer).where(Printer.printer_key == "CAJA"))
         assert employee and table and method and printer
         number = next(sequence)
@@ -70,7 +74,7 @@ def _create_operations() -> None:
         db.add(
             PrintJob(
                 folio=f"QA-RESET-PRINT-{number}",
-                job_type="TICKET",
+                job_type="Ticket",
                 printer_id=printer.id,
                 printer_key_snapshot=printer.printer_key,
                 ticket_id=ticket.id,
@@ -79,7 +83,7 @@ def _create_operations() -> None:
                 idempotency_key=f"QA-RESET:{number}",
             )
         )
-        table.status_cache = "OCCUPIED"
+        table.status_cache = "Ocupada"
         db.commit()
 
 
@@ -107,7 +111,9 @@ def test_reset_leaves_catalogs_intact() -> None:
         db.commit()
         assert db.scalar(select(func.count(Product.id))) == catalog_counts["products"]
         assert db.scalar(select(func.count(Employee.id))) == catalog_counts["employees"]
-        assert db.scalar(select(func.count(PaymentMethod.id))) == catalog_counts["methods"]
+        assert (
+            db.scalar(select(func.count(PaymentMethod.id))) == catalog_counts["methods"]
+        )
         assert db.scalar(select(func.count(Printer.id))) == catalog_counts["printers"]
 
 
@@ -116,7 +122,7 @@ def test_reset_returns_all_tables_to_free() -> None:
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()
-        assert set(db.scalars(select(DiningTable.status_cache))) == {"FREE"}
+        assert set(db.scalars(select(DiningTable.status_cache))) == {"Libre"}
 
 
 def test_reset_is_idempotent() -> None:
@@ -128,7 +134,9 @@ def test_reset_is_idempotent() -> None:
     assert sum(second.values()) == 0
 
 
-def test_reset_without_yes_does_not_delete_data(capsys: pytest.CaptureFixture[str]) -> None:
+def test_reset_without_yes_does_not_delete_data(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     _create_operations()
     assert main([]) == 0
     assert "no data was deleted" in capsys.readouterr().out

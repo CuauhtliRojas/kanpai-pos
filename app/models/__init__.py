@@ -1,4 +1,4 @@
-﻿from app.models.catalog import (
+from app.models.catalog import (
     Employee,
     EmployeeRole,
     InventoryItem,

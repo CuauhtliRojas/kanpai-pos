@@ -1,4 +1,4 @@
-﻿from sqlalchemy import select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends
@@ -14,14 +14,20 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
 @router.get("/products", response_model=list[ProductResponse])
 def list_products(db: Session = Depends(get_db)) -> list[ProductResponse]:
     """Expone el catálogo activo y visible para captura en POS."""
-    return [ProductResponse.model_validate(product) for product in list_pos_products(db)]
+    return [
+        ProductResponse.model_validate(product) for product in list_pos_products(db)
+    ]
 
 
 @router.get("/categories")
 def list_categories(db: Session = Depends(get_db)) -> list[dict]:
-    categories = db.execute(
-        select(MenuCategory).order_by(MenuCategory.sort_order, MenuCategory.name)
-    ).scalars().all()
+    categories = (
+        db.execute(
+            select(MenuCategory).order_by(MenuCategory.sort_order, MenuCategory.name)
+        )
+        .scalars()
+        .all()
+    )
 
     return [
         {
@@ -37,12 +43,16 @@ def list_categories(db: Session = Depends(get_db)) -> list[dict]:
 
 @router.get("/stations")
 def list_stations(db: Session = Depends(get_db)) -> list[dict]:
-    stations = db.execute(
-        select(ProductionStation).order_by(
-            ProductionStation.sort_order,
-            ProductionStation.name,
+    stations = (
+        db.execute(
+            select(ProductionStation).order_by(
+                ProductionStation.sort_order,
+                ProductionStation.name,
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     return [
         {
@@ -60,9 +70,9 @@ def list_stations(db: Session = Depends(get_db)) -> list[dict]:
 
 @router.get("/payment-methods")
 def list_payment_methods(db: Session = Depends(get_db)) -> list[dict]:
-    methods = db.execute(
-        select(PaymentMethod).order_by(PaymentMethod.id)
-    ).scalars().all()
+    methods = (
+        db.execute(select(PaymentMethod).order_by(PaymentMethod.id)).scalars().all()
+    )
 
     return [
         {

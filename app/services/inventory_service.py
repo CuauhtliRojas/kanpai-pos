@@ -6,6 +6,12 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    InventoryMovementType,
+    ReceiptStatus,
+    StockStatus,
+    audit_event,
+)
 from app.models import (
     AuditEvent,
     InventoryItem,
@@ -24,15 +30,18 @@ from app.services.exceptions import (
 )
 from app.services.expense_service import create_cash_expense
 from app.services.folio_service import generate_folio
-from app.services.permission_service import get_active_employee, require_employee_permission
+from app.services.permission_service import (
+    get_active_employee,
+    require_employee_permission,
+)
 from app.services.stock_alert_service import evaluate_stock_alert
 
 MOVEMENT_SIGNS = {
-    "PURCHASE": 1,
-    "ADJUSTMENT_IN": 1,
-    "ADJUSTMENT_OUT": -1,
-    "WASTE": -1,
-    "SALE_CONSUMPTION": -1,
+    InventoryMovementType.PURCHASE: 1,
+    InventoryMovementType.ADJUSTMENT_IN: 1,
+    InventoryMovementType.ADJUSTMENT_OUT: -1,
+    InventoryMovementType.WASTE: -1,
+    InventoryMovementType.SALE_CONSUMPTION: -1,
 }
 
 
@@ -61,11 +70,11 @@ def get_current_stock(db: Session, inventory_item_id: int) -> dict:
     current_stock = Decimal(current or 0)
     minimum_stock = Decimal(item.minimum_stock_qty)
     if current_stock <= 0:
-        stock_status = "OUT_OF_STOCK"
+        stock_status = StockStatus.OUT
     elif current_stock <= minimum_stock:
-        stock_status = "LOW_STOCK"
+        stock_status = StockStatus.LOW
     else:
-        stock_status = "OK"
+        stock_status = StockStatus.OK
     return {
         "inventory_item_id": item.id,
         "sku": item.item_code,
@@ -80,7 +89,9 @@ def get_current_stock(db: Session, inventory_item_id: int) -> dict:
 
 def list_inventory_items_with_stock(db: Session) -> list[dict]:
     """Lista insumos y agrega su stock calculado desde el ledger local."""
-    items = db.execute(select(InventoryItem).order_by(InventoryItem.item_code)).scalars()
+    items = db.execute(
+        select(InventoryItem).order_by(InventoryItem.item_code)
+    ).scalars()
     result = []
     for item in items:
         stock = get_current_stock(db, item.id)
@@ -168,7 +179,7 @@ def create_inventory_movement(
     if require_adjust_permission:
         require_employee_permission(db, employee_id, "INVENTORY_ADJUST")
 
-    normalized_type = movement_type.strip().upper()
+    normalized_type = movement_type.strip()
     if normalized_type not in MOVEMENT_SIGNS:
         raise InvalidBusinessDataError("El tipo de movimiento es inválido.")
     normalized_quantity = _decimal_quantity(quantity_base)
@@ -200,7 +211,7 @@ def create_inventory_movement(
     db.flush()
     db.add(
         AuditEvent(
-            event_type="INVENTORY_MOVEMENT_CREATED",
+            event_type=audit_event("INVENTORY_MOVEMENT_CREATED"),
             entity_type="InventoryMovement",
             entity_id=movement.id,
             actor_employee_id=employee_id,
@@ -295,9 +306,11 @@ def process_purchase_receipt(
         cash_shift_id=cash_shift.id if cash_shift else None,
         registered_by_employee_id=employee_id,
         cash_expense_id=expense.id if expense else None,
-        receipt_type="PURCHASE",
-        status="DRAFT",
-        supplier_name=supplier_name.strip() if supplier_name and supplier_name.strip() else None,
+        receipt_type=InventoryMovementType.PURCHASE,
+        status=ReceiptStatus.DRAFT,
+        supplier_name=supplier_name.strip()
+        if supplier_name and supplier_name.strip()
+        else None,
         invoice_reference=(
             invoice_reference.strip()
             if invoice_reference and invoice_reference.strip()
@@ -319,14 +332,14 @@ def process_purchase_receipt(
             captured_unit_id=unit_id,
             converted_quantity_base=quantity_base,
             unit_cost_cents=unit_cost,
-            status="PROCESSED",
+            status=ReceiptStatus.PROCESSED,
         )
         db.add(receipt_line)
         db.flush()
         movement = create_inventory_movement(
             db,
             inventory_item_id=item.id,
-            movement_type="PURCHASE",
+            movement_type=InventoryMovementType.PURCHASE,
             quantity_base=quantity_base,
             employee_id=employee_id,
             reason=f"Recepción {receipt.folio}",
@@ -337,12 +350,12 @@ def process_purchase_receipt(
         movement.purchase_receipt_line_id = receipt_line.id
         movement.cash_expense_id = expense.id if expense else None
 
-    receipt.status = "PROCESSED"
+    receipt.status = ReceiptStatus.PROCESSED
     receipt.processed_at = datetime.utcnow()
     db.flush()
     db.add(
         AuditEvent(
-            event_type="PURCHASE_RECEIPT_PROCESSED",
+            event_type=audit_event("PURCHASE_RECEIPT_PROCESSED"),
             entity_type="PurchaseReceipt",
             entity_id=receipt.id,
             actor_employee_id=employee_id,

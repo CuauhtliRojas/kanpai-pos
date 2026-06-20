@@ -1,4 +1,4 @@
-﻿from sqlalchemy import select, text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends

@@ -4,6 +4,16 @@ from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.domain.constants import (
+    ActiveStatus,
+    CashShiftStatus,
+    InventoryMovementType,
+    PaymentMethodValue,
+    PrintStatus,
+    StockAlertStatus,
+    TicketLineStatus,
+    TicketStatus,
+)
 from app.models import (
     AuditEvent,
     CashShift,
@@ -25,7 +35,7 @@ from app.models import (
     TicketLine,
 )
 
-ACTIVE_TICKET_STATUSES = ("OPEN", "IN_PAYMENT")
+ACTIVE_TICKET_STATUSES = (TicketStatus.OPEN, TicketStatus.IN_PAYMENT)
 CRITICAL_TABLE_MODELS = (
     CashShift,
     Ticket,
@@ -45,7 +55,11 @@ REQUIRED_FOLIOS = (
     "IMPRESION",
     "RECEPCION",
 )
-REQUIRED_PAYMENT_METHODS = ("CASH", "CARD", "TRANSFER")
+REQUIRED_PAYMENT_METHODS = (
+    PaymentMethodValue.CASH,
+    PaymentMethodValue.CARD,
+    PaymentMethodValue.TRANSFER,
+)
 REQUIRED_PRINTERS = (
     "CAJA",
     "COCINA",
@@ -62,7 +76,9 @@ def _count(db: Session, model, *conditions) -> int:
     return int(db.scalar(select(func.count(model.id)).where(*conditions)) or 0)
 
 
-def _check(key: str, message: str, failure_message: str, query: Callable[[], bool]) -> dict:
+def _check(
+    key: str, message: str, failure_message: str, query: Callable[[], bool]
+) -> dict:
     """Run one critical check and isolate database failures in its result."""
     try:
         passed = query()
@@ -92,12 +108,12 @@ def _required_values_present(
 def _summary(db: Session) -> dict[str, int]:
     """Build the operational counters shown by HTTP and CLI diagnostics."""
     counters = {
-        "active_cash_shifts": (CashShift, CashShift.status == "OPEN"),
-        "open_tickets": (Ticket, Ticket.status == "OPEN"),
-        "in_payment_tickets": (Ticket, Ticket.status == "IN_PAYMENT"),
-        "pending_print_jobs": (PrintJob, PrintJob.status == "PENDING"),
-        "failed_print_jobs": (PrintJob, PrintJob.status == "FAILED"),
-        "active_stock_alerts": (StockAlert, StockAlert.status == "OPEN"),
+        "active_cash_shifts": (CashShift, CashShift.status == CashShiftStatus.OPEN),
+        "open_tickets": (Ticket, Ticket.status == TicketStatus.OPEN),
+        "in_payment_tickets": (Ticket, Ticket.status == TicketStatus.IN_PAYMENT),
+        "pending_print_jobs": (PrintJob, PrintJob.status == PrintStatus.PENDING),
+        "failed_print_jobs": (PrintJob, PrintJob.status == PrintStatus.FAILED),
+        "active_stock_alerts": (StockAlert, StockAlert.status == StockAlertStatus.OPEN),
     }
     summary: dict[str, int] = {}
     for key, (model, condition) in counters.items():
@@ -149,7 +165,11 @@ def run_local_backend_preflight(db: Session) -> dict:
                         select(func.count(Employee.id))
                         .join(EmployeeRole, EmployeeRole.employee_id == Employee.id)
                         .join(Role, Role.id == EmployeeRole.role_id)
-                        .where(Employee.active.is_(True), Role.role_key == "ADMIN", Role.active.is_(True))
+                        .where(
+                            Employee.active.is_(True),
+                            Role.role_key == "ADMIN",
+                            Role.active.is_(True),
+                        )
                     )
                 ),
             ),
@@ -229,9 +249,9 @@ def run_local_backend_preflight(db: Session) -> dict:
         .join(TicketLine, TicketLine.ticket_id == Ticket.id)
         .join(ProductRecipe, ProductRecipe.product_id == TicketLine.product_id)
         .where(
-            Ticket.status == "PAID",
+            Ticket.status == TicketStatus.PAID,
             Ticket.inventory_consumed_at.is_(None),
-            TicketLine.status != "CANCELLED",
+            TicketLine.status != TicketLineStatus.CANCELLED,
             ProductRecipe.active.is_(True),
         )
         .distinct()
@@ -243,64 +263,88 @@ def run_local_backend_preflight(db: Session) -> dict:
                 "single_open_cash_shift",
                 "At most one cash shift is open",
                 "More than one cash shift is open",
-                lambda: _count(db, CashShift, CashShift.status == "OPEN") <= 1,
+                lambda: (
+                    _count(db, CashShift, CashShift.status == CashShiftStatus.OPEN) <= 1
+                ),
             ),
             _check(
                 "single_active_ticket_per_table",
                 "No table has more than one active ticket",
                 "A table has more than one active ticket",
-                lambda: int(db.scalar(select(func.count()).select_from(duplicate_active_tables)) or 0)
-                == 0,
+                lambda: (
+                    int(
+                        db.scalar(
+                            select(func.count()).select_from(duplicate_active_tables)
+                        )
+                        or 0
+                    )
+                    == 0
+                ),
             ),
             _check(
                 "paid_ticket_inventory",
                 "Paid recipe tickets have consumed inventory",
                 "A paid ticket with recipe lines has not consumed inventory",
-                lambda: int(db.scalar(select(func.count()).select_from(paid_recipe_tickets)) or 0)
-                == 0,
+                lambda: (
+                    int(
+                        db.scalar(select(func.count()).select_from(paid_recipe_tickets))
+                        or 0
+                    )
+                    == 0
+                ),
             ),
             _check(
                 "cancelled_ticket_payments",
                 "Cancelled tickets have no active payments",
                 "A cancelled ticket has active payments",
-                lambda: int(
-                    db.scalar(
-                        select(func.count(Payment.id))
-                        .join(Ticket, Ticket.id == Payment.ticket_id)
-                        .where(Ticket.status == "CANCELLED", Payment.status == "ACTIVE")
+                lambda: (
+                    int(
+                        db.scalar(
+                            select(func.count(Payment.id))
+                            .join(Ticket, Ticket.id == Payment.ticket_id)
+                            .where(
+                                Ticket.status == TicketStatus.CANCELLED,
+                                Payment.status == ActiveStatus.ACTIVE,
+                            )
+                        )
+                        or 0
                     )
-                    or 0
-                )
-                == 0,
+                    == 0
+                ),
             ),
             _check(
                 "print_job_printer_snapshot",
                 "All print jobs have a printer key snapshot",
                 "A print job has no printer key snapshot",
-                lambda: _count(
-                    db,
-                    PrintJob,
-                    or_(
-                        PrintJob.printer_key_snapshot.is_(None),
-                        func.trim(PrintJob.printer_key_snapshot) == "",
-                    ),
-                )
-                == 0,
+                lambda: (
+                    _count(
+                        db,
+                        PrintJob,
+                        or_(
+                            PrintJob.printer_key_snapshot.is_(None),
+                            func.trim(PrintJob.printer_key_snapshot) == "",
+                        ),
+                    )
+                    == 0
+                ),
             ),
             _check(
                 "sale_inventory_source",
                 "Sale inventory movements identify their source",
                 "A sale inventory movement has no source type",
-                lambda: _count(
-                    db,
-                    InventoryMovement,
-                    InventoryMovement.movement_type == "SALE_CONSUMPTION",
-                    or_(
-                        InventoryMovement.source_type.is_(None),
-                        func.trim(InventoryMovement.source_type) == "",
-                    ),
-                )
-                == 0,
+                lambda: (
+                    _count(
+                        db,
+                        InventoryMovement,
+                        InventoryMovement.movement_type
+                        == InventoryMovementType.SALE_CONSUMPTION,
+                        or_(
+                            InventoryMovement.source_type.is_(None),
+                            func.trim(InventoryMovement.source_type) == "",
+                        ),
+                    )
+                    == 0
+                ),
             ),
         )
     )
@@ -310,7 +354,7 @@ def run_local_backend_preflight(db: Session) -> dict:
             {
                 "key": "failed_print_jobs",
                 "status": "WARNING",
-                "message": f'{summary["failed_print_jobs"]} print job(s) require retry or review',
+                "message": f"{summary['failed_print_jobs']} print job(s) require retry or review",
             }
         )
     if summary["active_stock_alerts"]:
@@ -318,9 +362,16 @@ def run_local_backend_preflight(db: Session) -> dict:
             {
                 "key": "active_stock_alerts",
                 "status": "WARNING",
-                "message": f'{summary["active_stock_alerts"]} stock alert(s) are active',
+                "message": f"{summary['active_stock_alerts']} stock alert(s) are active",
             }
         )
     statuses = {check["status"] for check in checks}
-    overall = "ERROR" if "ERROR" in statuses else "WARNING" if "WARNING" in statuses else "OK"
-    return {"status": overall, "database": "sqlite", "checks": checks, "summary": summary}
+    overall = (
+        "ERROR" if "ERROR" in statuses else "WARNING" if "WARNING" in statuses else "OK"
+    )
+    return {
+        "status": overall,
+        "database": "sqlite",
+        "checks": checks,
+        "summary": summary,
+    }

@@ -69,7 +69,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.execute(delete(Employee).where(Employee.employee_code == "QA-NO-PERM"))
     db.commit()
 
@@ -108,7 +108,7 @@ def _receipt(db: Session, paid: int = 0) -> PurchaseReceipt:
     if paid:
         open_cash_shift(db, admin.id, 10_000)
         payment_method_id = db.execute(
-            select(PaymentMethod.id).where(PaymentMethod.method_key == "CASH")
+            select(PaymentMethod.id).where(PaymentMethod.method_key == "Efectivo")
         ).scalar_one()
     return process_purchase_receipt(
         db,
@@ -135,9 +135,7 @@ def test_seed_creates_demo_inventory_items_without_duplicates() -> None:
     with SessionLocal() as db:
         count = db.scalar(
             select(func.count(InventoryItem.id)).where(
-                InventoryItem.item_code.in_(
-                    ("INV-ARROZ", "INV-SAKE", "INV-LIMON")
-                )
+                InventoryItem.item_code.in_(("INV-ARROZ", "INV-SAKE", "INV-LIMON"))
             )
         )
     assert count == 3
@@ -158,14 +156,14 @@ def test_initial_stock_is_zero() -> None:
     with SessionLocal() as db:
         stock = get_current_stock(db, _item(db).id)
     assert stock["current_stock"] == 0
-    assert stock["stock_status"] == "OUT_OF_STOCK"
+    assert stock["stock_status"] == "Sin stock"
 
 
 def test_adjustment_in_increases_stock() -> None:
     with SessionLocal() as db:
         item, admin = _item(db), _admin(db)
         create_inventory_movement(
-            db, item.id, "ADJUSTMENT_IN", Decimal("500"), admin.id, "QA"
+            db, item.id, "Ajuste entrada", Decimal("500"), admin.id, "QA"
         )
         assert get_current_stock(db, item.id)["current_stock"] == 500
 
@@ -174,10 +172,10 @@ def test_adjustment_out_decreases_stock() -> None:
     with SessionLocal() as db:
         item, admin = _item(db), _admin(db)
         create_inventory_movement(
-            db, item.id, "ADJUSTMENT_IN", Decimal("800"), admin.id, "QA"
+            db, item.id, "Ajuste entrada", Decimal("800"), admin.id, "QA"
         )
         create_inventory_movement(
-            db, item.id, "ADJUSTMENT_OUT", Decimal("300"), admin.id, "QA"
+            db, item.id, "Ajuste salida", Decimal("300"), admin.id, "QA"
         )
         assert get_current_stock(db, item.id)["current_stock"] == 500
 
@@ -188,13 +186,13 @@ def test_movement_requires_permission() -> None:
             employee_code="QA-NO-PERM",
             full_name="Sin permiso",
             active=True,
-            sync_status="ACTIVE",
+            sync_status="Activo",
         )
         db.add(employee)
         db.flush()
         with pytest.raises(PermissionDeniedError, match="INVENTORY_ADJUST"):
             create_inventory_movement(
-                db, _item(db).id, "ADJUSTMENT_IN", Decimal("1"), employee.id, "QA"
+                db, _item(db).id, "Ajuste entrada", Decimal("1"), employee.id, "QA"
             )
 
 
@@ -202,7 +200,7 @@ def test_movement_rejects_zero_quantity() -> None:
     with SessionLocal() as db:
         with pytest.raises(InvalidBusinessDataError, match="mayor a cero"):
             create_inventory_movement(
-                db, _item(db).id, "ADJUSTMENT_IN", Decimal("0"), _admin(db).id, "QA"
+                db, _item(db).id, "Ajuste entrada", Decimal("0"), _admin(db).id, "QA"
             )
 
 
@@ -221,7 +219,7 @@ def test_convert_l_to_ml() -> None:
 def test_receipt_creates_purchase_receipt() -> None:
     with SessionLocal() as db:
         receipt = _receipt(db)
-        assert receipt.status == "PROCESSED"
+        assert receipt.status == "Procesada"
         assert db.get(PurchaseReceipt, receipt.id) is receipt
 
 
@@ -241,11 +239,11 @@ def test_receipt_creates_positive_movements() -> None:
     with SessionLocal() as db:
         receipt = _receipt(db)
         movement = db.execute(
-            select(InventoryMovement).join(PurchaseReceiptLine).where(
-                PurchaseReceiptLine.purchase_receipt_id == receipt.id
-            )
+            select(InventoryMovement)
+            .join(PurchaseReceiptLine)
+            .where(PurchaseReceiptLine.purchase_receipt_id == receipt.id)
         ).scalar_one()
-        assert movement.movement_type == "PURCHASE"
+        assert movement.movement_type == "Compra"
         assert movement.signed_quantity_base == 2000
 
 
@@ -279,19 +277,19 @@ def test_paid_receipt_without_open_shift_conflicts() -> None:
 def test_low_stock_creates_active_alert() -> None:
     with SessionLocal() as db:
         item, admin = _item(db), _admin(db)
-        create_inventory_movement(db, item.id, "ADJUSTMENT_IN", 500, admin.id, "QA")
-        alert = db.scalar(select(StockAlert).where(StockAlert.status == "OPEN"))
+        create_inventory_movement(db, item.id, "Ajuste entrada", 500, admin.id, "QA")
+        alert = db.scalar(select(StockAlert).where(StockAlert.status == "Abierta"))
         assert alert is not None
-        assert alert.alert_type == "LOW_STOCK"
+        assert alert.alert_type == "Stock bajo"
 
 
 def test_low_stock_does_not_duplicate_active_alert() -> None:
     with SessionLocal() as db:
         item, admin = _item(db), _admin(db)
-        create_inventory_movement(db, item.id, "ADJUSTMENT_IN", 300, admin.id, "QA")
-        create_inventory_movement(db, item.id, "ADJUSTMENT_IN", 200, admin.id, "QA")
+        create_inventory_movement(db, item.id, "Ajuste entrada", 300, admin.id, "QA")
+        create_inventory_movement(db, item.id, "Ajuste entrada", 200, admin.id, "QA")
         count = db.scalar(
-            select(func.count(StockAlert.id)).where(StockAlert.status == "OPEN")
+            select(func.count(StockAlert.id)).where(StockAlert.status == "Abierta")
         )
         assert count == 1
 
@@ -299,11 +297,13 @@ def test_low_stock_does_not_duplicate_active_alert() -> None:
 def test_recovered_stock_resolves_alert() -> None:
     with SessionLocal() as db:
         item, admin = _item(db), _admin(db)
-        create_inventory_movement(db, item.id, "ADJUSTMENT_IN", 500, admin.id, "QA")
-        create_inventory_movement(db, item.id, "ADJUSTMENT_IN", 600, admin.id, "QA")
-        alert = db.scalar(select(StockAlert).where(StockAlert.inventory_item_id == item.id))
+        create_inventory_movement(db, item.id, "Ajuste entrada", 500, admin.id, "QA")
+        create_inventory_movement(db, item.id, "Ajuste entrada", 600, admin.id, "QA")
+        alert = db.scalar(
+            select(StockAlert).where(StockAlert.inventory_item_id == item.id)
+        )
         assert alert is not None
-        assert alert.status == "RESOLVED"
+        assert alert.status == "Resuelta"
         assert alert.resolved_at is not None
 
 
@@ -317,7 +317,7 @@ def test_list_inventory_items_endpoint() -> None:
     assert rice["base_unit_id"]
     assert rice["base_unit_name"] == "G"
     assert rice["stock_minimum"] == 1000
-    assert rice["stock_status"] == "OUT_OF_STOCK"
+    assert rice["stock_status"] == "Sin stock"
 
 
 def test_get_inventory_item_stock_endpoint() -> None:
@@ -330,7 +330,7 @@ def test_get_inventory_item_stock_endpoint() -> None:
     assert stock["sku"] == "INV-ARROZ"
     assert stock["current_stock"] == 0
     assert stock["stock_minimum"] == 1000
-    assert stock["stock_status"] == "OUT_OF_STOCK"
+    assert stock["stock_status"] == "Sin stock"
 
 
 def test_create_inventory_movement_endpoint() -> None:
@@ -338,7 +338,7 @@ def test_create_inventory_movement_endpoint() -> None:
         payload = {
             "employee_id": _admin(db).id,
             "inventory_item_id": _item(db).id,
-            "movement_type": "ADJUSTMENT_IN",
+            "movement_type": "Ajuste entrada",
             "quantity": 500,
             "unit_id": _unit(db, "G").id,
             "reason": "QA ajuste entrada",
@@ -366,18 +366,16 @@ def test_process_purchase_receipt_endpoint() -> None:
                 }
             ],
         }
-    response = TestClient(app).post(
-        "/api/v1/inventory/purchase-receipts", json=payload
-    )
+    response = TestClient(app).post("/api/v1/inventory/purchase-receipts", json=payload)
     assert response.status_code == 201
-    assert response.json()["status"] == "PROCESSED"
+    assert response.json()["status"] == "Procesada"
     assert len(response.json()["lines"]) == 1
 
 
 def test_list_active_stock_alerts_endpoint() -> None:
     with SessionLocal() as db:
         item, admin = _item(db), _admin(db)
-        create_inventory_movement(db, item.id, "ADJUSTMENT_IN", 500, admin.id, "QA")
+        create_inventory_movement(db, item.id, "Ajuste entrada", 500, admin.id, "QA")
         db.commit()
     response = TestClient(app).get("/api/v1/inventory/stock-alerts/active")
     assert response.status_code == 200

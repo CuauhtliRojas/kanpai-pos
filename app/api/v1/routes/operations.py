@@ -1,4 +1,4 @@
-﻿from sqlalchemy import select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends
@@ -11,9 +11,13 @@ router = APIRouter(prefix="/operations", tags=["operations"])
 
 @router.get("/tables")
 def list_tables(db: Session = Depends(get_db)) -> list[dict]:
-    tables = db.execute(
-        select(DiningTable).order_by(DiningTable.sort_order, DiningTable.table_code)
-    ).scalars().all()
+    tables = (
+        db.execute(
+            select(DiningTable).order_by(DiningTable.sort_order, DiningTable.table_code)
+        )
+        .scalars()
+        .all()
+    )
 
     return [
         {
@@ -30,9 +34,9 @@ def list_tables(db: Session = Depends(get_db)) -> list[dict]:
 
 @router.get("/employees")
 def list_employees(db: Session = Depends(get_db)) -> list[dict]:
-    employees = db.execute(
-        select(Employee).order_by(Employee.employee_code)
-    ).scalars().all()
+    employees = (
+        db.execute(select(Employee).order_by(Employee.employee_code)).scalars().all()
+    )
 
     return [
         {

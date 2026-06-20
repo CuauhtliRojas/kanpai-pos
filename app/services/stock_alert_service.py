@@ -5,6 +5,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain.constants import StockAlertStatus, StockStatus, audit_event
 from app.models import AuditEvent, StockAlert
 
 
@@ -19,16 +20,20 @@ def evaluate_stock_alert(
     from app.services.inventory_service import get_current_stock
 
     stock = get_current_stock(db, inventory_item_id)
-    active_alert = db.execute(
-        select(StockAlert).where(
-            StockAlert.inventory_item_id == inventory_item_id,
-            StockAlert.status == "OPEN",
+    active_alert = (
+        db.execute(
+            select(StockAlert).where(
+                StockAlert.inventory_item_id == inventory_item_id,
+                StockAlert.status == StockAlertStatus.OPEN,
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
     current = Decimal(stock["current_stock"])
     threshold = Decimal(stock["stock_minimum"])
 
-    if stock["stock_status"] in {"LOW_STOCK", "OUT_OF_STOCK"}:
+    if stock["stock_status"] in {StockStatus.LOW, StockStatus.OUT}:
         message = (
             f"{stock['name']}: stock {current} {stock['base_unit_name']}; "
             f"mínimo {threshold} {stock['base_unit_name']}."
@@ -44,7 +49,7 @@ def evaluate_stock_alert(
         alert = StockAlert(
             inventory_item_id=inventory_item_id,
             alert_type=stock["stock_status"],
-            status="OPEN",
+            status=StockAlertStatus.OPEN,
             threshold_quantity=threshold,
             current_quantity=current,
             message=message,
@@ -53,7 +58,7 @@ def evaluate_stock_alert(
         db.flush()
         db.add(
             AuditEvent(
-                event_type="STOCK_ALERT_OPENED",
+                event_type=audit_event("STOCK_ALERT_OPENED"),
                 entity_type="StockAlert",
                 entity_id=alert.id,
                 actor_employee_id=employee_id,
@@ -72,7 +77,7 @@ def evaluate_stock_alert(
         return alert
 
     if active_alert is not None:
-        active_alert.status = "RESOLVED"
+        active_alert.status = StockAlertStatus.RESOLVED
         active_alert.resolved_at = datetime.utcnow()
         active_alert.current_quantity = current
         active_alert.message = (
@@ -81,13 +86,16 @@ def evaluate_stock_alert(
         db.flush()
         db.add(
             AuditEvent(
-                event_type="STOCK_ALERT_RESOLVED",
+                event_type=audit_event("STOCK_ALERT_RESOLVED"),
                 entity_type="StockAlert",
                 entity_id=active_alert.id,
                 actor_employee_id=employee_id,
-                before_snapshot=json.dumps({"status": "OPEN"}),
+                before_snapshot=json.dumps({"status": StockAlertStatus.OPEN}),
                 after_snapshot=json.dumps(
-                    {"status": "RESOLVED", "current_quantity": str(current)}
+                    {
+                        "status": StockAlertStatus.RESOLVED,
+                        "current_quantity": str(current),
+                    }
                 ),
             )
         )
@@ -101,7 +109,7 @@ def list_active_stock_alerts(db: Session) -> list[StockAlert]:
     return list(
         db.execute(
             select(StockAlert)
-            .where(StockAlert.status == "OPEN")
+            .where(StockAlert.status == StockAlertStatus.OPEN)
             .order_by(StockAlert.opened_at, StockAlert.id)
         ).scalars()
     )

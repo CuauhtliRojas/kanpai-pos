@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.domain.constants import TableStatus, audit_event
 from app.models import DiningTable, TableStatusEvent, Ticket
 from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 
@@ -11,7 +12,7 @@ def get_free_active_table(db: Session, table_id: int) -> DiningTable:
         raise EntityNotFoundError("La mesa no existe.")
     if not table.active:
         raise BusinessConflictError("La mesa está inactiva.")
-    if table.status_cache != "FREE":
+    if table.status_cache != TableStatus.FREE:
         raise BusinessConflictError("La mesa no está libre.")
     return table
 
@@ -24,15 +25,15 @@ def release_table_for_paid_ticket(
     if table is None:
         raise EntityNotFoundError("La mesa no existe.")
 
-    table.status_cache = "FREE"
+    table.status_cache = TableStatus.FREE
     db.add(
         TableStatusEvent(
             table_id=table.id,
             ticket_id=ticket.id,
             actor_employee_id=employee_id,
-            from_status="IN_PAYMENT",
-            to_status="FREE",
-            reason="TICKET_PAID",
+            from_status=TableStatus.IN_PAYMENT,
+            to_status=TableStatus.FREE,
+            reason=audit_event("TICKET_PAID"),
         )
     )
     db.flush()
@@ -48,15 +49,15 @@ def release_table_for_cancelled_ticket(
         raise EntityNotFoundError("La mesa no existe.")
 
     previous_status = table.status_cache
-    table.status_cache = "FREE"
+    table.status_cache = TableStatus.FREE
     db.add(
         TableStatusEvent(
             table_id=table.id,
             ticket_id=ticket.id,
             actor_employee_id=employee_id,
             from_status=previous_status,
-            to_status="FREE",
-            reason="TICKET_CANCELLED",
+            to_status=TableStatus.FREE,
+            reason=audit_event("TICKET_CANCELLED"),
         )
     )
     db.flush()

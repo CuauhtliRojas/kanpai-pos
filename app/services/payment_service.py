@@ -4,6 +4,14 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.domain.constants import (
+    ActiveStatus,
+    PaymentMethodValue,
+    TicketLineStatus,
+    TicketPaymentStatus,
+    TicketStatus,
+    audit_event,
+)
 from app.models import AuditEvent, Payment, PaymentMethod, Ticket, TicketLine
 from app.services.exceptions import (
     BusinessConflictError,
@@ -16,7 +24,7 @@ from app.services.sales_inventory_service import consume_inventory_for_paid_tick
 from app.services.table_service import release_table_for_paid_ticket
 from app.services.ticket_service import get_active_employee, get_ticket
 
-CANCELLED_LINE_STATUSES = ("CANCELLED", "CANCELED", "CANCELADO")
+CANCELLED_LINE_STATUSES = (TicketLineStatus.CANCELLED,)
 
 
 def _has_captured_lines(db: Session, ticket_id: int) -> bool:
@@ -24,7 +32,7 @@ def _has_captured_lines(db: Session, ticket_id: int) -> bool:
         db.scalar(
             select(func.count(TicketLine.id)).where(
                 TicketLine.ticket_id == ticket_id,
-                TicketLine.status == "CAPTURED",
+                TicketLine.status == TicketLineStatus.CAPTURED,
             )
         )
     )
@@ -35,7 +43,7 @@ def _active_payment_total(db: Session, ticket_id: int) -> int:
         db.scalar(
             select(func.coalesce(func.sum(Payment.amount_cents), 0)).where(
                 Payment.ticket_id == ticket_id,
-                Payment.status == "ACTIVE",
+                Payment.status == ActiveStatus.ACTIVE,
             )
         )
         or 0
@@ -51,7 +59,7 @@ def start_payment(db: Session, ticket_id: int, employee_id: int) -> Ticket:
     """
     ticket = get_ticket(db, ticket_id)
     get_active_employee(db, employee_id)
-    if ticket.status != "OPEN":
+    if ticket.status != TicketStatus.OPEN:
         raise BusinessConflictError(
             f"El ticket no puede iniciar cobro desde el estado {ticket.status}."
         )
@@ -69,19 +77,19 @@ def start_payment(db: Session, ticket_id: int, employee_id: int) -> Ticket:
     if _has_captured_lines(db, ticket_id):
         raise InvalidBusinessDataError("El ticket tiene líneas capturadas pendientes.")
 
-    ticket.status = "IN_PAYMENT"
+    ticket.status = TicketStatus.IN_PAYMENT
     ticket.billing_started_at = datetime.utcnow()
-    ticket.table.status_cache = "IN_PAYMENT"
+    ticket.table.status_cache = TicketStatus.IN_PAYMENT
     db.add(
         AuditEvent(
-            event_type="PAYMENT_STARTED",
+            event_type=audit_event("PAYMENT_STARTED"),
             entity_type="Ticket",
             entity_id=ticket.id,
             actor_employee_id=employee_id,
             cash_shift_id=ticket.cash_shift_id,
             ticket_id=ticket.id,
-            before_snapshot=json.dumps({"status": "OPEN"}),
-            after_snapshot=json.dumps({"status": "IN_PAYMENT"}),
+            before_snapshot=json.dumps({"status": TicketStatus.OPEN}),
+            after_snapshot=json.dumps({"status": TicketStatus.IN_PAYMENT}),
         )
     )
     db.flush()
@@ -104,7 +112,7 @@ def create_payment(
     """
     ticket = get_ticket(db, ticket_id)
     get_active_employee(db, employee_id)
-    if ticket.status != "IN_PAYMENT":
+    if ticket.status != TicketStatus.IN_PAYMENT:
         raise BusinessConflictError(
             f"El ticket no acepta pagos desde el estado {ticket.status}."
         )
@@ -120,7 +128,7 @@ def create_payment(
     normalized_reference = reference.strip() if reference else None
     if payment_method.requires_reference and not normalized_reference:
         raise InvalidBusinessDataError("El método de pago requiere referencia.")
-    is_cash = payment_method.method_key == "CASH"
+    is_cash = payment_method.method_key == PaymentMethodValue.CASH
     if is_cash and received_cents is not None and received_cents < amount_cents:
         raise InvalidBusinessDataError(
             "El efectivo recibido no puede ser menor que el monto."
@@ -138,7 +146,7 @@ def create_payment(
         if is_cash and received_cents is not None
         else 0,
         reference=normalized_reference,
-        status="ACTIVE",
+        status=ActiveStatus.ACTIVE,
     )
     db.add(payment)
     db.flush()
@@ -147,7 +155,7 @@ def create_payment(
     if total_paid < ticket.total_cents:
         db.add(
             AuditEvent(
-                event_type="PAYMENT_REGISTERED",
+                event_type=audit_event("PAYMENT_REGISTERED"),
                 entity_type="Payment",
                 entity_id=payment.id,
                 actor_employee_id=employee_id,
@@ -165,23 +173,23 @@ def create_payment(
         raise InvalidBusinessDataError("El ticket tiene líneas capturadas pendientes.")
 
     now = datetime.utcnow()
-    ticket.status = "PAID"
-    ticket.payment_status = "PAID"
+    ticket.status = TicketStatus.PAID
+    ticket.payment_status = TicketPaymentStatus.PAID
     ticket.paid_at = now
     ticket.closed_by_employee_id = employee_id
     consume_inventory_for_paid_ticket(db, ticket.id, employee_id)
     release_table_for_paid_ticket(db, ticket, employee_id)
     db.add(
         AuditEvent(
-            event_type="TICKET_PAID",
+            event_type=audit_event("TICKET_PAID"),
             entity_type="Ticket",
             entity_id=ticket.id,
             actor_employee_id=employee_id,
             cash_shift_id=ticket.cash_shift_id,
             ticket_id=ticket.id,
-            before_snapshot=json.dumps({"status": "IN_PAYMENT"}),
+            before_snapshot=json.dumps({"status": TicketStatus.IN_PAYMENT}),
             after_snapshot=json.dumps(
-                {"status": "PAID", "total_paid_cents": total_paid}
+                {"status": TicketStatus.PAID, "total_paid_cents": total_paid}
             ),
         )
     )
@@ -189,7 +197,9 @@ def create_payment(
         db.execute(
             select(Payment)
             .options(selectinload(Payment.payment_method))
-            .where(Payment.ticket_id == ticket.id, Payment.status == "ACTIVE")
+            .where(
+                Payment.ticket_id == ticket.id, Payment.status == ActiveStatus.ACTIVE
+            )
             .order_by(Payment.id)
         ).scalars()
     )

@@ -1,9 +1,18 @@
-﻿from sqlalchemy import select
+from sqlalchemy import select
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.domain.constants import (
+    CatalogStatus,
+    ConnectionType,
+    ItemType,
+    PaymentMethodValue,
+    ProductType,
+    TableStatus,
+    UnitFamily,
+)
 from app.models import (
     BusinessSetting,
     DiningTable,
@@ -30,7 +39,9 @@ from app.models import (
 )
 
 
-def get_or_create(session: Session, model: type, lookup: dict, defaults: dict | None = None):
+def get_or_create(
+    session: Session, model: type, lookup: dict, defaults: dict | None = None
+):
     statement = select(model).filter_by(**lookup)
     instance = session.execute(statement).scalar_one_or_none()
 
@@ -90,9 +101,9 @@ def seed_folio_sequences(session: Session) -> None:
 
 def seed_payment_methods(session: Session) -> None:
     methods = [
-        ("CASH", "Efectivo", False),
-        ("CARD", "Tarjeta", True),
-        ("TRANSFER", "Transferencia", True),
+        (PaymentMethodValue.CASH, "Efectivo", False),
+        (PaymentMethodValue.CARD, "Tarjeta", True),
+        (PaymentMethodValue.TRANSFER, "Transferencia", True),
     ]
 
     for method_key, name, requires_reference in methods:
@@ -134,7 +145,7 @@ def seed_service_zones_and_tables(session: Session) -> None:
                 "zone_id": salon.id,
                 "buzzer_number": number,
                 "sort_order": number,
-                "status_cache": "FREE",
+                "status_cache": TableStatus.FREE,
                 "active": True,
             },
         )
@@ -147,7 +158,7 @@ def seed_service_zones_and_tables(session: Session) -> None:
             "display_name": "Barra 1",
             "zone_id": barra.id,
             "sort_order": 1,
-            "status_cache": "FREE",
+            "status_cache": TableStatus.FREE,
             "active": True,
         },
     )
@@ -160,7 +171,7 @@ def seed_service_zones_and_tables(session: Session) -> None:
             "display_name": "Para llevar",
             "zone_id": para_llevar.id,
             "sort_order": 1,
-            "status_cache": "FREE",
+            "status_cache": TableStatus.FREE,
             "active": True,
         },
     )
@@ -177,12 +188,12 @@ def seed_pos_devices(session: Session) -> None:
 
 def seed_units(session: Session) -> None:
     units = [
-        ("G", "g", "MASS"),
-        ("KG", "kg", "MASS"),
-        ("ML", "ml", "VOLUME"),
-        ("L", "lt", "VOLUME"),
-        ("PZA", "pza", "COUNT"),
-        ("OZ", "oz", "VOLUME"),
+        ("G", "g", UnitFamily.MASS),
+        ("KG", "kg", UnitFamily.MASS),
+        ("ML", "ml", UnitFamily.VOLUME),
+        ("L", "lt", UnitFamily.VOLUME),
+        ("PZA", "pza", UnitFamily.COUNT),
+        ("OZ", "oz", UnitFamily.VOLUME),
     ]
 
     for unit_key, name, unit_family in units:
@@ -197,8 +208,7 @@ def seed_units(session: Session) -> None:
 def seed_unit_conversions(session: Session) -> None:
     """Crea conversiones temporales directas sin duplicar pares existentes."""
     units = {
-        unit.unit_key: unit
-        for unit in session.execute(select(Unit)).scalars().all()
+        unit.unit_key: unit for unit in session.execute(select(Unit)).scalars().all()
     }
     conversions = [
         ("KG", "G", Decimal("1000")),
@@ -223,8 +233,7 @@ def seed_unit_conversions(session: Session) -> None:
 def seed_development_inventory_items(session: Session) -> None:
     """Crea insumos temporales de desarrollo en sus unidades base."""
     units = {
-        unit.unit_key: unit
-        for unit in session.execute(select(Unit)).scalars().all()
+        unit.unit_key: unit for unit in session.execute(select(Unit)).scalars().all()
     }
     items = [
         ("INV-ARROZ", "Arroz desarrollo", "G", 1000),
@@ -240,8 +249,9 @@ def seed_development_inventory_items(session: Session) -> None:
                 "name": name,
                 "base_unit_id": units[unit_key].id,
                 "minimum_stock_qty": minimum_stock_qty,
+                "item_type": ItemType.OTHER,
                 "active": True,
-                "sync_status": "ACTIVE",
+                "sync_status": CatalogStatus.ACTIVE,
             },
         )
 
@@ -262,7 +272,11 @@ def seed_categories_and_stations(session: Session) -> None:
             session,
             MenuCategory,
             {"name": name},
-            {"sort_order": sort_order, "active": True, "sync_status": "ACTIVE"},
+            {
+                "sort_order": sort_order,
+                "active": True,
+                "sync_status": CatalogStatus.ACTIVE,
+            },
         )
 
     stations = [
@@ -282,7 +296,7 @@ def seed_categories_and_stations(session: Session) -> None:
                 "printer_key": printer_key,
                 "sort_order": sort_order,
                 "active": True,
-                "sync_status": "ACTIVE",
+                "sync_status": CatalogStatus.ACTIVE,
             },
         )
 
@@ -310,7 +324,7 @@ def seed_logical_printers(session: Session) -> None:
             {
                 "name": name,
                 "station_id": station.id if station else None,
-                "connection_type": "LOGICAL",
+                "connection_type": ConnectionType.LOGICAL,
                 "active": True,
             },
         )
@@ -325,9 +339,7 @@ def seed_development_products(session: Session) -> None:
         select(MenuCategory).where(MenuCategory.name == "Sake")
     ).scalar_one()
     cold_bar = session.execute(
-        select(ProductionStation).where(
-            ProductionStation.station_key == "BARRA_FRIA"
-        )
+        select(ProductionStation).where(ProductionStation.station_key == "BARRA_FRIA")
     ).scalar_one()
     hot_bar = session.execute(
         select(ProductionStation).where(
@@ -340,14 +352,14 @@ def seed_development_products(session: Session) -> None:
         Product,
         {"sku": "DEV-CHELA"},
         {
-            "product_type": "SIMPLE",
+            "product_type": ProductType.SIMPLE,
             "name": "Chela desarrollo",
             "display_name": "Chela desarrollo",
             "category_id": beer_category.id,
             "price_cents": 7_000,
             "active": True,
             "visible_pos": True,
-            "sync_status": "ACTIVE",
+            "sync_status": CatalogStatus.ACTIVE,
         },
     )
     sake, _ = get_or_create(
@@ -355,14 +367,14 @@ def seed_development_products(session: Session) -> None:
         Product,
         {"sku": "DEV-SAKE"},
         {
-            "product_type": "SIMPLE",
+            "product_type": ProductType.SIMPLE,
             "name": "Sake desarrollo",
             "display_name": "Sake desarrollo",
             "category_id": sake_category.id,
             "price_cents": 6_000,
             "active": True,
             "visible_pos": True,
-            "sync_status": "ACTIVE",
+            "sync_status": CatalogStatus.ACTIVE,
         },
     )
     package_product, _ = get_or_create(
@@ -370,14 +382,14 @@ def seed_development_products(session: Session) -> None:
         Product,
         {"sku": "DEV-CHELA-SAKE"},
         {
-            "product_type": "PACKAGE",
+            "product_type": ProductType.PACKAGE,
             "name": "Chela + Sake",
             "display_name": "Chela + Sake",
             "category_id": beer_category.id,
             "price_cents": 12_000,
             "active": True,
             "visible_pos": True,
-            "sync_status": "ACTIVE",
+            "sync_status": CatalogStatus.ACTIVE,
         },
     )
 
@@ -386,20 +398,25 @@ def seed_development_products(session: Session) -> None:
             session,
             ProductStationAssignment,
             {"product_id": product.id, "station_id": station.id},
-            {"is_primary": True, "active": True, "sync_status": "ACTIVE"},
+            {"is_primary": True, "active": True, "sync_status": CatalogStatus.ACTIVE},
         )
 
     package, _ = get_or_create(
         session,
         ProductPackage,
         {"package_product_id": package_product.id},
-        {"active": True, "sync_status": "ACTIVE"},
+        {"active": True, "sync_status": CatalogStatus.ACTIVE},
     )
     get_or_create(
         session,
         ProductPackageItem,
         {"package_id": package.id, "component_product_id": beer.id},
-        {"quantity": 1, "sort_order": 1, "active": True, "sync_status": "ACTIVE"},
+        {
+            "quantity": 1,
+            "sort_order": 1,
+            "active": True,
+            "sync_status": CatalogStatus.ACTIVE,
+        },
     )
     get_or_create(
         session,
@@ -410,7 +427,7 @@ def seed_development_products(session: Session) -> None:
             "sort_order": 2,
             "station_id_override": hot_bar.id,
             "active": True,
-            "sync_status": "ACTIVE",
+            "sync_status": CatalogStatus.ACTIVE,
         },
     )
 
@@ -436,7 +453,7 @@ def seed_development_recipes(session: Session) -> None:
                 "quantity_base": quantity_base,
                 "waste_pct": 0,
                 "active": True,
-                "sync_status": "ACTIVE",
+                "sync_status": CatalogStatus.ACTIVE,
             },
         )
 
@@ -459,13 +476,32 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
             session,
             Permission,
             {"permission_key": permission_key},
-            {"description": description, "active": True, "sync_status": "ACTIVE"},
+            {
+                "description": description,
+                "active": True,
+                "sync_status": CatalogStatus.ACTIVE,
+            },
         )
         permissions[permission_key] = permission
 
     role_defs = {
-        "ADMIN": ["DISCOUNT_AUTHORIZE", "TICKET_CANCEL", "CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE", "INVENTORY_ADJUST", "REPRINT"],
-        "GERENTE": ["DISCOUNT_AUTHORIZE", "TICKET_CANCEL", "CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE", "REPRINT"],
+        "ADMIN": [
+            "DISCOUNT_AUTHORIZE",
+            "TICKET_CANCEL",
+            "CASH_SHIFT_OPEN",
+            "CASH_SHIFT_CLOSE",
+            "EXPENSE_CREATE",
+            "INVENTORY_ADJUST",
+            "REPRINT",
+        ],
+        "GERENTE": [
+            "DISCOUNT_AUTHORIZE",
+            "TICKET_CANCEL",
+            "CASH_SHIFT_OPEN",
+            "CASH_SHIFT_CLOSE",
+            "EXPENSE_CREATE",
+            "REPRINT",
+        ],
         "CAJERO": ["CASH_SHIFT_OPEN", "EXPENSE_CREATE"],
         "ALMACEN": ["INVENTORY_ADJUST"],
     }
@@ -477,7 +513,11 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
             session,
             Role,
             {"role_key": role_key},
-            {"name": role_key.title(), "active": True, "sync_status": "ACTIVE"},
+            {
+                "name": role_key.title(),
+                "active": True,
+                "sync_status": CatalogStatus.ACTIVE,
+            },
         )
         roles[role_key] = role
 
@@ -496,7 +536,7 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
             "full_name": "Administrador",
             "pos_alias": "Admin",
             "active": True,
-            "sync_status": "ACTIVE",
+            "sync_status": CatalogStatus.ACTIVE,
         },
     )
 

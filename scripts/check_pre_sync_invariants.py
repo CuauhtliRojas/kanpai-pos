@@ -16,10 +16,10 @@ def main() -> int:
     with SessionLocal() as db:
         result = run_local_backend_preflight(db)
 
-    print(f'PRE-SYNC PREFLIGHT: {result["status"]}')
-    print(f'Database: {result["database"]}')
+    print(f"PRE-SYNC PREFLIGHT: {result['status']}")
+    print(f"Database: {result['database']}")
     for check in result["checks"]:
-        print(f'[{check["status"]:7}] {check["key"]}: {check["message"]}')
+        print(f"[{check['status']:7}] {check['key']}: {check['message']}")
     print("Summary:")
     for key, value in result["summary"].items():
         print(f"  {key}: {value}")

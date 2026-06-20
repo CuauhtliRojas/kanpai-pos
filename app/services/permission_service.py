@@ -9,9 +9,7 @@ from app.services.exceptions import (
 )
 
 
-def employee_has_permission(
-    db: Session, employee_id: int, permission_key: str
-) -> bool:
+def employee_has_permission(db: Session, employee_id: int, permission_key: str) -> bool:
     """Valida que un empleado tenga un rol y permiso activos para una operación.
 
     La consulta usa las tablas de asignación reales y no concede permisos por
@@ -38,9 +36,7 @@ def require_employee_permission(
 ) -> None:
     """Exige un permiso normalizado o levanta un error público de autorización."""
     if not employee_has_permission(db, employee_id, permission_key):
-        raise PermissionDeniedError(
-            f"El empleado no tiene permiso {permission_key}."
-        )
+        raise PermissionDeniedError(f"El empleado no tiene permiso {permission_key}.")
 
 
 def get_active_employee(db: Session, employee_id: int) -> Employee:

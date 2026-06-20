@@ -51,7 +51,7 @@ def _clean_operational_data(db: Session) -> None:
         CashShift,
     ):
         db.execute(delete(model))
-    db.execute(DiningTable.__table__.update().values(status_cache="FREE"))
+    db.execute(DiningTable.__table__.update().values(status_cache="Libre"))
     db.commit()
 
 
@@ -98,14 +98,17 @@ def test_start_payment_after_sent_round() -> None:
         result = start_payment(db, ticket.id, employee.id)
         db.commit()
 
-        assert result.status == "IN_PAYMENT"
+        assert result.status == "En cobro"
         assert result.billing_started_at is not None
-        assert result.table.status_cache == "IN_PAYMENT"
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "PAYMENT_STARTED"
+        assert result.table.status_cache == "En cobro"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Cobro iniciado"
+                )
             )
-        ) == "PAYMENT_STARTED"
+            == "Cobro iniciado"
+        )
 
 
 def test_start_payment_rejects_captured_lines() -> None:
@@ -140,60 +143,63 @@ def test_partial_payment_keeps_ticket_in_payment() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
-        cash = _method(db, "CASH")
+        cash = _method(db, "Efectivo")
 
         payment = create_payment(db, ticket.id, employee.id, cash.id, 100)
         db.commit()
 
-        assert payment.status == "ACTIVE"
-        assert ticket.status == "IN_PAYMENT"
-        assert ticket.table.status_cache == "IN_PAYMENT"
-        assert db.scalar(
-            select(AuditEvent.event_type).where(
-                AuditEvent.event_type == "PAYMENT_REGISTERED"
+        assert payment.status == "Activo"
+        assert ticket.status == "En cobro"
+        assert ticket.table.status_cache == "En cobro"
+        assert (
+            db.scalar(
+                select(AuditEvent.event_type).where(
+                    AuditEvent.event_type == "Pago registrado"
+                )
             )
-        ) == "PAYMENT_REGISTERED"
-        assert db.scalar(select(PrintJob.id).where(PrintJob.job_type == "TICKET")) is None
+            == "Pago registrado"
+        )
+        assert (
+            db.scalar(select(PrintJob.id).where(PrintJob.job_type == "Ticket")) is None
+        )
 
 
 def test_complete_payment_closes_ticket_and_releases_table() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
-        cash = _method(db, "CASH")
+        cash = _method(db, "Efectivo")
 
-        create_payment(
-            db, ticket.id, employee.id, cash.id, ticket.total_cents
-        )
+        create_payment(db, ticket.id, employee.id, cash.id, ticket.total_cents)
         db.commit()
 
-        assert ticket.status == "PAID"
-        assert ticket.payment_status == "PAID"
+        assert ticket.status == "Cobrado"
+        assert ticket.payment_status == "Pagado"
         assert ticket.paid_at is not None
         assert ticket.closed_by_employee_id == employee.id
-        assert ticket.table.status_cache == "FREE"
+        assert ticket.table.status_cache == "Libre"
         table_event = db.scalar(
             select(TableStatusEvent)
-            .where(TableStatusEvent.to_status == "FREE")
+            .where(TableStatusEvent.to_status == "Libre")
             .order_by(TableStatusEvent.id.desc())
         )
         assert table_event is not None
-        assert table_event.from_status == "IN_PAYMENT"
+        assert table_event.from_status == "En cobro"
 
 
 def test_complete_payment_creates_ticket_print_job() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
-        cash = _method(db, "CASH")
+        cash = _method(db, "Efectivo")
         create_payment(db, ticket.id, employee.id, cash.id, ticket.total_cents)
         db.commit()
 
         job = db.execute(
-            select(PrintJob).where(PrintJob.job_type == "TICKET")
+            select(PrintJob).where(PrintJob.job_type == "Ticket")
         ).scalar_one()
         assert job.printer_key_snapshot == "CAJA"
-        assert job.status == "PENDING"
+        assert job.status == "Pendiente"
         assert job.attempts == 0
         assert job.idempotency_key == f"TICKET:{ticket.id}"
         assert job.ticket_id == ticket.id
@@ -205,7 +211,7 @@ def test_complete_payment_creates_ticket_print_job() -> None:
 def test_payment_rejects_open_ticket() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
-        cash = _method(db, "CASH")
+        cash = _method(db, "Efectivo")
 
         with pytest.raises(BusinessConflictError):
             create_payment(db, ticket.id, employee.id, cash.id, ticket.total_cents)
@@ -215,7 +221,7 @@ def test_payment_requires_reference_when_configured() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
-        card = _method(db, "CARD")
+        card = _method(db, "Tarjeta")
 
         with pytest.raises(InvalidBusinessDataError):
             create_payment(db, ticket.id, employee.id, card.id, ticket.total_cents)
@@ -225,7 +231,7 @@ def test_cash_payment_calculates_change() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
-        cash = _method(db, "CASH")
+        cash = _method(db, "Efectivo")
 
         payment = create_payment(
             db,
@@ -243,7 +249,7 @@ def test_cash_payment_rejects_insufficient_received_amount() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
-        cash = _method(db, "CASH")
+        cash = _method(db, "Efectivo")
 
         with pytest.raises(InvalidBusinessDataError):
             create_payment(
@@ -268,7 +274,7 @@ def test_start_payment_endpoint() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["status"] == "IN_PAYMENT"
+    assert response.json()["status"] == "En cobro"
 
 
 def test_create_and_list_payments_endpoints() -> None:
@@ -276,7 +282,7 @@ def test_create_and_list_payments_endpoints() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
-        cash = _method(db, "CASH")
+        cash = _method(db, "Efectivo")
         db.commit()
         employee_id = employee.id
         ticket_id = ticket.id
@@ -301,14 +307,14 @@ def test_create_and_list_payments_endpoints() -> None:
     list_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/payments")
     assert list_response.status_code == 200
     assert len(list_response.json()["payments"]) == 1
-    assert list_response.json()["payments"][0]["status"] == "ACTIVE"
+    assert list_response.json()["payments"][0]["status"] == "Activo"
 
 
 def test_payment_endpoints_map_domain_errors() -> None:
     client = TestClient(app)
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
-        card = _method(db, "CARD")
+        card = _method(db, "Tarjeta")
         employee_id, ticket_id, card_id = employee.id, ticket.id, card.id
 
     open_ticket_payment = client.post(

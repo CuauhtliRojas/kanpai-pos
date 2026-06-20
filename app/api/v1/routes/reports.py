@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.domain.constants import InventoryMovementType
 from app.schemas.reporting import (
     InventoryConsumptionItem,
     OperationalSummaryResponse,
@@ -40,9 +41,7 @@ def operational_summary_endpoint(
         raise _bad_request(error) from None
 
 
-@router.get(
-    "/sales-by-payment-method", response_model=list[SalesByPaymentMethodItem]
-)
+@router.get("/sales-by-payment-method", response_model=list[SalesByPaymentMethodItem])
 def sales_by_payment_method_endpoint(
     date_from: str | None = None,
     date_to: str | None = None,
@@ -74,7 +73,7 @@ def sales_by_product_endpoint(
 
 @router.get("/inventory-consumption", response_model=list[InventoryConsumptionItem])
 def inventory_consumption_endpoint(
-    movement_type: str = "SALE_CONSUMPTION",
+    movement_type: str = InventoryMovementType.SALE_CONSUMPTION,
     date_from: str | None = None,
     date_to: str | None = None,
     db: Session = Depends(get_db),
@@ -82,9 +81,7 @@ def inventory_consumption_endpoint(
     try:
         return [
             InventoryConsumptionItem.model_validate(item)
-            for item in get_inventory_consumption(
-                db, movement_type, date_from, date_to
-            )
+            for item in get_inventory_consumption(db, movement_type, date_from, date_to)
         ]
     except InvalidBusinessDataError as error:
         raise _bad_request(error) from None
