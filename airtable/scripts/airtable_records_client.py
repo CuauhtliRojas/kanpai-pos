@@ -10,6 +10,7 @@ import json
 import os
 import time
 from collections.abc import Iterable
+from decimal import Decimal, InvalidOperation
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
@@ -33,9 +34,48 @@ def batched(items: list[Any], size: int = MAX_BATCH_SIZE) -> Iterable[list[Any]]
         yield items[start : start + size]
 
 
-def _same_value(left: Any, right: Any) -> bool:
-    if isinstance(left, list) and isinstance(right, list):
-        return sorted(left) == sorted(right)
+def _is_empty(value: Any) -> bool:
+    return value is None or value == "" or value == []
+
+
+def _as_number(value: Any) -> Decimal | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
+        return None
+    try:
+        return Decimal(str(value))
+    except InvalidOperation:
+        return None
+
+
+def _same_value(left: Any, right: Any, *, linked: bool = False) -> bool:
+    """Compare Airtable values after normalizing API representation details."""
+    if linked:
+        left_ids = [] if _is_empty(left) else left
+        right_ids = [] if _is_empty(right) else right
+        if not isinstance(left_ids, list) or not isinstance(right_ids, list):
+            return False
+        return sorted(str(value).strip() for value in left_ids) == sorted(
+            str(value).strip() for value in right_ids
+        )
+
+    if isinstance(right, bool):
+        if _is_empty(left):
+            return right is False
+        if isinstance(left, bool):
+            return left is right
+        return False
+
+    if _is_empty(left) and _is_empty(right):
+        return True
+
+    left_number = _as_number(left)
+    right_number = _as_number(right)
+    if left_number is not None and right_number is not None:
+        return left_number == right_number
+
+    if isinstance(left, str) and isinstance(right, str):
+        return left.strip() == right.strip()
+
     return left == right
 
 
@@ -161,15 +201,31 @@ class AirtableRecordsClient:
         return result
 
     def plan_upsert(
-        self, table: str, key_field: str, records: list[dict[str, Any]]
+        self,
+        table: str,
+        key_field: str,
+        records: list[dict[str, Any]],
+        *,
+        linked_fields: set[str] | None = None,
+        excluded_fields: set[str] | None = None,
+        existing: dict[str, dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
-        field_names = sorted({field for record in records for field in record})
-        existing = self.index_by_key(table, key_field, fields=field_names)
+        linked_fields = linked_fields or set()
+        excluded_fields = excluded_fields or set()
+        if key_field in excluded_fields:
+            raise ValueError("La clave natural no puede excluirse del upsert.")
+        writable_records = [
+            {field: value for field, value in record.items() if field not in excluded_fields}
+            for record in records
+        ]
+        field_names = sorted({field for record in writable_records for field in record})
+        if existing is None:
+            existing = self.index_by_key(table, key_field, fields=field_names)
         creates: list[dict[str, Any]] = []
         updates: list[dict[str, Any]] = []
         unchanged: list[dict[str, Any]] = []
 
-        for fields in records:
+        for fields in writable_records:
             key = str(fields.get(key_field, "")).strip()
             if not key:
                 raise AirtableRecordsError(
@@ -183,7 +239,9 @@ class AirtableRecordsClient:
             changed = {
                 field: value
                 for field, value in fields.items()
-                if not _same_value(remote_fields.get(field), value)
+                if not _same_value(
+                    remote_fields.get(field), value, linked=field in linked_fields
+                )
             }
             if changed:
                 updates.append({"id": remote["id"], "fields": changed})
@@ -198,9 +256,21 @@ class AirtableRecordsClient:
         }
 
     def upsert_by_key(
-        self, table: str, key_field: str, records: list[dict[str, Any]]
+        self,
+        table: str,
+        key_field: str,
+        records: list[dict[str, Any]],
+        *,
+        linked_fields: set[str] | None = None,
+        excluded_fields: set[str] | None = None,
     ) -> dict[str, Any]:
-        plan = self.plan_upsert(table, key_field, records)
+        plan = self.plan_upsert(
+            table,
+            key_field,
+            records,
+            linked_fields=linked_fields,
+            excluded_fields=excluded_fields,
+        )
         created = self.create_records(table, plan["creates"])
         updated = self.update_records(table, plan["updates"])
         final_index = dict(plan["existing"])

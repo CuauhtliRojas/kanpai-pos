@@ -348,7 +348,14 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
     tables["EstacionesProduccion"] = fixed["EstacionesProduccion"]
     tables["CategoriasMenu"] = fixed["CategoriasMenu"]
     tables["Mesas"] = [
-        {key: value for key, value in row.items() if key != "estado_temporal"}
+        {
+            **{
+                key: value
+                for key, value in row.items()
+                if key not in {"estado_temporal", "zona"}
+            },
+            "zona": [row["zona"]],
+        }
         for row in fixed["Mesas"]
     ]
     tables["Empleados"] = [

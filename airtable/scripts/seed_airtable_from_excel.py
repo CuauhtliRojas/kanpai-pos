@@ -21,6 +21,24 @@ from build_airtable_seed import (
 CONFIRM_TEXT = "SEED_KANPAI_AIRTABLE"
 DEFAULT_REPORT = Path("airtable/reports/airtable_seed_dry_run_report.md")
 
+# Campos readonly u operativos administrados por Airtable/SQLite sync no
+# pertenecen al seed. Se excluyen de comparación y de cualquier payload futuro.
+SYNC_MANAGED_FIELDS = {
+    "id_sqlite",
+    "estado_sync",
+    "revision_remota",
+    "actualizado_sqlite_en",
+    "actualizado_airtable_en",
+    "ultimo_pull_en",
+    "ultimo_push_en",
+    "error_sync",
+}
+EXCLUDED_SEED_FIELDS = {
+    table: set(SYNC_MANAGED_FIELDS) for table in TABLE_ORDER
+}
+EXCLUDED_SEED_FIELDS["Mesas"].add("estado_temporal")
+EXCLUDED_SEED_FIELDS["Empleados"].update({"pin_activo", "ultimo_acceso"})
+
 
 def dry_run_plan(
     client: AirtableRecordsClient | None,
@@ -28,19 +46,23 @@ def dry_run_plan(
     issues: list[SeedIssue],
 ) -> dict[str, dict[str, int]]:
     plan: dict[str, dict[str, int]] = {}
+    indexes: dict[str, dict[str, dict[str, Any]]] = {}
     for table in TABLE_ORDER:
         records = result.tables[table]
-        keys = {str(record[NATURAL_KEYS[table]]).strip() for record in records}
         if client is None:
             plan[table] = {
                 "creates": len(records),
                 "updates": 0,
                 "unchanged": 0,
                 "upserts": len(records),
+                "skipped": 0,
             }
             continue
         try:
-            existing = client.index_by_key(table, NATURAL_KEYS[table])
+            fields = sorted({field for record in records for field in record})
+            existing = client.index_by_key(
+                table, NATURAL_KEYS[table], fields=fields
+            )
         except AirtableRecordsError as error:
             issues.append(SeedIssue("error", "remote_read_failed", str(error)))
             plan[table] = {
@@ -48,14 +70,25 @@ def dry_run_plan(
                 "updates": 0,
                 "unchanged": 0,
                 "upserts": len(records),
+                "skipped": 0,
             }
             continue
-        existing_keys = set(existing)
+        indexes[table] = existing
+        resolved = resolve_links(table, records, indexes, issues)
+        upsert = client.plan_upsert(
+            table,
+            NATURAL_KEYS[table],
+            resolved,
+            linked_fields=set(LINK_FIELDS.get(table, {})),
+            excluded_fields=EXCLUDED_SEED_FIELDS.get(table),
+            existing=existing,
+        )
         plan[table] = {
-            "creates": len(keys - existing_keys),
-            "updates": len(keys & existing_keys),
-            "unchanged": 0,
+            "creates": len(upsert["creates"]),
+            "updates": len(upsert["updates"]),
+            "unchanged": len(upsert["unchanged"]),
             "upserts": len(records),
+            "skipped": len(records) - len(resolved),
         }
     return plan
 
@@ -106,8 +139,16 @@ def execute_seed(
     summary: dict[str, dict[str, int]] = {}
     for table in TABLE_ORDER:
         resolved = resolve_links(table, result.tables[table], indexes, issues)
-        outcome = client.upsert_by_key(table, NATURAL_KEYS[table], resolved)
+        outcome = client.upsert_by_key(
+            table,
+            NATURAL_KEYS[table],
+            resolved,
+            linked_fields=set(LINK_FIELDS.get(table, {})),
+            excluded_fields=EXCLUDED_SEED_FIELDS.get(table),
+        )
         indexes[table] = outcome.pop("index")
+        outcome["skipped"] = len(result.tables[table]) - len(resolved)
+        outcome["upserts"] = len(result.tables[table])
         summary[table] = outcome
     return summary
 
@@ -129,15 +170,16 @@ def render_report(
         "",
         "## Resumen por tabla",
         "",
-        "| Tabla | Creates | Updates | Unchanged | Upserts |",
-        "| --- | ---: | ---: | ---: | ---: |",
+        "| Tabla | Creates | Updates | Unchanged | Skipped | Upserts |",
+        "| --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for table in TABLE_ORDER:
         item = summary.get(table, {})
         lines.append(
             f"| {table} | {item.get('created', item.get('creates', 0))} | "
             f"{item.get('updated', item.get('updates', 0))} | "
-            f"{item.get('unchanged', 0)} | {item.get('upserts', len(result.tables[table]))} |"
+            f"{item.get('unchanged', 0)} | {item.get('skipped', 0)} | "
+            f"{item.get('upserts', len(result.tables[table]))} |"
         )
     lines.extend(["", "## Perfil Excel", ""])
     for name, value in result.stats.items():
@@ -224,7 +266,11 @@ def main() -> int:
         creates = item.get("created", item.get("creates", 0))
         updates = item.get("updated", item.get("updates", 0))
         unchanged = item.get("unchanged", 0)
-        print(f"{table}: creates={creates} updates={updates} unchanged={unchanged}")
+        skipped = item.get("skipped", 0)
+        print(
+            f"{table}: creates={creates} updates={updates} "
+            f"unchanged={unchanged} skipped={skipped}"
+        )
     print(f"Warnings: {len(warnings)}")
     print(f"Errores: {len(errors)}")
     print(f"Reporte: {args.report}")
