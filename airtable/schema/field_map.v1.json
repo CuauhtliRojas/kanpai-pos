@@ -1,0 +1,40 @@
+﻿{
+  "version": "1.0.0",
+  "policy": {
+    "ignore_remote_extra_fields": true,
+    "fail_on_missing_required_remote_field": true,
+    "fail_on_type_mismatch": true
+  },
+  "tables": {
+    "Productos": {
+      "sqlite_table": "productos",
+      "direction": "pull_to_sqlite",
+      "primary_key": "sku",
+      "fields": {
+        "sku": "sku",
+        "tipo_producto": "product_type",
+        "nombre": "name",
+        "variante": "variant",
+        "nombre_visible": "display_name",
+        "precio_centavos": "price_cents",
+        "activo": "active",
+        "visible_pos": "visible_pos",
+        "imagen_path": "image_path"
+      }
+    },
+    "Tickets": {
+      "sqlite_table": "tickets",
+      "direction": "push_to_airtable_readonly",
+      "primary_key": "folio",
+      "fields": {
+        "folio": "folio",
+        "estado": "status",
+        "estado_pago": "payment_status",
+        "subtotal_centavos": "subtotal_cents",
+        "descuento_centavos": "discount_cents",
+        "impuesto_centavos": "tax_cents",
+        "total_centavos": "total_cents"
+      }
+    }
+  }
+}
