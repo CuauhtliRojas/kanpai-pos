@@ -155,7 +155,7 @@ def test_seed_creates_unit_conversions_without_duplicates() -> None:
 def test_initial_stock_is_zero() -> None:
     with SessionLocal() as db:
         stock = get_current_stock(db, _item(db).id)
-    assert stock["current_stock"] == 0
+    assert Decimal(str(stock["current_stock"])) == Decimal("0")
     assert stock["stock_status"] == "Sin stock"
 
 
@@ -316,7 +316,7 @@ def test_list_inventory_items_endpoint() -> None:
     rice = next(item for item in items if item["sku"] == "INV-ARROZ")
     assert rice["base_unit_id"]
     assert rice["base_unit_name"] == "G"
-    assert rice["stock_minimum"] == 1000
+    assert Decimal(str(rice["stock_minimum"])) == Decimal("1000")
     assert rice["stock_status"] == "Sin stock"
 
 
@@ -328,8 +328,8 @@ def test_get_inventory_item_stock_endpoint() -> None:
     stock = response.json()
     assert stock["inventory_item_id"] == item_id
     assert stock["sku"] == "INV-ARROZ"
-    assert stock["current_stock"] == 0
-    assert stock["stock_minimum"] == 1000
+    assert Decimal(str(stock["current_stock"])) == Decimal("0")
+    assert Decimal(str(stock["stock_minimum"])) == Decimal("1000")
     assert stock["stock_status"] == "Sin stock"
 
 
@@ -347,6 +347,28 @@ def test_create_inventory_movement_endpoint() -> None:
     response = TestClient(app).post("/api/v1/inventory/movements", json=payload)
     assert response.status_code == 201
     assert Decimal(str(response.json()["signed_quantity_base"])) == 500
+
+
+def test_decimal_stock_minimum_drives_low_stock_alert_without_truncation() -> None:
+    with SessionLocal() as db:
+        item = _item(db)
+        item.minimum_stock_qty = Decimal("0.500000")
+        movement = create_inventory_movement(
+            db,
+            inventory_item_id=item.id,
+            movement_type="Ajuste entrada",
+            quantity_base=Decimal("0.400000"),
+            employee_id=_admin(db).id,
+            reason="QA mínimo decimal",
+        )
+        stock = get_current_stock(db, item.id)
+        alert = db.scalar(
+            select(StockAlert).where(StockAlert.inventory_item_id == item.id)
+        )
+        assert movement.quantity_base == Decimal("0.400000")
+        assert stock["stock_minimum"] == Decimal("0.500000")
+        assert stock["stock_status"] == "Stock bajo"
+        assert alert.threshold_quantity == Decimal("0.500000")
 
 
 def test_process_purchase_receipt_endpoint() -> None:

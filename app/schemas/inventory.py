@@ -19,8 +19,8 @@ class InventoryStockResponse(BaseModel):
     name: str
     base_unit_id: int
     base_unit_name: str
-    current_stock: float
-    stock_minimum: float
+    current_stock: Decimal
+    stock_minimum: Decimal
     stock_status: str
 
 
@@ -30,8 +30,8 @@ class InventoryItemResponse(BaseModel):
     name: str
     base_unit_id: int
     base_unit_name: str
-    current_stock: float
-    stock_minimum: float
+    current_stock: Decimal
+    stock_minimum: Decimal
     stock_status: str
     active: bool
 

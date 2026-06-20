@@ -6,6 +6,49 @@
     "fail_on_type_mismatch": true
   },
   "tables": {
+    "ConfiguracionNegocio": {
+      "sqlite_table": "configuracion_negocio",
+      "direction": "pull_to_sqlite",
+      "primary_key": "nombre_negocio",
+      "fields": {
+        "nombre_negocio": "business_name", "moneda": "currency", "mensaje_ticket": "ticket_message",
+        "logo_path": "logo_path", "inventario_activo": "inventory_enabled", "zona_horaria": "timezone",
+        "impuestos_activos": "tax_enabled", "tasa_impuesto_bps": "tax_rate_bps",
+        "impuesto_incluido": "tax_included", "etiqueta_impuesto": "tax_label", "activo": "active"
+      }
+    },
+    "MetodosPago": {
+      "sqlite_table": "metodos_pago", "direction": "pull_to_sqlite", "primary_key": "clave_metodo",
+      "fields": {"clave_metodo": "method_key", "nombre": "name", "requiere_referencia": "requires_reference", "activo": "active"}
+    },
+    "ZonasServicio": {
+      "sqlite_table": "zonas_servicio", "direction": "pull_to_sqlite", "primary_key": "clave_zona",
+      "fields": {"clave_zona": "zone_key", "nombre": "name", "orden": "sort_order", "activo": "active"}
+    },
+    "Mesas": {
+      "sqlite_table": "mesas", "direction": "pull_to_sqlite", "primary_key": "codigo_mesa",
+      "fields": {"codigo_mesa": "table_code", "nombre_mesa": "display_name", "zona": "zone_id", "localizador": "buzzer_number", "orden": "sort_order", "activo": "active"}
+    },
+    "EstacionesProduccion": {
+      "sqlite_table": "estaciones_produccion", "direction": "pull_to_sqlite", "primary_key": "clave_estacion",
+      "fields": {"clave_estacion": "station_key", "nombre": "name", "clave_impresora": "printer_key", "orden": "sort_order", "activo": "active"}
+    },
+    "Impresoras": {
+      "sqlite_table": "impresoras", "direction": "pull_to_sqlite", "primary_key": "clave_impresora",
+      "fields": {"clave_impresora": "printer_key", "nombre": "name", "estacion": "station_id", "ancho_papel_mm": "paper_width_mm", "tipo_conexion": "connection_type", "referencia_conexion": "connection_ref", "autocorte_activo": "autocut_enabled", "activo": "active"}
+    },
+    "Roles": {
+      "sqlite_table": "roles", "direction": "pull_to_sqlite", "primary_key": "clave_rol",
+      "fields": {"clave_rol": "role_key", "nombre": "name", "activo": "active"}
+    },
+    "Empleados": {
+      "sqlite_table": "empleados", "direction": "pull_to_sqlite", "primary_key": "codigo_empleado",
+      "fields": {"codigo_empleado": "employee_code", "nombre_completo": "full_name", "alias_pos": "pos_alias", "roles": "roles", "activo": "active"}
+    },
+    "CategoriasMenu": {
+      "sqlite_table": "categorias_menu", "direction": "pull_to_sqlite", "primary_key": "nombre",
+      "fields": {"nombre": "name", "orden": "sort_order", "activo": "active"}
+    },
     "Productos": {
       "sqlite_table": "productos",
       "direction": "pull_to_sqlite",
@@ -15,12 +58,32 @@
         "tipo_producto": "product_type",
         "nombre": "name",
         "variante": "variant",
-        "nombre_visible": "display_name",
+        "nombre_visible": "display_name", "categoria": "category_id",
         "precio_centavos": "price_cents",
         "activo": "active",
         "visible_pos": "visible_pos",
         "imagen_path": "image_path"
       }
+    },
+    "AsignacionesProductoEstacion": {
+      "sqlite_table": "asignaciones_estacion_producto", "direction": "pull_to_sqlite", "primary_key": ["producto", "estacion"],
+      "fields": {"producto": "product_id", "estacion": "station_id", "es_principal": "is_primary", "activo": "active"}
+    },
+    "Unidades": {
+      "sqlite_table": "unidades", "direction": "pull_to_sqlite", "primary_key": "clave_unidad",
+      "fields": {"clave_unidad": "unit_key", "nombre": "name", "familia_unidad": "unit_family", "activo": "active"}
+    },
+    "InsumosInventario": {
+      "sqlite_table": "insumos_inventario", "direction": "pull_to_sqlite", "primary_key": "codigo_insumo",
+      "fields": {"codigo_insumo": "item_code", "nombre": "name", "unidad_base": "base_unit_id", "tipo_insumo": "item_type", "stock_minimo": "minimum_stock_qty", "costo_unitario_centavos": "unit_cost_cents", "activo": "active"}
+    },
+    "RecetasProducto": {
+      "sqlite_table": "recetas_producto", "direction": "pull_to_sqlite", "primary_key": ["producto", "insumo"],
+      "fields": {"producto": "product_id", "insumo": "inventory_item_id", "cantidad_base": "quantity_base", "porcentaje_merma": "waste_pct", "activo": "active"}
+    },
+    "CanalesNotificacion": {
+      "sqlite_table": "canales_notificacion", "direction": "pull_to_sqlite", "primary_key": "clave_canal",
+      "fields": {"clave_canal": "channel_key", "nombre": "name", "activo": "active"}
     },
     "Tickets": {
       "sqlite_table": "tickets",

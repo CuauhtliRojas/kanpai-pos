@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import (
@@ -6,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -282,8 +284,8 @@ class InventoryItem(RemoteCatalogMixin, TimestampMixin, Base):
     item_type: Mapped[str] = db_column(
         "item_type", String(32), default=ItemType.OTHER, nullable=False
     )
-    minimum_stock_qty: Mapped[int] = db_column(
-        "minimum_stock_qty", Integer, default=0, nullable=False
+    minimum_stock_qty: Mapped[Decimal] = db_column(
+        "minimum_stock_qty", Numeric(18, 6), default=Decimal("0"), nullable=False
     )
     unit_cost_cents: Mapped[int] = db_column(
         "unit_cost_cents", Integer, default=0, nullable=False
@@ -312,8 +314,12 @@ class ProductRecipe(RemoteCatalogMixin, TimestampMixin, Base):
     inventory_item_id: Mapped[int] = db_column(
         "inventory_item_id", ForeignKey("insumos_inventario.id"), nullable=False
     )
-    quantity_base: Mapped[int] = db_column("quantity_base", Integer, nullable=False)
-    waste_pct: Mapped[int] = db_column("waste_pct", Integer, default=0, nullable=False)
+    quantity_base: Mapped[Decimal] = db_column(
+        "quantity_base", Numeric(18, 6), nullable=False
+    )
+    waste_pct: Mapped[Decimal] = db_column(
+        "waste_pct", Numeric(18, 6), default=Decimal("0"), nullable=False
+    )
     active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
 
     product: Mapped["Product"] = relationship(back_populates="recipe_items")

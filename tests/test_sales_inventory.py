@@ -146,6 +146,21 @@ def test_paid_simple_ticket_creates_negative_sale_consumption() -> None:
         assert movement.ticket_line_id == movement.source_id
 
 
+def test_decimal_recipe_quantity_is_consumed_without_truncation() -> None:
+    with SessionLocal() as db:
+        product = _product(db, "DEV-CHELA")
+        recipe = db.scalar(
+            select(ProductRecipe).where(ProductRecipe.product_id == product.id)
+        )
+        recipe.quantity_base = Decimal("0.125000")
+        recipe.waste_pct = Decimal("1.500000")
+        ticket = _open_ticket(db, quantity=2)
+        _pay_ticket(db, ticket)
+        movement = _sales_movements(db, ticket.id)[0]
+        assert movement.quantity_base == Decimal("0.253750")
+        assert movement.signed_quantity_base == Decimal("-0.253750")
+
+
 def test_package_consumes_components_and_not_parent() -> None:
     with SessionLocal() as db:
         ticket = _open_ticket(db, "DEV-CHELA-SAKE")
