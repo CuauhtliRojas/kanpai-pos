@@ -4,10 +4,12 @@ Este documento define qué debe permanecer visible en Airtable para operación d
 
 ## Objetivo
 
+<<<<<<< HEAD
 Airtable se usa como backoffice de catálogos, configuración y supervisión.
 SQLite sigue siendo la base operativa local-first del POS.
 
-La interfaz visible de Airtable debe exponer solo datos editables o consultables por operación.
+# La interfaz visible de Airtable debe exponer solo datos editables o consultables por operación.
+
 Las tablas técnicas, mirrors operativos y campos de sync deben ocultarse, pero nunca borrarse.
 
 ## Tablas visibles recomendadas
@@ -41,7 +43,7 @@ Estas tablas deben ocultarse en la UI normal. No deben borrarse.
 ### Técnicas
 
 - Table 1
-- _AirtableSchemaMigrations
+- \_AirtableSchemaMigrations
 
 ### Seguridad/permisos avanzados
 
@@ -162,7 +164,7 @@ No exponer en la interfaz principal:
 - TrabajosImpresion
 - HistorialSMS
 - EventosAuditoria
-- _AirtableSchemaMigrations
+- \_AirtableSchemaMigrations
 - campos de sync
 
 ## Estado actual
@@ -177,8 +179,13 @@ Ya existe:
 - Dry-run posterior idempotente.
 - Drift sin warnings ni errores.
 
+<<<<<<< HEAD
 El Excel sigue siendo fuente viva/incompleta para insumos, productos y recetas.
-El seed no borra registros si faltan en Excel. Solo hace upsert por claves naturales.
+=======
+El Excel sigue siendo fuente viva/incompleta para insumos, productos y recetas.
+
+> > > > > > > 31316d2e56d004d4a26c616afa46bab80b5cbebe
+> > > > > > > El seed no borra registros si faltan en Excel. Solo hace upsert por claves naturales.
 
 ## Siguiente fase
 
