@@ -41,7 +41,11 @@
         },
         {
           "name": "inventario_activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "zona_horaria",
@@ -49,7 +53,11 @@
         },
         {
           "name": "impuestos_activos",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "tasa_impuesto_bps",
@@ -60,7 +68,11 @@
         },
         {
           "name": "impuesto_incluido",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "etiqueta_impuesto",
@@ -68,7 +80,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -202,11 +218,19 @@
         },
         {
           "name": "requiere_referencia",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -347,7 +371,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -515,7 +543,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -660,7 +692,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -819,11 +855,19 @@
         },
         {
           "name": "autocorte_activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -957,7 +1001,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -1091,7 +1139,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -1230,6 +1282,10 @@
         {
           "name": "pin_activo",
           "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          },
           "_kanpai": {
             "readonly": true
           }
@@ -1252,7 +1308,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -1389,7 +1449,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -1552,11 +1616,19 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "visible_pos",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "imagen_path",
@@ -1690,11 +1762,19 @@
         },
         {
           "name": "es_principal",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -1857,7 +1937,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -2008,11 +2092,19 @@
         },
         {
           "name": "visible_ticket_cliente",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -2153,11 +2245,19 @@
         },
         {
           "name": "requerido",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -2295,7 +2395,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -2446,7 +2550,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -2583,7 +2691,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -2742,7 +2854,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -2886,7 +3002,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -3020,7 +3140,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -3158,15 +3282,27 @@
         },
         {
           "name": "recibir_stock_bajo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "recibir_fallo_impresion",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "recibir_cierre_caja",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "notas",
@@ -3174,7 +3310,11 @@
         },
         {
           "name": "activo",
-          "type": "checkbox"
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
         },
         {
           "name": "id_sqlite",
@@ -4454,6 +4594,10 @@
         {
           "name": "modo_prueba",
           "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          },
           "_kanpai": {
             "readonly": true
           }

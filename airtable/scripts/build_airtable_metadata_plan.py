@@ -41,6 +41,12 @@ def airtable_field_payload(field: dict[str, Any]) -> dict[str, Any]:
     if field_type == "number":
         payload["options"] = {"precision": field.get("precision", 0)}
 
+    if field_type == "checkbox":
+        payload["options"] = {
+            "icon": field.get("icon", "check"),
+            "color": field.get("color", "greenBright"),
+        }
+
     if field_type == "singleSelect":
         payload["options"] = {
             "choices": [{"name": option} for option in field.get("options", [])]
