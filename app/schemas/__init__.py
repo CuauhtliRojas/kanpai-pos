@@ -13,6 +13,18 @@ from app.schemas.cancellation import (
 )
 from app.schemas.common import BusinessErrorResponse
 from app.schemas.expense import CashExpenseCreateRequest, CashExpenseResponse
+from app.schemas.inventory import (
+    InventoryItemResponse,
+    InventoryMovementCreateRequest,
+    InventoryMovementResponse,
+    InventoryStockResponse,
+    PurchaseReceiptCreateRequest,
+    PurchaseReceiptLineRequest,
+    PurchaseReceiptLineResponse,
+    PurchaseReceiptResponse,
+    StockAlertResponse,
+    UnitResponse,
+)
 from app.schemas.product import ProductResponse
 from app.schemas.payment import (
     PaymentCreateRequest,
@@ -47,6 +59,16 @@ __all__ = [
     "CashShiftCloseResponse",
     "CashExpenseCreateRequest",
     "CashExpenseResponse",
+    "InventoryItemResponse",
+    "InventoryMovementCreateRequest",
+    "InventoryMovementResponse",
+    "InventoryStockResponse",
+    "PurchaseReceiptCreateRequest",
+    "PurchaseReceiptLineRequest",
+    "PurchaseReceiptLineResponse",
+    "PurchaseReceiptResponse",
+    "StockAlertResponse",
+    "UnitResponse",
     "TicketCancelRequest",
     "TicketCancelResponse",
     "TicketLineCancelRequest",

@@ -1,4 +1,6 @@
 ﻿from sqlalchemy import select
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
@@ -8,6 +10,7 @@ from app.models import (
     Employee,
     EmployeeRole,
     FolioSequence,
+    InventoryItem,
     MenuCategory,
     PaymentMethod,
     Permission,
@@ -22,6 +25,7 @@ from app.models import (
     RolePermission,
     ServiceZone,
     Unit,
+    UnitConversion,
 )
 
 
@@ -186,6 +190,58 @@ def seed_units(session: Session) -> None:
             Unit,
             {"unit_key": unit_key},
             {"name": name, "unit_family": unit_family, "active": True},
+        )
+
+
+def seed_unit_conversions(session: Session) -> None:
+    """Crea conversiones temporales directas sin duplicar pares existentes."""
+    units = {
+        unit.unit_key: unit
+        for unit in session.execute(select(Unit)).scalars().all()
+    }
+    conversions = [
+        ("KG", "G", Decimal("1000")),
+        ("G", "KG", Decimal("0.001")),
+        ("L", "ML", Decimal("1000")),
+        ("ML", "L", Decimal("0.001")),
+        ("OZ", "ML", Decimal("29.573529")),
+        ("OZ", "G", Decimal("28.349523")),
+    ]
+    for from_key, to_key, factor in conversions:
+        get_or_create(
+            session,
+            UnitConversion,
+            {
+                "from_unit_id": units[from_key].id,
+                "to_unit_id": units[to_key].id,
+            },
+            {"factor": factor, "active": True},
+        )
+
+
+def seed_development_inventory_items(session: Session) -> None:
+    """Crea insumos temporales de desarrollo en sus unidades base."""
+    units = {
+        unit.unit_key: unit
+        for unit in session.execute(select(Unit)).scalars().all()
+    }
+    items = [
+        ("INV-ARROZ", "Arroz desarrollo", "G", 1000),
+        ("INV-SAKE", "Sake insumo desarrollo", "ML", 750),
+        ("INV-LIMON", "Limon desarrollo", "PZA", 10),
+    ]
+    for item_code, name, unit_key, minimum_stock_qty in items:
+        get_or_create(
+            session,
+            InventoryItem,
+            {"item_code": item_code},
+            {
+                "name": name,
+                "base_unit_id": units[unit_key].id,
+                "minimum_stock_qty": minimum_stock_qty,
+                "active": True,
+                "sync_status": "ACTIVE",
+            },
         )
 
 
@@ -431,6 +487,8 @@ def run_seed() -> None:
         seed_service_zones_and_tables(session)
         seed_pos_devices(session)
         seed_units(session)
+        seed_unit_conversions(session)
+        seed_development_inventory_items(session)
         seed_categories_and_stations(session)
         seed_logical_printers(session)
         seed_development_products(session)

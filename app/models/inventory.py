@@ -1,7 +1,9 @@
 ﻿from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from decimal import Decimal
+
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -16,7 +18,7 @@ class UnitConversion(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     from_unit_id: Mapped[int] = mapped_column(ForeignKey("units.id"), nullable=False)
     to_unit_id: Mapped[int] = mapped_column(ForeignKey("units.id"), nullable=False)
-    factor: Mapped[int] = mapped_column(Integer, nullable=False)
+    factor: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
@@ -38,6 +40,9 @@ class PurchaseReceipt(Base):
     receipt_type: Mapped[str] = mapped_column(String(40), default="PURCHASE", nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="DRAFT", nullable=False)
     invoice_note: Mapped[Optional[str]] = mapped_column(Text)
+    supplier_name: Mapped[Optional[str]] = mapped_column(String(160))
+    invoice_reference: Mapped[Optional[str]] = mapped_column(String(120))
+    note: Mapped[Optional[str]] = mapped_column(Text)
     amount_paid_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     payment_method_id: Mapped[Optional[int]] = mapped_column(ForeignKey("payment_methods.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
@@ -55,9 +60,9 @@ class PurchaseReceiptLine(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     purchase_receipt_id: Mapped[int] = mapped_column(ForeignKey("purchase_receipts.id"), nullable=False)
     inventory_item_id: Mapped[int] = mapped_column(ForeignKey("inventory_items.id"), nullable=False)
-    captured_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    captured_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     captured_unit_id: Mapped[int] = mapped_column(ForeignKey("units.id"), nullable=False)
-    converted_quantity_base: Mapped[int] = mapped_column(Integer, nullable=False)
+    converted_quantity_base: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     unit_cost_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="PENDING", nullable=False)
     error_code: Mapped[Optional[str]] = mapped_column(String(120))
@@ -76,14 +81,16 @@ class InventoryMovement(Base):
     folio: Mapped[str] = mapped_column(String(40), unique=True, nullable=False)
     inventory_item_id: Mapped[int] = mapped_column(ForeignKey("inventory_items.id"), nullable=False)
     movement_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    quantity_base: Mapped[int] = mapped_column(Integer, nullable=False)
-    signed_quantity_base: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_base: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
+    signed_quantity_base: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     unit_cost_cents_snapshot: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     total_cost_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     ticket_line_id: Mapped[Optional[int]] = mapped_column(ForeignKey("ticket_lines.id"))
     purchase_receipt_line_id: Mapped[Optional[int]] = mapped_column(ForeignKey("purchase_receipt_lines.id"))
     cash_expense_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cash_expenses.id"))
     registered_by_employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    source_type: Mapped[Optional[str]] = mapped_column(String(64))
+    source_id: Mapped[Optional[int]] = mapped_column(Integer)
     reason: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -103,3 +110,6 @@ class StockAlert(Base):
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     acknowledged_by_employee_id: Mapped[Optional[int]] = mapped_column(ForeignKey("employees.id"))
+    threshold_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 6), default=0, nullable=False)
+    current_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 6), default=0, nullable=False)
+    message: Mapped[str] = mapped_column(Text, default="", nullable=False)
