@@ -23,6 +23,9 @@
     {"clave_metodo": "Tarjeta", "nombre": "Tarjeta", "requiere_referencia": true, "activo": true},
     {"clave_metodo": "Transferencia", "nombre": "Transferencia", "requiere_referencia": true, "activo": true}
   ],
+  "CanalesNotificacion": [
+    {"clave_canal": "sms", "nombre": "SMS", "activo": true}
+  ],
   "Mesas": [
     {"codigo_mesa": "M01", "nombre_mesa": "M01 Barra", "zona": "BARRA", "orden": 1, "estado_temporal": "Libre", "activo": true},
     {"codigo_mesa": "M02", "nombre_mesa": "M02 Barra", "zona": "BARRA", "orden": 2, "estado_temporal": "Libre", "activo": true},

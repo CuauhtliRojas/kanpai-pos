@@ -278,6 +278,9 @@ def test_fixed_seed_contains_role_and_unit_dependencies(tmp_path: Path) -> None:
         "Tarjeta",
         "Transferencia",
     }
+    assert result.tables["CanalesNotificacion"] == [
+        {"clave_canal": "sms", "nombre": "SMS", "activo": True}
+    ]
     printers = {
         printer["clave_impresora"]: printer for printer in result.tables["Impresoras"]
     }

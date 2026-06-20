@@ -23,6 +23,7 @@ TABLE_ORDER = (
     "Unidades",
     "ZonasServicio",
     "MetodosPago",
+    "CanalesNotificacion",
     "EstacionesProduccion",
     "Impresoras",
     "CategoriasMenu",
@@ -38,6 +39,7 @@ NATURAL_KEYS = {
     "Unidades": "clave_unidad",
     "ZonasServicio": "clave_zona",
     "MetodosPago": "clave_metodo",
+    "CanalesNotificacion": "clave_canal",
     "EstacionesProduccion": "clave_estacion",
     "Impresoras": "clave_impresora",
     "CategoriasMenu": "nombre",
@@ -351,6 +353,7 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
     tables["Unidades"] = fixed["Unidades"]
     tables["ZonasServicio"] = fixed["ZonasServicio"]
     tables["MetodosPago"] = fixed["MetodosPago"]
+    tables["CanalesNotificacion"] = fixed["CanalesNotificacion"]
     tables["EstacionesProduccion"] = fixed["EstacionesProduccion"]
     tables["Impresoras"] = fixed["Impresoras"]
     tables["CategoriasMenu"] = fixed["CategoriasMenu"]

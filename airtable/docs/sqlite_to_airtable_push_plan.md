@@ -20,14 +20,14 @@ Cada espejo usa `id_sqlite` como llave idempotente. El folio se conserva como da
 
 En ejecución, las tablas se procesan en ese orden y se replanea cada nivel. Así, los IDs de registros Airtable recién creados están disponibles antes de construir links hijos. En dry-run se usan referencias pendientes internas únicamente para validar la dependencia; nunca se envían a Airtable.
 
-## No soportado en este bloque
+## Fuera de alcance Airtable v1 por decisión arquitectónica
 
 | Dominio SQLite | Estado | Motivo |
 | --- | --- | --- |
-| `lotes_comanda`, `ordenes_estacion`, `lineas_orden_estacion` | No soportado | El schema JSON vigente no contiene LotesComanda ni tablas de órdenes de estación. |
-| `movimientos_inventario` | No soportado | MovimientosInventario aparece en documentación de diseño, pero no en `kanpai_airtable_schema.v1.json`. |
+| `lotes_comanda`, `ordenes_estacion`, `lineas_orden_estacion` | Fuera de alcance v1 | Las comandas permanecen como operación local; Airtable no requiere su espejo en esta fase. |
+| `movimientos_inventario` | Fuera de alcance v1 | El kardex detallado permanece local; Airtable recibe lectura gerencial de ventas y consumo, no movimientos unitarios. |
 
-Habilitar esos dominios requiere una migración de schema Airtable revisada y aprobada por separado.
+Esta exclusión es deliberada y no bloquea el push operativo v1. Cualquier ampliación futura se evaluará como un alcance independiente.
 
 ## Campos omitidos y límites
 

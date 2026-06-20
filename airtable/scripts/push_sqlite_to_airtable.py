@@ -139,9 +139,9 @@ TABLE_SPECS = (
     ),
 )
 SPEC_BY_TABLE = {spec.airtable_table: spec for spec in TABLE_SPECS}
-UNSUPPORTED_TABLES = {
-    "LotesComanda / OrdenesEstacion": "No existen tablas equivalentes en el schema Airtable v1 vigente.",
-    "MovimientosInventario": "La tabla está documentada en diseño, pero no existe en el schema Airtable v1 vigente.",
+OUT_OF_SCOPE_TABLES = {
+    "LotesComanda / OrdenesEstacion": "Fuera de alcance Airtable v1 por decisión arquitectónica.",
+    "MovimientosInventario detallados": "Fuera de alcance Airtable v1 por decisión arquitectónica.",
 }
 
 
@@ -460,8 +460,8 @@ def render_report(plan: PushPlan, *, mode: str, executed: bool) -> str:
             f"{plan.remote_counts.get(spec.airtable_table, 0)} | {summary['create']} | {summary['update']} | "
             f"{summary['unchanged']} | {summary['skipped']} | {summary['error']} |"
         )
-    lines.extend(["", "## No soportado por schema vigente", ""])
-    lines.extend(f"- {table}: {reason}" for table, reason in UNSUPPORTED_TABLES.items())
+    lines.extend(["", "## Fuera de alcance Airtable v1", ""])
+    lines.extend(f"- {table}: {reason}" for table, reason in OUT_OF_SCOPE_TABLES.items())
     lines.extend(["", "## Warnings y errores", ""])
     if plan.issues:
         for issue in plan.issues:
