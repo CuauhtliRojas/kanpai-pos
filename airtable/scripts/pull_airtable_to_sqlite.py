@@ -750,7 +750,7 @@ def render_report(plan: PullPlan, *, mode: str, executed: bool) -> str:
     return "\n".join(lines)
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true")
@@ -762,21 +762,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--max-seed-changes", type=int, default=25)
     parser.add_argument("--max-seed-change-ratio", type=float, default=0.20)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def run_pull(
+    args: argparse.Namespace,
+    *,
+    run_remote_preflight: bool = True,
+    client: AirtableRecordsClient | None = None,
+) -> PullPlan:
     mode = "execute" if args.execute else "dry-run"
     if args.execute and args.confirm != CONFIRM_TEXT:
-        raise SystemExit(f"Para ejecutar usa --execute --confirm {CONFIRM_TEXT}")
+        raise ValueError(f"Para ejecutar usa --execute --confirm {CONFIRM_TEXT}")
 
     issues: list[Issue] = []
-    checks, preflight_issues = run_preflight(
-        max_seed_changes=args.max_seed_changes,
-        max_seed_ratio=args.max_seed_change_ratio,
-    )
-    issues.extend(preflight_issues)
+    checks: list[str] = []
+    if run_remote_preflight:
+        checks, preflight_issues = run_preflight(
+            max_seed_changes=args.max_seed_changes,
+            max_seed_ratio=args.max_seed_change_ratio,
+        )
+        issues.extend(preflight_issues)
     try:
         field_map = _read_json(args.field_map)
         airtable_schema = _read_json(args.airtable_schema)
@@ -795,8 +801,8 @@ def main() -> int:
     plan_records_by_table: dict[str, list[PlannedRecord]] = {spec.airtable_table: [] for spec in TABLE_SPECS}
     if not any(issue.level == "error" for issue in issues):
         try:
-            client = AirtableRecordsClient.from_env()
-            remote = fetch_remote_records(client, field_map)
+            records_client = client or AirtableRecordsClient.from_env()
+            remote = fetch_remote_records(records_client, field_map)
             checks.append("Airtable Records API: lectura de tablas soportadas OK.")
             remote_indexes, index_issues = build_remote_indexes(remote, field_map)
             issues.extend(index_issues)
@@ -825,6 +831,15 @@ def main() -> int:
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(render_report(pull_plan, mode=mode, executed=executed), encoding="utf-8")
+    return pull_plan
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    if args.execute and args.confirm != CONFIRM_TEXT:
+        raise SystemExit(f"Para ejecutar usa --execute --confirm {CONFIRM_TEXT}")
+    pull_plan = run_pull(args)
+    mode = "execute" if args.execute else "dry-run"
     print(f"MODE: {mode}")
     for spec in TABLE_SPECS:
         summary = pull_plan.summary(spec.airtable_table)
@@ -832,10 +847,10 @@ def main() -> int:
             f"{spec.airtable_table}: creates={summary['create']} updates={summary['update']} "
             f"unchanged={summary['unchanged']} skipped={summary['skipped']} errors={summary['error']}"
         )
-    print(f"Warnings: {sum(issue.level == 'warning' for issue in issues)}")
-    print(f"Errores: {sum(issue.level == 'error' for issue in issues)}")
+    print(f"Warnings: {sum(issue.level == 'warning' for issue in pull_plan.issues)}")
+    print(f"Errores: {sum(issue.level == 'error' for issue in pull_plan.issues)}")
     print(f"Reporte: {args.report}")
-    return 1 if any(issue.level == "error" for issue in issues) else 0
+    return 1 if any(issue.level == "error" for issue in pull_plan.issues) else 0
 
 
 if __name__ == "__main__":

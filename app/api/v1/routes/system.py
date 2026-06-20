@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.models import (
@@ -14,8 +15,72 @@ from app.models import (
     ProductionStation,
 )
 from app.schemas.business_setting import BusinessSettingResponse
+from app.services.airtable_sync_scheduler import get_airtable_sync_scheduler
 
 router = APIRouter(prefix="/system", tags=["system"])
+
+
+class AirtableSyncRequest(BaseModel):
+    dry_run: bool = True
+    confirm: str | None = None
+    force_pull_during_active_shift: bool = False
+
+
+def _airtable_sync_response_or_error(result: dict) -> dict:
+    if result.get("accepted", True):
+        return result
+    code = status.HTTP_400_BAD_REQUEST
+    if result.get("status") in {"busy", "missing_credentials"}:
+        code = status.HTTP_409_CONFLICT
+    raise HTTPException(status_code=code, detail=result)
+
+
+
+
+@router.get("/airtable-sync")
+def airtable_sync_status() -> dict:
+    return get_airtable_sync_scheduler().status()
+
+
+
+
+@router.post("/airtable-sync/pull")
+async def airtable_sync_pull(request: AirtableSyncRequest | None = None) -> dict:
+    payload = request or AirtableSyncRequest()
+    result = await get_airtable_sync_scheduler().run_manual(
+        pull=True,
+        push=False,
+        dry_run=payload.dry_run,
+        confirm=payload.confirm,
+        force_pull_during_active_shift=payload.force_pull_during_active_shift,
+    )
+    return _airtable_sync_response_or_error(result)
+
+
+@router.post("/airtable-sync/push")
+async def airtable_sync_push(request: AirtableSyncRequest | None = None) -> dict:
+    payload = request or AirtableSyncRequest()
+    result = await get_airtable_sync_scheduler().run_manual(
+        pull=False,
+        push=True,
+        dry_run=payload.dry_run,
+        confirm=payload.confirm,
+        force_pull_during_active_shift=payload.force_pull_during_active_shift,
+    )
+    return _airtable_sync_response_or_error(result)
+
+
+@router.post("/airtable-sync/run")
+async def airtable_sync_run(request: AirtableSyncRequest | None = None) -> dict:
+    payload = request or AirtableSyncRequest()
+    result = await get_airtable_sync_scheduler().run_manual(
+        pull=True,
+        push=True,
+        dry_run=payload.dry_run,
+        confirm=payload.confirm,
+        force_pull_during_active_shift=payload.force_pull_during_active_shift,
+    )
+    return _airtable_sync_response_or_error(result)
 
 
 @router.get("/business-settings", response_model=BusinessSettingResponse)

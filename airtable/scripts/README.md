@@ -9,3 +9,5 @@ Reglas:
 - Todo script de escritura debe soportar dry-run antes de tocar Airtable.
 - Todo cambio real debe generar reporte.
 - Usar `.env` local para credenciales.
+
+Operación manual y programada: [Manual operativo de sincronización](../docs/airtable_sync_operating_manual.md).

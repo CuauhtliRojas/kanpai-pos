@@ -492,11 +492,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = parse_args(argv)
+def run_push(
+    args: argparse.Namespace, *, client: AirtableRecordsClient | None = None
+) -> PushPlan:
     mode = "execute" if args.execute else "dry-run"
     if args.execute and args.confirm != CONFIRM_TEXT:
-        raise SystemExit(f"Para ejecutar usa --execute --confirm {CONFIRM_TEXT}")
+        raise ValueError(f"Para ejecutar usa --execute --confirm {CONFIRM_TEXT}")
     field_map = _read_json(args.field_map)
     schema = _read_json(args.airtable_schema)
     contract_issues = validate_contract(field_map, schema)
@@ -505,18 +506,27 @@ def main(argv: list[str] | None = None) -> int:
     executed = False
     try:
         if not contract_issues:
-            client = AirtableRecordsClient.from_env()
-            remote = fetch_remote_records(client, field_map)
+            records_client = client or AirtableRecordsClient.from_env()
+            remote = fetch_remote_records(records_client, field_map)
             engine = create_engine(args.database_url)
             with Session(engine) as session:
                 plan = plan_push(session, remote, field_map)
                 if args.execute and not any(issue.level == "error" for issue in plan.issues):
-                    execute_sequential(client, session, remote, field_map)
+                    execute_sequential(records_client, session, remote, field_map)
                     executed = True
     except (AirtableRecordsError, OSError, ValueError) as error:
         plan.issues.append(Issue("error", "push_failed", str(error)))
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(render_report(plan, mode=mode, executed=executed), encoding="utf-8")
+    return plan
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    if args.execute and args.confirm != CONFIRM_TEXT:
+        raise SystemExit(f"Para ejecutar usa --execute --confirm {CONFIRM_TEXT}")
+    plan = run_push(args)
+    mode = "execute" if args.execute else "dry-run"
     print(f"MODE: {mode}")
     for spec in TABLE_SPECS:
         summary = plan.summary(spec.airtable_table)

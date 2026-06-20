@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import threading
 from collections.abc import Iterable
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -21,6 +22,9 @@ from dotenv import load_dotenv
 API_ROOT = "https://api.airtable.com/v0"
 RETRY_STATUS = {429, 500, 502, 503}
 MAX_BATCH_SIZE = 10
+MIN_REQUEST_INTERVAL_SECONDS = 0.2
+_RATE_LIMIT_LOCK = threading.Lock()
+_LAST_REQUEST_AT = 0.0
 
 
 class AirtableRecordsError(RuntimeError):
@@ -117,7 +121,14 @@ class AirtableRecordsClient:
         }
         url = self._url(table, query)
 
+        global _LAST_REQUEST_AT
+
         for attempt in range(1, self.max_attempts + 1):
+            with _RATE_LIMIT_LOCK:
+                wait = MIN_REQUEST_INTERVAL_SECONDS - (time.monotonic() - _LAST_REQUEST_AT)
+                if wait > 0:
+                    time.sleep(wait)
+                _LAST_REQUEST_AT = time.monotonic()
             request = Request(url, data=data, headers=headers, method=method)
             try:
                 with urlopen(request, timeout=30) as response:  # noqa: S310

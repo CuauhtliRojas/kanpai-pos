@@ -24,6 +24,10 @@ Airtable se usará para:
 - 4-E Creación controlada de base.
 - 4-F Plan de sincronización.
 
+## Operación
+
+Consultar el [manual operativo de sincronización](docs/airtable_sync_operating_manual.md) para configuración, ejecución manual/programada, seguridad durante turnos activos y QA end-to-end.
+
 ## Seguridad
 
 Nunca hardcodear tokens. Usar `.env` para:
@@ -32,4 +36,6 @@ Nunca hardcodear tokens. Usar `.env` para:
 AIRTABLE_API_TOKEN
 AIRTABLE_BASE_ID
 AIRTABLE_WORKSPACE_ID
+```
+
 No guardar PIN, hash de PIN, tokens de sesión, tokens LabsMobile ni secretos en Airtable.
