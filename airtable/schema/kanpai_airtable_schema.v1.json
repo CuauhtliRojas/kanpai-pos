@@ -1,0 +1,2786 @@
+{
+  "schema_version": "1.0.0",
+  "project": "Kanpai POS",
+  "base_name": "Kanpai POS",
+  "created_for": "Airtable Metadata API",
+  "principles": [
+    "SQLite/FastAPI es maestro operativo local-first.",
+    "Airtable es backoffice, catálogo, configuración y espejo administrativo.",
+    "No guardar secretos, hash_pin, PIN ni token_sesion en Airtable.",
+    "Transacciones operativas son readonly mirror en Airtable."
+  ],
+  "ownership_values": [
+    "AIRTABLE_MASTER",
+    "SQLITE_MASTER",
+    "BIDIRECTIONAL_CONTROLLED",
+    "READONLY_MIRROR",
+    "LOCAL_ONLY"
+  ],
+  "tables": [
+    {
+      "key": "configuracion_negocio",
+      "name": "ConfiguracionNegocio",
+      "source_table": "configuracion_negocio",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "description": "Configuración general visible del negocio.",
+      "primary_field": "nombre_negocio",
+      "fields": [
+        {
+          "name": "nombre_negocio",
+          "type": "singleLineText"
+        },
+        {
+          "name": "moneda",
+          "type": "singleSelect",
+          "options": [
+            "MXN"
+          ]
+        },
+        {
+          "name": "mensaje_ticket",
+          "type": "multilineText"
+        },
+        {
+          "name": "logo_path",
+          "type": "singleLineText"
+        },
+        {
+          "name": "inventario_activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "zona_horaria",
+          "type": "singleLineText"
+        },
+        {
+          "name": "impuestos_activos",
+          "type": "checkbox"
+        },
+        {
+          "name": "tasa_impuesto_bps",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "impuesto_incluido",
+          "type": "checkbox"
+        },
+        {
+          "name": "etiqueta_impuesto",
+          "type": "singleLineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "metodos_pago",
+      "name": "MetodosPago",
+      "source_table": "metodos_pago",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "clave_metodo",
+      "fields": [
+        {
+          "name": "clave_metodo",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "requiere_referencia",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "zonas_servicio",
+      "name": "ZonasServicio",
+      "source_table": "zonas_servicio",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "clave_zona",
+      "fields": [
+        {
+          "name": "clave_zona",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "mesas",
+      "name": "Mesas",
+      "source_table": "mesas",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "codigo_mesa",
+      "fields": [
+        {
+          "name": "codigo_mesa",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre_mesa",
+          "type": "singleLineText"
+        },
+        {
+          "name": "zona",
+          "type": "link",
+          "target": "ZonasServicio"
+        },
+        {
+          "name": "localizador",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "estado_temporal",
+          "type": "singleSelect",
+          "options": [
+            "Libre",
+            "Ocupada",
+            "En cobro"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "estaciones_produccion",
+      "name": "EstacionesProduccion",
+      "source_table": "estaciones_produccion",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "clave_estacion",
+      "fields": [
+        {
+          "name": "clave_estacion",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "clave_impresora",
+          "type": "singleLineText"
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "impresoras",
+      "name": "Impresoras",
+      "source_table": "impresoras",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "clave_impresora",
+      "fields": [
+        {
+          "name": "clave_impresora",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "estacion",
+          "type": "link",
+          "target": "EstacionesProduccion"
+        },
+        {
+          "name": "ancho_papel_mm",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "tipo_conexion",
+          "type": "singleSelect",
+          "options": [
+            "Logica",
+            "USB"
+          ]
+        },
+        {
+          "name": "referencia_conexion",
+          "type": "singleLineText"
+        },
+        {
+          "name": "autocorte_activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "roles",
+      "name": "Roles",
+      "source_table": "roles",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "description": "",
+      "primary_field": "clave_rol",
+      "fields": [
+        {
+          "name": "clave_rol",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "permisos",
+      "name": "Permisos",
+      "source_table": "permisos",
+      "ownership": "SQLITE_MASTER",
+      "description": "",
+      "primary_field": "clave_permiso",
+      "fields": [
+        {
+          "name": "clave_permiso",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "descripcion",
+          "type": "multilineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "empleados",
+      "name": "Empleados",
+      "source_table": "empleados",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "description": "No incluye hash_pin ni tokens de sesión.",
+      "primary_field": "codigo_empleado",
+      "fields": [
+        {
+          "name": "codigo_empleado",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre_completo",
+          "type": "singleLineText"
+        },
+        {
+          "name": "alias_pos",
+          "type": "singleLineText"
+        },
+        {
+          "name": "roles",
+          "type": "link",
+          "target": "Roles",
+          "many": true
+        },
+        {
+          "name": "pin_activo",
+          "type": "checkbox",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_acceso",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "categorias_menu",
+      "name": "CategoriasMenu",
+      "source_table": "categorias_menu",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "productos",
+      "name": "Productos",
+      "source_table": "productos",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "sku",
+      "fields": [
+        {
+          "name": "sku",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "tipo_producto",
+          "type": "singleSelect",
+          "options": [
+            "Simple",
+            "Paquete"
+          ]
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "variante",
+          "type": "singleLineText"
+        },
+        {
+          "name": "nombre_visible",
+          "type": "singleLineText"
+        },
+        {
+          "name": "categoria",
+          "type": "link",
+          "target": "CategoriasMenu"
+        },
+        {
+          "name": "precio_centavos",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "precio_mxn",
+          "type": "formula",
+          "formula": "{precio_centavos}/100"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "visible_pos",
+          "type": "checkbox"
+        },
+        {
+          "name": "imagen_path",
+          "type": "singleLineText"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "asignaciones_producto_estacion",
+      "name": "AsignacionesProductoEstacion",
+      "source_table": "asignaciones_estacion_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre_registro",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "readonly": false,
+          "description": "Asignacion producto-estacion"
+        },
+        {
+          "name": "producto",
+          "type": "link",
+          "target": "Productos"
+        },
+        {
+          "name": "estacion",
+          "type": "link",
+          "target": "EstacionesProduccion"
+        },
+        {
+          "name": "es_principal",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "paquetes_producto",
+      "name": "PaquetesProducto",
+      "source_table": "paquetes_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre_registro",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "readonly": false,
+          "description": "Paquete producto"
+        },
+        {
+          "name": "producto_paquete",
+          "type": "link",
+          "target": "Productos"
+        },
+        {
+          "name": "modo_paquete",
+          "type": "singleSelect",
+          "options": [
+            "Componentes fijos"
+          ]
+        },
+        {
+          "name": "comportamiento_impresion",
+          "type": "singleSelect",
+          "options": [
+            "Imprimir componentes"
+          ]
+        },
+        {
+          "name": "comportamiento_inventario",
+          "type": "singleSelect",
+          "options": [
+            "Consumir recetas de componentes"
+          ]
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "componentes_paquete_producto",
+      "name": "ComponentesPaqueteProducto",
+      "source_table": "componentes_paquete_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre_registro",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "readonly": false,
+          "description": "Componente de paquete"
+        },
+        {
+          "name": "paquete",
+          "type": "link",
+          "target": "PaquetesProducto"
+        },
+        {
+          "name": "producto_componente",
+          "type": "link",
+          "target": "Productos"
+        },
+        {
+          "name": "cantidad",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "estacion_override",
+          "type": "link",
+          "target": "EstacionesProduccion"
+        },
+        {
+          "name": "asignacion_precio_centavos",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "visible_ticket_cliente",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "grupos_variante_producto",
+      "name": "GruposVarianteProducto",
+      "source_table": "grupos_variante_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre",
+      "fields": [
+        {
+          "name": "producto",
+          "type": "link",
+          "target": "Productos"
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "seleccion_minima",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "seleccion_maxima",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "requerido",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "opciones_variante_producto",
+      "name": "OpcionesVarianteProducto",
+      "source_table": "opciones_variante_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre",
+      "fields": [
+        {
+          "name": "grupo_variante",
+          "type": "link",
+          "target": "GruposVarianteProducto"
+        },
+        {
+          "name": "producto_opcional",
+          "type": "link",
+          "target": "Productos"
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "sku",
+          "type": "singleLineText"
+        },
+        {
+          "name": "diferencia_precio_centavos",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "estacion",
+          "type": "link",
+          "target": "EstacionesProduccion"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "unidades",
+      "name": "Unidades",
+      "source_table": "unidades",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "clave_unidad",
+      "fields": [
+        {
+          "name": "clave_unidad",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "familia_unidad",
+          "type": "singleSelect",
+          "options": [
+            "Masa",
+            "Volumen",
+            "Conteo"
+          ]
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "conversiones_unidad",
+      "name": "ConversionesUnidad",
+      "source_table": "conversiones_unidad",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre_registro",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "readonly": false,
+          "description": "Conversion unidad"
+        },
+        {
+          "name": "unidad_origen",
+          "type": "link",
+          "target": "Unidades"
+        },
+        {
+          "name": "unidad_destino",
+          "type": "link",
+          "target": "Unidades"
+        },
+        {
+          "name": "factor",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "insumos_inventario",
+      "name": "InsumosInventario",
+      "source_table": "insumos_inventario",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "codigo_insumo",
+      "fields": [
+        {
+          "name": "codigo_insumo",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "unidad_base",
+          "type": "link",
+          "target": "Unidades"
+        },
+        {
+          "name": "tipo_insumo",
+          "type": "singleSelect",
+          "options": [
+            "Otro"
+          ]
+        },
+        {
+          "name": "stock_minimo",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "costo_unitario_centavos",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "costo_unitario_mxn",
+          "type": "formula",
+          "formula": "{costo_unitario_centavos}/100"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "recetas_producto",
+      "name": "RecetasProducto",
+      "source_table": "recetas_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre_registro",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "readonly": false,
+          "description": "Receta producto-insumo"
+        },
+        {
+          "name": "producto",
+          "type": "link",
+          "target": "Productos"
+        },
+        {
+          "name": "insumo",
+          "type": "link",
+          "target": "InsumosInventario"
+        },
+        {
+          "name": "cantidad_base",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "porcentaje_merma",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "canales_notificacion",
+      "name": "CanalesNotificacion",
+      "source_table": "canales_notificacion",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "description": "",
+      "primary_field": "clave_canal",
+      "fields": [
+        {
+          "name": "clave_canal",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "destinatarios_notificacion",
+      "name": "DestinatariosNotificacion",
+      "source_table": null,
+      "ownership": "AIRTABLE_MASTER",
+      "description": "Tabla nueva requerida para reemplazar LABSMOBILE_DEFAULT_MSISDN.",
+      "primary_field": "nombre",
+      "fields": [
+        {
+          "name": "canal",
+          "type": "link",
+          "target": "CanalesNotificacion"
+        },
+        {
+          "name": "empleado",
+          "type": "link",
+          "target": "Empleados"
+        },
+        {
+          "name": "rol",
+          "type": "link",
+          "target": "Roles"
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "msisdn",
+          "type": "singleLineText"
+        },
+        {
+          "name": "prioridad",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "recibir_stock_bajo",
+          "type": "checkbox"
+        },
+        {
+          "name": "recibir_fallo_impresion",
+          "type": "checkbox"
+        },
+        {
+          "name": "recibir_cierre_caja",
+          "type": "checkbox"
+        },
+        {
+          "name": "notas",
+          "type": "multilineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "tickets",
+      "name": "Tickets",
+      "source_table": "tickets",
+      "ownership": "READONLY_MIRROR",
+      "description": "",
+      "primary_field": "folio",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "corte_caja",
+          "type": "link",
+          "target": "CortesCaja",
+          "readonly": true
+        },
+        {
+          "name": "mesa",
+          "type": "link",
+          "target": "Mesas",
+          "readonly": true
+        },
+        {
+          "name": "abierto_por",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": [
+            "Abierto",
+            "En cobro",
+            "Cobrado",
+            "Cancelado"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "estado_pago",
+          "type": "singleSelect",
+          "options": [
+            "Sin pagar",
+            "Pagado",
+            "Cancelado"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "subtotal_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "descuento_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "impuesto_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "total_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "abierto_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "pagado_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "lineas_ticket",
+      "name": "LineasTicket",
+      "source_table": "lineas_ticket",
+      "ownership": "READONLY_MIRROR",
+      "description": "",
+      "primary_field": "nombre_producto_snapshot",
+      "fields": [
+        {
+          "name": "ticket",
+          "type": "link",
+          "target": "Tickets",
+          "readonly": true
+        },
+        {
+          "name": "producto",
+          "type": "link",
+          "target": "Productos",
+          "readonly": true
+        },
+        {
+          "name": "tipo_linea",
+          "type": "singleSelect",
+          "options": [
+            "Simple",
+            "Paquete padre",
+            "Componente de paquete"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "cantidad",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "precio_unitario_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "total_linea_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "nombre_producto_snapshot",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": [
+            "Capturado",
+            "Enviado a comanda",
+            "Impreso",
+            "Cancelado"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "ronda",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "pagos",
+      "name": "Pagos",
+      "source_table": "pagos",
+      "ownership": "READONLY_MIRROR",
+      "description": "",
+      "primary_field": "folio",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "ticket",
+          "type": "link",
+          "target": "Tickets",
+          "readonly": true
+        },
+        {
+          "name": "corte_caja",
+          "type": "link",
+          "target": "CortesCaja",
+          "readonly": true
+        },
+        {
+          "name": "metodo_pago",
+          "type": "link",
+          "target": "MetodosPago",
+          "readonly": true
+        },
+        {
+          "name": "cajero",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true
+        },
+        {
+          "name": "importe_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "recibido_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "cambio_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "referencia",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Cancelado"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "cortes_caja",
+      "name": "CortesCaja",
+      "source_table": "cortes_caja",
+      "ownership": "READONLY_MIRROR",
+      "description": "",
+      "primary_field": "folio",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": [
+            "Abierto",
+            "Cerrado"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "abierto_por",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true
+        },
+        {
+          "name": "cerrado_por",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true
+        },
+        {
+          "name": "apertura_caja_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "declarado_caja_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "esperado_caja_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "diferencia_caja_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "ventas_total_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "gastos_total_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "neto_total_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "abierto_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "cerrado_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "trabajos_impresion",
+      "name": "TrabajosImpresion",
+      "source_table": "trabajos_impresion",
+      "ownership": "READONLY_MIRROR",
+      "description": "",
+      "primary_field": "folio",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "tipo_trabajo",
+          "type": "singleSelect",
+          "options": [
+            "Comanda",
+            "Ticket",
+            "Corte",
+            "Cancelacion comanda",
+            "Modificacion"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "impresora",
+          "type": "link",
+          "target": "Impresoras",
+          "readonly": true
+        },
+        {
+          "name": "clave_impresora_snapshot",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "ticket",
+          "type": "link",
+          "target": "Tickets",
+          "readonly": true
+        },
+        {
+          "name": "contenido_snapshot",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": [
+            "Pendiente",
+            "Tomado",
+            "Impreso",
+            "Fallido",
+            "Cancelado"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "intentos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "ultimo_error",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "impreso_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "fallido_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "historial_sms",
+      "name": "HistorialSMS",
+      "source_table": "notificaciones_sms",
+      "ownership": "READONLY_MIRROR",
+      "description": "",
+      "primary_field": "msisdn",
+      "fields": [
+        {
+          "name": "canal",
+          "type": "link",
+          "target": "CanalesNotificacion",
+          "readonly": true
+        },
+        {
+          "name": "empleado",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true
+        },
+        {
+          "name": "msisdn",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "mensaje",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": [
+            "Pendiente",
+            "Enviada",
+            "Fallida",
+            "Simulada",
+            "Cancelada"
+          ],
+          "readonly": true
+        },
+        {
+          "name": "modo_prueba",
+          "type": "checkbox",
+          "readonly": true
+        },
+        {
+          "name": "respuesta_contenido",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "error",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "creado_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "enviado_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "key": "eventos_auditoria",
+      "name": "EventosAuditoria",
+      "source_table": "eventos_auditoria",
+      "ownership": "READONLY_MIRROR",
+      "description": "",
+      "primary_field": "tipo_evento",
+      "fields": [
+        {
+          "name": "tipo_evento",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "tipo_entidad",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "entidad_id",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "actor_empleado",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true
+        },
+        {
+          "name": "corte_caja",
+          "type": "link",
+          "target": "CortesCaja",
+          "readonly": true
+        },
+        {
+          "name": "ticket",
+          "type": "link",
+          "target": "Tickets",
+          "readonly": true
+        },
+        {
+          "name": "snapshot_antes",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "snapshot_despues",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "motivo",
+          "type": "multilineText",
+          "readonly": true
+        },
+        {
+          "name": "creado_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "precision": 0,
+          "readonly": true
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Pendiente",
+            "Sincronizado",
+            "Conflicto",
+            "Error"
+          ]
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "readonly": true
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "readonly": true
+        }
+      ]
+    }
+  ]
+}

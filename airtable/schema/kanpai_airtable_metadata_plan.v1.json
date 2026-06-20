@@ -1,0 +1,5578 @@
+{
+  "schema_version": "1.0.0",
+  "base_name": "Kanpai POS",
+  "strategy": {
+    "phase_1": "Crear tablas con campos directos.",
+    "phase_2": "Resolver table IDs reales.",
+    "phase_3": "Crear campos link multipleRecordLinks.",
+    "phase_4": "Crear campos formula.",
+    "phase_5": "Aplicar vistas/semillas en fases posteriores."
+  },
+  "counts": {
+    "tables": 29,
+    "direct_fields": 401,
+    "late_fields": 42,
+    "warnings": 0
+  },
+  "warnings": [],
+  "tables_to_create": [
+    {
+      "name": "ConfiguracionNegocio",
+      "description": "Configuración general visible del negocio.",
+      "source_table": "configuracion_negocio",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "fields": [
+        {
+          "name": "nombre_negocio",
+          "type": "singleLineText"
+        },
+        {
+          "name": "moneda",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "MXN"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mensaje_ticket",
+          "type": "multilineText"
+        },
+        {
+          "name": "logo_path",
+          "type": "singleLineText"
+        },
+        {
+          "name": "inventario_activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "zona_horaria",
+          "type": "singleLineText"
+        },
+        {
+          "name": "impuestos_activos",
+          "type": "checkbox"
+        },
+        {
+          "name": "tasa_impuesto_bps",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "impuesto_incluido",
+          "type": "checkbox"
+        },
+        {
+          "name": "etiqueta_impuesto",
+          "type": "singleLineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "MetodosPago",
+      "description": "",
+      "source_table": "metodos_pago",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "clave_metodo",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "requiere_referencia",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ZonasServicio",
+      "description": "",
+      "source_table": "zonas_servicio",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "clave_zona",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mesas",
+      "description": "",
+      "source_table": "mesas",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "codigo_mesa",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre_mesa",
+          "type": "singleLineText"
+        },
+        {
+          "name": "localizador",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "estado_temporal",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Libre"
+              },
+              {
+                "name": "Ocupada"
+              },
+              {
+                "name": "En cobro"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "EstacionesProduccion",
+      "description": "",
+      "source_table": "estaciones_produccion",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "clave_estacion",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "clave_impresora",
+          "type": "singleLineText"
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Impresoras",
+      "description": "",
+      "source_table": "impresoras",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "clave_impresora",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "ancho_papel_mm",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "tipo_conexion",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Logica"
+              },
+              {
+                "name": "USB"
+              }
+            ]
+          }
+        },
+        {
+          "name": "referencia_conexion",
+          "type": "singleLineText"
+        },
+        {
+          "name": "autocorte_activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "",
+      "source_table": "roles",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "fields": [
+        {
+          "name": "clave_rol",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permisos",
+      "description": "",
+      "source_table": "permisos",
+      "ownership": "SQLITE_MASTER",
+      "fields": [
+        {
+          "name": "clave_permiso",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "descripcion",
+          "type": "multilineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Empleados",
+      "description": "No incluye hash_pin ni tokens de sesión.",
+      "source_table": "empleados",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "fields": [
+        {
+          "name": "codigo_empleado",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre_completo",
+          "type": "singleLineText"
+        },
+        {
+          "name": "alias_pos",
+          "type": "singleLineText"
+        },
+        {
+          "name": "pin_activo",
+          "type": "checkbox",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_acceso",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CategoriasMenu",
+      "description": "",
+      "source_table": "categorias_menu",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "description": "",
+      "source_table": "productos",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "sku",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "tipo_producto",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Simple"
+              },
+              {
+                "name": "Paquete"
+              }
+            ]
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "variante",
+          "type": "singleLineText"
+        },
+        {
+          "name": "nombre_visible",
+          "type": "singleLineText"
+        },
+        {
+          "name": "precio_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "visible_pos",
+          "type": "checkbox"
+        },
+        {
+          "name": "imagen_path",
+          "type": "singleLineText"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "AsignacionesProductoEstacion",
+      "description": "",
+      "source_table": "asignaciones_estacion_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": false
+          }
+        },
+        {
+          "name": "es_principal",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "PaquetesProducto",
+      "description": "",
+      "source_table": "paquetes_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": false
+          }
+        },
+        {
+          "name": "modo_paquete",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Componentes fijos"
+              }
+            ]
+          }
+        },
+        {
+          "name": "comportamiento_impresion",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Imprimir componentes"
+              }
+            ]
+          }
+        },
+        {
+          "name": "comportamiento_inventario",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Consumir recetas de componentes"
+              }
+            ]
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ComponentesPaqueteProducto",
+      "description": "",
+      "source_table": "componentes_paquete_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": false
+          }
+        },
+        {
+          "name": "cantidad",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "asignacion_precio_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "visible_ticket_cliente",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "GruposVarianteProducto",
+      "description": "",
+      "source_table": "grupos_variante_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "seleccion_minima",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "seleccion_maxima",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "requerido",
+          "type": "checkbox"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "OpcionesVarianteProducto",
+      "description": "",
+      "source_table": "opciones_variante_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "sku",
+          "type": "singleLineText"
+        },
+        {
+          "name": "diferencia_precio_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unidades",
+      "description": "",
+      "source_table": "unidades",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "clave_unidad",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "familia_unidad",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Masa"
+              },
+              {
+                "name": "Volumen"
+              },
+              {
+                "name": "Conteo"
+              }
+            ]
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ConversionesUnidad",
+      "description": "",
+      "source_table": "conversiones_unidad",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": false
+          }
+        },
+        {
+          "name": "factor",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "InsumosInventario",
+      "description": "",
+      "source_table": "insumos_inventario",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "codigo_insumo",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "tipo_insumo",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Otro"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stock_minimo",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "costo_unitario_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "RecetasProducto",
+      "description": "",
+      "source_table": "recetas_producto",
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": false
+          }
+        },
+        {
+          "name": "cantidad_base",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "porcentaje_merma",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CanalesNotificacion",
+      "description": "",
+      "source_table": "canales_notificacion",
+      "ownership": "BIDIRECTIONAL_CONTROLLED",
+      "fields": [
+        {
+          "name": "clave_canal",
+          "type": "singleLineText",
+          "_kanpai": {
+            "unique": true
+          }
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "DestinatariosNotificacion",
+      "description": "Tabla nueva requerida para reemplazar LABSMOBILE_DEFAULT_MSISDN.",
+      "source_table": null,
+      "ownership": "AIRTABLE_MASTER",
+      "fields": [
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "msisdn",
+          "type": "singleLineText"
+        },
+        {
+          "name": "prioridad",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "recibir_stock_bajo",
+          "type": "checkbox"
+        },
+        {
+          "name": "recibir_fallo_impresion",
+          "type": "checkbox"
+        },
+        {
+          "name": "recibir_cierre_caja",
+          "type": "checkbox"
+        },
+        {
+          "name": "notas",
+          "type": "multilineText"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "description": "",
+      "source_table": "tickets",
+      "ownership": "READONLY_MIRROR",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Abierto"
+              },
+              {
+                "name": "En cobro"
+              },
+              {
+                "name": "Cobrado"
+              },
+              {
+                "name": "Cancelado"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_pago",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Sin pagar"
+              },
+              {
+                "name": "Pagado"
+              },
+              {
+                "name": "Cancelado"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "subtotal_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "descuento_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "impuesto_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "total_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "abierto_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "pagado_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "LineasTicket",
+      "description": "",
+      "source_table": "lineas_ticket",
+      "ownership": "READONLY_MIRROR",
+      "fields": [
+        {
+          "name": "nombre_producto_snapshot",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "tipo_linea",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Simple"
+              },
+              {
+                "name": "Paquete padre"
+              },
+              {
+                "name": "Componente de paquete"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "cantidad",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "precio_unitario_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "total_linea_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Capturado"
+              },
+              {
+                "name": "Enviado a comanda"
+              },
+              {
+                "name": "Impreso"
+              },
+              {
+                "name": "Cancelado"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ronda",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagos",
+      "description": "",
+      "source_table": "pagos",
+      "ownership": "READONLY_MIRROR",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "importe_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "recibido_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "cambio_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "referencia",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Cancelado"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "CortesCaja",
+      "description": "",
+      "source_table": "cortes_caja",
+      "ownership": "READONLY_MIRROR",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Abierto"
+              },
+              {
+                "name": "Cerrado"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "apertura_caja_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "declarado_caja_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "esperado_caja_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "diferencia_caja_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ventas_total_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "gastos_total_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "neto_total_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "abierto_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "cerrado_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "TrabajosImpresion",
+      "description": "",
+      "source_table": "trabajos_impresion",
+      "ownership": "READONLY_MIRROR",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "tipo_trabajo",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Comanda"
+              },
+              {
+                "name": "Ticket"
+              },
+              {
+                "name": "Corte"
+              },
+              {
+                "name": "Cancelacion comanda"
+              },
+              {
+                "name": "Modificacion"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "clave_impresora_snapshot",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "contenido_snapshot",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Tomado"
+              },
+              {
+                "name": "Impreso"
+              },
+              {
+                "name": "Fallido"
+              },
+              {
+                "name": "Cancelado"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "intentos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_error",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "impreso_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "fallido_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "HistorialSMS",
+      "description": "",
+      "source_table": "notificaciones_sms",
+      "ownership": "READONLY_MIRROR",
+      "fields": [
+        {
+          "name": "msisdn",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "mensaje",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Enviada"
+              },
+              {
+                "name": "Fallida"
+              },
+              {
+                "name": "Simulada"
+              },
+              {
+                "name": "Cancelada"
+              }
+            ]
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "modo_prueba",
+          "type": "checkbox",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "respuesta_contenido",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "creado_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "enviado_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "EventosAuditoria",
+      "description": "",
+      "source_table": "eventos_auditoria",
+      "ownership": "READONLY_MIRROR",
+      "fields": [
+        {
+          "name": "tipo_evento",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "tipo_entidad",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "entidad_id",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "snapshot_antes",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "snapshot_despues",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "motivo",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "creado_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "estado_sync",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Pendiente"
+              },
+              {
+                "name": "Sincronizado"
+              },
+              {
+                "name": "Conflicto"
+              },
+              {
+                "name": "Error"
+              }
+            ]
+          }
+        },
+        {
+          "name": "revision_remota",
+          "type": "singleLineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_sqlite_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "actualizado_airtable_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_pull_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "ultimo_push_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "_kanpai": {
+            "readonly": true
+          }
+        },
+        {
+          "name": "error_sync",
+          "type": "multilineText",
+          "_kanpai": {
+            "readonly": true
+          }
+        }
+      ]
+    }
+  ],
+  "fields_to_create_late": [
+    {
+      "table_name": "Mesas",
+      "field": {
+        "name": "zona",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "ZonasServicio",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "ZonasServicio",
+          "source_table": "Mesas",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Impresoras",
+      "field": {
+        "name": "estacion",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "EstacionesProduccion",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "EstacionesProduccion",
+          "source_table": "Impresoras",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Empleados",
+      "field": {
+        "name": "roles",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Roles",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": false
+        },
+        "_kanpai": {
+          "target": "Roles",
+          "many": true,
+          "source_table": "Empleados",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Productos",
+      "field": {
+        "name": "categoria",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "CategoriasMenu",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "CategoriasMenu",
+          "source_table": "Productos",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Productos",
+      "field": {
+        "name": "precio_mxn",
+        "type": "formula",
+        "options": {
+          "formula": "{precio_centavos}/100"
+        },
+        "_kanpai": {
+          "source_table": "Productos",
+          "requires_table_id_resolution": false,
+          "requires_existing_fields": true
+        }
+      }
+    },
+    {
+      "table_name": "AsignacionesProductoEstacion",
+      "field": {
+        "name": "producto",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Productos",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Productos",
+          "source_table": "AsignacionesProductoEstacion",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "AsignacionesProductoEstacion",
+      "field": {
+        "name": "estacion",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "EstacionesProduccion",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "EstacionesProduccion",
+          "source_table": "AsignacionesProductoEstacion",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "PaquetesProducto",
+      "field": {
+        "name": "producto_paquete",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Productos",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Productos",
+          "source_table": "PaquetesProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "ComponentesPaqueteProducto",
+      "field": {
+        "name": "paquete",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "PaquetesProducto",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "PaquetesProducto",
+          "source_table": "ComponentesPaqueteProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "ComponentesPaqueteProducto",
+      "field": {
+        "name": "producto_componente",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Productos",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Productos",
+          "source_table": "ComponentesPaqueteProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "ComponentesPaqueteProducto",
+      "field": {
+        "name": "estacion_override",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "EstacionesProduccion",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "EstacionesProduccion",
+          "source_table": "ComponentesPaqueteProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "GruposVarianteProducto",
+      "field": {
+        "name": "producto",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Productos",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Productos",
+          "source_table": "GruposVarianteProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "OpcionesVarianteProducto",
+      "field": {
+        "name": "grupo_variante",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "GruposVarianteProducto",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "GruposVarianteProducto",
+          "source_table": "OpcionesVarianteProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "OpcionesVarianteProducto",
+      "field": {
+        "name": "producto_opcional",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Productos",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Productos",
+          "source_table": "OpcionesVarianteProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "OpcionesVarianteProducto",
+      "field": {
+        "name": "estacion",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "EstacionesProduccion",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "EstacionesProduccion",
+          "source_table": "OpcionesVarianteProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "ConversionesUnidad",
+      "field": {
+        "name": "unidad_origen",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Unidades",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Unidades",
+          "source_table": "ConversionesUnidad",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "ConversionesUnidad",
+      "field": {
+        "name": "unidad_destino",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Unidades",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Unidades",
+          "source_table": "ConversionesUnidad",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "InsumosInventario",
+      "field": {
+        "name": "unidad_base",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Unidades",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Unidades",
+          "source_table": "InsumosInventario",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "InsumosInventario",
+      "field": {
+        "name": "costo_unitario_mxn",
+        "type": "formula",
+        "options": {
+          "formula": "{costo_unitario_centavos}/100"
+        },
+        "_kanpai": {
+          "source_table": "InsumosInventario",
+          "requires_table_id_resolution": false,
+          "requires_existing_fields": true
+        }
+      }
+    },
+    {
+      "table_name": "RecetasProducto",
+      "field": {
+        "name": "producto",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Productos",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Productos",
+          "source_table": "RecetasProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "RecetasProducto",
+      "field": {
+        "name": "insumo",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "InsumosInventario",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "InsumosInventario",
+          "source_table": "RecetasProducto",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "DestinatariosNotificacion",
+      "field": {
+        "name": "canal",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "CanalesNotificacion",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "CanalesNotificacion",
+          "source_table": "DestinatariosNotificacion",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "DestinatariosNotificacion",
+      "field": {
+        "name": "empleado",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Empleados",
+          "source_table": "DestinatariosNotificacion",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "DestinatariosNotificacion",
+      "field": {
+        "name": "rol",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Roles",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "target": "Roles",
+          "source_table": "DestinatariosNotificacion",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Tickets",
+      "field": {
+        "name": "corte_caja",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "CortesCaja",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "CortesCaja",
+          "source_table": "Tickets",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Tickets",
+      "field": {
+        "name": "mesa",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Mesas",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Mesas",
+          "source_table": "Tickets",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Tickets",
+      "field": {
+        "name": "abierto_por",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Empleados",
+          "source_table": "Tickets",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "LineasTicket",
+      "field": {
+        "name": "ticket",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Tickets",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Tickets",
+          "source_table": "LineasTicket",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "LineasTicket",
+      "field": {
+        "name": "producto",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Productos",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Productos",
+          "source_table": "LineasTicket",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Pagos",
+      "field": {
+        "name": "ticket",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Tickets",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Tickets",
+          "source_table": "Pagos",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Pagos",
+      "field": {
+        "name": "corte_caja",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "CortesCaja",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "CortesCaja",
+          "source_table": "Pagos",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Pagos",
+      "field": {
+        "name": "metodo_pago",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "MetodosPago",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "MetodosPago",
+          "source_table": "Pagos",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "Pagos",
+      "field": {
+        "name": "cajero",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Empleados",
+          "source_table": "Pagos",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "CortesCaja",
+      "field": {
+        "name": "abierto_por",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Empleados",
+          "source_table": "CortesCaja",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "CortesCaja",
+      "field": {
+        "name": "cerrado_por",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Empleados",
+          "source_table": "CortesCaja",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "TrabajosImpresion",
+      "field": {
+        "name": "impresora",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Impresoras",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Impresoras",
+          "source_table": "TrabajosImpresion",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "TrabajosImpresion",
+      "field": {
+        "name": "ticket",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Tickets",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Tickets",
+          "source_table": "TrabajosImpresion",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "HistorialSMS",
+      "field": {
+        "name": "canal",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "CanalesNotificacion",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "CanalesNotificacion",
+          "source_table": "HistorialSMS",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "HistorialSMS",
+      "field": {
+        "name": "empleado",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Empleados",
+          "source_table": "HistorialSMS",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "EventosAuditoria",
+      "field": {
+        "name": "actor_empleado",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Empleados",
+          "source_table": "EventosAuditoria",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "EventosAuditoria",
+      "field": {
+        "name": "corte_caja",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "CortesCaja",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "CortesCaja",
+          "source_table": "EventosAuditoria",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    },
+    {
+      "table_name": "EventosAuditoria",
+      "field": {
+        "name": "ticket",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Tickets",
+          "linkedTableId": null,
+          "prefersSingleRecordLink": true
+        },
+        "_kanpai": {
+          "readonly": true,
+          "target": "Tickets",
+          "source_table": "EventosAuditoria",
+          "requires_table_id_resolution": true,
+          "requires_existing_fields": false
+        }
+      }
+    }
+  ]
+}
