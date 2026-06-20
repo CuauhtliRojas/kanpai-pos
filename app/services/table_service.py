@@ -37,3 +37,27 @@ def release_table_for_paid_ticket(
     )
     db.flush()
     return table
+
+
+def release_table_for_cancelled_ticket(
+    db: Session, ticket: Ticket, employee_id: int
+) -> DiningTable:
+    """Libera la mesa de un ticket cancelado y registra el estado previo real."""
+    table = db.get(DiningTable, ticket.table_id)
+    if table is None:
+        raise EntityNotFoundError("La mesa no existe.")
+
+    previous_status = table.status_cache
+    table.status_cache = "FREE"
+    db.add(
+        TableStatusEvent(
+            table_id=table.id,
+            ticket_id=ticket.id,
+            actor_employee_id=employee_id,
+            from_status=previous_status,
+            to_status="FREE",
+            reason="TICKET_CANCELLED",
+        )
+    )
+    db.flush()
+    return table

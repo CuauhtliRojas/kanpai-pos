@@ -12,3 +12,7 @@ class EntityNotFoundError(BusinessError):
 
 class BusinessConflictError(BusinessError):
     """Indica que el estado actual impide ejecutar la operación."""
+
+
+class PermissionDeniedError(BusinessError):
+    """Indica que el empleado no cuenta con el permiso operativo requerido."""

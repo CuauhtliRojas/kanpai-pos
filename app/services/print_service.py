@@ -2,7 +2,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from unicodedata import normalize
 
-from app.models import Payment, PrintJob, Printer, Ticket
+from app.models import (
+    Payment,
+    PrintJob,
+    Printer,
+    ProductionStation,
+    StationOrder,
+    StationOrderLine,
+    Ticket,
+    TicketLine,
+)
 from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 from app.services.folio_service import generate_folio
 
@@ -71,6 +80,71 @@ def create_ticket_print_job(
         status="PENDING",
         attempts=0,
         idempotency_key=f"TICKET:{ticket.id}",
+    )
+    db.add(print_job)
+    db.flush()
+    return print_job
+
+
+def create_cancellation_print_job(
+    db: Session,
+    ticket: Ticket,
+    line: TicketLine,
+    reason: str | None,
+    idempotency_key: str,
+) -> PrintJob:
+    """Encola una cancelación de comanda ASCII e idempotente para una línea.
+
+    La función resuelve la impresora desde el snapshot de estación y vincula la
+    última comanda que contenga la línea cuando esa relación está disponible.
+    No confirma la transacción.
+    """
+    existing = db.execute(
+        select(PrintJob).where(PrintJob.idempotency_key == idempotency_key)
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+
+    if line.station_id_snapshot is None:
+        raise BusinessConflictError("La línea no tiene estación para cancelar.")
+    station = db.get(ProductionStation, line.station_id_snapshot)
+    if station is None:
+        raise EntityNotFoundError("La estación de la línea no existe.")
+    if not station.printer_key:
+        raise BusinessConflictError(
+            f"La estación {station.name} no tiene impresora configurada."
+        )
+    printer = get_active_printer(db, station.printer_key)
+    station_order_id = db.execute(
+        select(StationOrder.id)
+        .join(StationOrderLine, StationOrderLine.station_order_id == StationOrder.id)
+        .where(StationOrderLine.ticket_line_id == line.id)
+        .order_by(StationOrder.id.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    content = "\n".join(
+        [
+            "KANPAI",
+            "CANCELACION COMANDA",
+            f"FOLIO: {_ascii_text(ticket.folio)}",
+            f"ESTACION: {_ascii_text(station.name)}",
+            f"PRODUCTO: {_ascii_text(line.product_name_snapshot)}",
+            f"CANTIDAD: {line.quantity}",
+            f"MOTIVO: {_ascii_text(reason or 'SIN MOTIVO')}",
+        ]
+    )
+    print_job = PrintJob(
+        folio=generate_folio(db, "IMPRESION"),
+        job_type="CANCELACION_COMANDA",
+        printer_id=printer.id,
+        printer_key_snapshot=printer.printer_key,
+        ticket_id=ticket.id,
+        cash_shift_id=ticket.cash_shift_id,
+        station_order_id=station_order_id,
+        content_snapshot=content,
+        status="PENDING",
+        attempts=0,
+        idempotency_key=idempotency_key,
     )
     db.add(print_job)
     db.flush()

@@ -27,6 +27,9 @@ class TicketResponse(BaseModel):
     billing_started_at: datetime | None
     paid_at: datetime | None
     closed_by_employee_id: int | None
+    cancelled_by_employee_id: int | None
+    cancelled_at: datetime | None
+    cancel_reason: str | None
     subtotal_cents: int
     discount_cents: int
     tax_cents: int
@@ -61,6 +64,9 @@ class TicketLineResponse(BaseModel):
     note: str | None
     status: str
     created_by_employee_id: int
+    cancelled_by_employee_id: int | None
+    cancel_reason: str | None
+    cancelled_at: datetime | None
 
 
 class TicketTotalsResponse(BaseModel):

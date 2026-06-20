@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import PrintJob, TicketLine
+from app.models import Payment, PrintJob, TicketLine
 from app.schemas import (
     BusinessErrorResponse,
     CashShiftOpenRequest,
@@ -17,6 +17,10 @@ from app.schemas import (
     SendRoundResponse,
     StationOrderResponse,
     StartPaymentRequest,
+    TicketCancelRequest,
+    TicketCancelResponse,
+    TicketLineCancelRequest,
+    TicketLineCancelResponse,
     TicketLineCreateRequest,
     TicketLineResponse,
     TicketLinesCreatedResponse,
@@ -29,7 +33,9 @@ from app.services.exceptions import (
     BusinessError,
     EntityNotFoundError,
     InvalidBusinessDataError,
+    PermissionDeniedError,
 )
+from app.services.cancellation_service import cancel_ticket, cancel_ticket_line
 from app.services.ticket_service import get_ticket, open_ticket_for_table
 from app.services.product_service import add_product_to_ticket, get_ticket_lines
 from app.services.order_service import list_ticket_station_orders, send_round
@@ -45,6 +51,7 @@ router = APIRouter(prefix="/pos", tags=["pos"])
 
 BUSINESS_ERROR_RESPONSES = {
     400: {"model": BusinessErrorResponse},
+    403: {"model": BusinessErrorResponse},
     404: {"model": BusinessErrorResponse},
     409: {"model": BusinessErrorResponse},
 }
@@ -54,6 +61,8 @@ def _to_http_exception(error: BusinessError) -> HTTPException:
     """Convierte errores públicos del dominio a códigos HTTP estables."""
     if isinstance(error, InvalidBusinessDataError):
         status_code = status.HTTP_400_BAD_REQUEST
+    elif isinstance(error, PermissionDeniedError):
+        status_code = status.HTTP_403_FORBIDDEN
     elif isinstance(error, EntityNotFoundError):
         status_code = status.HTTP_404_NOT_FOUND
     elif isinstance(error, BusinessConflictError):
@@ -347,3 +356,90 @@ def list_pending_print_jobs_endpoint(
     return [
         PrintJobResponse.model_validate(job) for job in list_pending_print_jobs(db)
     ]
+
+
+@router.post(
+    "/ticket-lines/{line_id}/cancel",
+    response_model=TicketLineCancelResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def cancel_ticket_line_endpoint(
+    line_id: int,
+    payload: TicketLineCancelRequest,
+    db: Session = Depends(get_db),
+) -> TicketLineCancelResponse:
+    try:
+        jobs_before = db.scalar(
+            select(func.count(PrintJob.id)).where(
+                PrintJob.job_type == "CANCELACION_COMANDA"
+            )
+        ) or 0
+        line = cancel_ticket_line(
+            db, line_id, payload.employee_id, payload.reason
+        )
+        ticket = get_ticket(db, line.ticket_id)
+        jobs_after = db.scalar(
+            select(func.count(PrintJob.id)).where(
+                PrintJob.job_type == "CANCELACION_COMANDA"
+            )
+        ) or 0
+        response = TicketLineCancelResponse(
+            line=TicketLineResponse.model_validate(line),
+            ticket=TicketResponse.model_validate(ticket),
+            print_jobs_created=jobs_after - jobs_before,
+        )
+        db.commit()
+        return response
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/tickets/{ticket_id}/cancel",
+    response_model=TicketCancelResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def cancel_ticket_endpoint(
+    ticket_id: int,
+    payload: TicketCancelRequest,
+    db: Session = Depends(get_db),
+) -> TicketCancelResponse:
+    try:
+        jobs_before = db.scalar(
+            select(func.count(PrintJob.id)).where(
+                PrintJob.job_type == "CANCELACION_COMANDA"
+            )
+        ) or 0
+        lines_to_cancel = db.scalar(
+            select(func.count(TicketLine.id)).where(
+                TicketLine.ticket_id == ticket_id,
+                TicketLine.status != "CANCELLED",
+            )
+        )
+        payments_to_cancel = db.scalar(
+            select(func.count(Payment.id)).where(
+                Payment.ticket_id == ticket_id,
+                Payment.status == "ACTIVE",
+            )
+        )
+        ticket = cancel_ticket(
+            db, ticket_id, payload.employee_id, payload.reason
+        )
+        jobs_after = db.scalar(
+            select(func.count(PrintJob.id)).where(
+                PrintJob.job_type == "CANCELACION_COMANDA"
+            )
+        ) or 0
+        response = TicketCancelResponse(
+            ticket=TicketResponse.model_validate(ticket),
+            lines_cancelled=lines_to_cancel or 0,
+            payments_cancelled=payments_to_cancel or 0,
+            print_jobs_created=jobs_after - jobs_before,
+            table_released=ticket.table.status_cache == "FREE",
+        )
+        db.commit()
+        return response
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None

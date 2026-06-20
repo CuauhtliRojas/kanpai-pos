@@ -1,6 +1,6 @@
 import json
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -11,7 +11,6 @@ from app.models import (
     ProductPackageItem,
     ProductStationAssignment,
     Ticket,
-    TicketDiscount,
     TicketLine,
 )
 from app.services.exceptions import (
@@ -19,6 +18,7 @@ from app.services.exceptions import (
     EntityNotFoundError,
     InvalidBusinessDataError,
 )
+from app.services.ticket_service import recalculate_ticket_totals
 
 CHARGEABLE_LINE_TYPES = ("SIMPLE", "PACKAGE_PARENT")
 CANCELLED_LINE_STATUSES = ("CANCELLED", "CANCELED", "CANCELADO")
@@ -94,29 +94,6 @@ def _line_from_product(
         note=note,
         status="CAPTURED",
         created_by_employee_id=employee_id,
-    )
-
-
-def _recalculate_ticket_totals(db: Session, ticket: Ticket) -> None:
-    """Recalcula importes cobrables sin sumar componentes incluidos."""
-    subtotal = db.execute(
-        select(func.coalesce(func.sum(TicketLine.line_total_cents), 0)).where(
-            TicketLine.ticket_id == ticket.id,
-            TicketLine.line_type.in_(CHARGEABLE_LINE_TYPES),
-            TicketLine.status.not_in(CANCELLED_LINE_STATUSES),
-        )
-    ).scalar_one()
-    discount = db.execute(
-        select(func.coalesce(func.sum(TicketDiscount.amount_cents), 0)).where(
-            TicketDiscount.ticket_id == ticket.id
-        )
-    ).scalar_one()
-
-    ticket.subtotal_cents = int(subtotal)
-    ticket.discount_cents = int(discount)
-    ticket.total_cents = max(
-        ticket.subtotal_cents - ticket.discount_cents + ticket.tax_cents,
-        0,
     )
 
 
@@ -245,7 +222,7 @@ def add_product_to_ticket(
         lines.append(line)
 
     db.flush()
-    _recalculate_ticket_totals(db, ticket)
+    recalculate_ticket_totals(db, ticket)
     db.add(
         AuditEvent(
             event_type=event_type,

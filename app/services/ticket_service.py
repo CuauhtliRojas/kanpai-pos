@@ -1,9 +1,16 @@
 import json
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import AuditEvent, Employee, TableStatusEvent, Ticket
+from app.models import (
+    AuditEvent,
+    Employee,
+    TableStatusEvent,
+    Ticket,
+    TicketDiscount,
+    TicketLine,
+)
 from app.services.cash_shift_service import get_current_cash_shift
 from app.services.exceptions import (
     BusinessConflictError,
@@ -30,6 +37,28 @@ def get_ticket(db: Session, ticket_id: int) -> Ticket:
     if ticket is None:
         raise EntityNotFoundError("El ticket no existe.")
     return ticket
+
+
+def recalculate_ticket_totals(db: Session, ticket: Ticket) -> None:
+    """Recalcula importes cobrables sin sumar componentes incluidos."""
+    subtotal = db.execute(
+        select(func.coalesce(func.sum(TicketLine.line_total_cents), 0)).where(
+            TicketLine.ticket_id == ticket.id,
+            TicketLine.line_type.in_(("SIMPLE", "PACKAGE_PARENT")),
+            TicketLine.status.not_in(("CANCELLED", "CANCELED", "CANCELADO")),
+        )
+    ).scalar_one()
+    discount = db.execute(
+        select(func.coalesce(func.sum(TicketDiscount.amount_cents), 0)).where(
+            TicketDiscount.ticket_id == ticket.id
+        )
+    ).scalar_one()
+    ticket.subtotal_cents = int(subtotal)
+    ticket.discount_cents = int(discount)
+    ticket.total_cents = max(
+        ticket.subtotal_cents - ticket.discount_cents + ticket.tax_cents,
+        0,
+    )
 
 
 def open_ticket_for_table(
