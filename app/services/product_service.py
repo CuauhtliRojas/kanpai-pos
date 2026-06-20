@@ -18,8 +18,11 @@ from app.models import (
     ProductPackage,
     ProductPackageItem,
     ProductStationAssignment,
+    ProductVariantGroup,
+    ProductVariantOption,
     Ticket,
     TicketLine,
+    TicketLineVariantSelection,
 )
 from app.services.exceptions import (
     BusinessConflictError,
@@ -112,6 +115,7 @@ def add_product_to_ticket(
     employee_id: int,
     quantity: int,
     note: str | None = None,
+    variant_selections: list[dict] | None = None,
 ) -> list[TicketLine]:
     """Agrega un producto simple o paquete a un ticket abierto.
 
@@ -144,6 +148,37 @@ def add_product_to_ticket(
     if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
         raise InvalidBusinessDataError("La cantidad debe ser un entero positivo.")
 
+    normalized_variants = variant_selections or []
+    groups = list(db.scalars(select(ProductVariantGroup).where(
+        ProductVariantGroup.product_id == product.id,
+        ProductVariantGroup.active.is_(True),
+    )))
+    groups_by_id = {group.id: group for group in groups}
+    counts = {group.id: 0 for group in groups}
+    resolved_variants: list[tuple[ProductVariantGroup, ProductVariantOption, int]] = []
+    for selection in normalized_variants:
+        group = groups_by_id.get(selection["variant_group_id"])
+        option = db.get(ProductVariantOption, selection["variant_option_id"])
+        selected_quantity = selection.get("quantity", 1)
+        if group is None or option is None or option.variant_group_id != group.id or not option.active:
+            raise InvalidBusinessDataError("La opción de variante no pertenece al producto.")
+        if isinstance(selected_quantity, bool) or selected_quantity <= 0:
+            raise InvalidBusinessDataError("La cantidad de variante debe ser positiva.")
+        counts[group.id] += selected_quantity
+        resolved_variants.append((group, option, selected_quantity))
+    for group in groups:
+        minimum = max(group.min_select, 1 if group.required else 0)
+        if counts[group.id] < minimum or counts[group.id] > group.max_select:
+            raise InvalidBusinessDataError(
+                f"El grupo {group.name} requiere entre {minimum} y {group.max_select} selecciones."
+            )
+    if normalized_variants and not groups:
+        raise InvalidBusinessDataError("El producto no admite variantes.")
+
+    variant_delta = sum(
+        option.price_delta_cents * selected_quantity
+        for _, option, selected_quantity in resolved_variants
+    )
     lines: list[TicketLine] = []
     event_type = audit_event("TICKET_LINE_ADDED")
     if product.product_type == ProductType.PACKAGE:
@@ -175,7 +210,7 @@ def add_product_to_ticket(
             quantity=quantity,
             station_id=_primary_station_id(db, product.id),
             line_type=TicketLineType.PACKAGE_PARENT,
-            unit_price_cents=product.price_cents,
+            unit_price_cents=product.price_cents + variant_delta,
             price_mode=PriceMode.PACKAGE_PRICE,
             note=note,
             package_id=package.id,
@@ -222,13 +257,25 @@ def add_product_to_ticket(
             quantity=quantity,
             station_id=_primary_station_id(db, product.id),
             line_type=TicketLineType.SIMPLE,
-            unit_price_cents=product.price_cents,
+            unit_price_cents=product.price_cents + variant_delta,
             price_mode=PriceMode.NORMAL,
             note=note,
         )
         db.add(line)
         lines.append(line)
 
+    db.flush()
+    for group, option, selected_quantity in resolved_variants:
+        db.add(TicketLineVariantSelection(
+            ticket_line_id=lines[0].id,
+            variant_group_id=group.id,
+            variant_option_id=option.id,
+            quantity=selected_quantity,
+            price_delta_cents_snapshot=option.price_delta_cents,
+            name_snapshot=option.name,
+            sku_snapshot=option.sku,
+            station_id_snapshot=option.station_id,
+        ))
     db.flush()
     recalculate_ticket_totals(db, ticket)
     db.add(
@@ -245,6 +292,15 @@ def add_product_to_ticket(
                     "quantity": quantity,
                     "line_ids": [line.id for line in lines],
                     "total_cents": ticket.total_cents,
+                    "variant_selections": [
+                        {
+                            "group_id": group.id,
+                            "option_id": option.id,
+                            "name": option.name,
+                            "quantity": selected_quantity,
+                        }
+                        for group, option, selected_quantity in resolved_variants
+                    ],
                 }
             ),
         )

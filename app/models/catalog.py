@@ -118,6 +118,42 @@ class Product(RemoteCatalogMixin, TimestampMixin, Base):
         back_populates="product",
         cascade="all, delete-orphan",
     )
+    variant_groups: Mapped[list["ProductVariantGroup"]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+
+
+class ProductVariantGroup(TimestampMixin, Base):
+    __tablename__ = "grupos_variante_producto"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    product_id: Mapped[int] = db_column("product_id", ForeignKey("productos.id"), nullable=False)
+    name: Mapped[str] = db_column("name", String(160), nullable=False)
+    min_select: Mapped[int] = db_column("min_select", Integer, default=0, nullable=False)
+    max_select: Mapped[int] = db_column("max_select", Integer, default=1, nullable=False)
+    required: Mapped[bool] = db_column("required", Boolean, default=False, nullable=False)
+    active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+
+    product: Mapped["Product"] = relationship(back_populates="variant_groups")
+    options: Mapped[list["ProductVariantOption"]] = relationship(
+        back_populates="variant_group", cascade="all, delete-orphan"
+    )
+
+
+class ProductVariantOption(TimestampMixin, Base):
+    __tablename__ = "opciones_variante_producto"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    variant_group_id: Mapped[int] = db_column("variant_group_id", ForeignKey("grupos_variante_producto.id"), nullable=False)
+    product_id: Mapped[Optional[int]] = db_column("product_id", ForeignKey("productos.id"))
+    name: Mapped[str] = db_column("name", String(160), nullable=False)
+    sku: Mapped[Optional[str]] = db_column("sku", String(80))
+    price_delta_cents: Mapped[int] = db_column("price_delta_cents", Integer, default=0, nullable=False)
+    station_id: Mapped[Optional[int]] = db_column("station_id", ForeignKey("estaciones_produccion.id"))
+    active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+
+    variant_group: Mapped["ProductVariantGroup"] = relationship(back_populates="options")
+    product: Mapped[Optional["Product"]] = relationship(foreign_keys=[product_id])
 
 
 class ProductStationAssignment(RemoteCatalogMixin, TimestampMixin, Base):
@@ -296,6 +332,9 @@ class Employee(RemoteCatalogMixin, TimestampMixin, Base):
     full_name: Mapped[str] = db_column("full_name", String(160), nullable=False)
     pos_alias: Mapped[Optional[str]] = db_column("pos_alias", String(80))
     active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+    pin_hash: Mapped[Optional[str]] = db_column("pin_hash", String(255))
+    pin_enabled: Mapped[bool] = db_column("pin_enabled", Boolean, default=False, nullable=False)
+    last_login_at: Mapped[Optional[datetime]] = db_column("last_login_at", DateTime)
 
     roles: Mapped[list["EmployeeRole"]] = relationship(
         back_populates="employee",

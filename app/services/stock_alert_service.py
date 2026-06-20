@@ -74,6 +74,9 @@ def evaluate_stock_alert(
             )
         )
         db.flush()
+        from app.services.sms_service import notify_stock_alert
+
+        notify_stock_alert(db, alert, employee_id)
         return alert
 
     if active_alert is not None:

@@ -81,6 +81,8 @@ def _command_content(
         if line.note:
             detail += f" | Nota: {line.note}"
         content.append(detail)
+        for selection in line.variant_selections:
+            content.append(f"  - {selection.quantity} x {selection.name_snapshot}")
     return "\n".join(content)
 
 

@@ -104,6 +104,7 @@ def create_payment(
     amount_cents: int,
     received_cents: int | None = None,
     reference: str | None = None,
+    ticket_split_id: int | None = None,
 ) -> Payment:
     """Registra un pago y cierra el ticket si cubre el total, sin hacer commit.
 
@@ -137,6 +138,7 @@ def create_payment(
     payment = Payment(
         folio=generate_folio(db, "PAGO"),
         ticket_id=ticket.id,
+        ticket_split_id=ticket_split_id,
         cash_shift_id=ticket.cash_shift_id,
         payment_method_id=payment_method.id,
         cashier_employee_id=employee_id,

@@ -37,11 +37,30 @@ class TicketResponse(BaseModel):
     total_cents: int
 
 
+class VariantSelectionRequest(BaseModel):
+    variant_group_id: int
+    variant_option_id: int
+    quantity: int = 1
+
+
+class VariantSelectionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    variant_group_id: int
+    variant_option_id: int
+    quantity: int
+    price_delta_cents_snapshot: int
+    name_snapshot: str
+    sku_snapshot: str | None
+    station_id_snapshot: int | None
+
+
 class TicketLineCreateRequest(BaseModel):
     product_id: int
     employee_id: int
     quantity: int = 1
     note: str | None = None
+    variant_selections: list[VariantSelectionRequest] = []
 
 
 class TicketLineResponse(BaseModel):
@@ -68,6 +87,7 @@ class TicketLineResponse(BaseModel):
     cancelled_by_employee_id: int | None
     cancel_reason: str | None
     cancelled_at: datetime | None
+    variant_selections: list[VariantSelectionResponse] = []
 
 
 class TicketTotalsResponse(BaseModel):

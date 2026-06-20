@@ -28,8 +28,26 @@ from app.services.print_queue_service import (
     mark_print_job_printed,
     retry_failed_print_jobs,
 )
+from app.models import Printer
+from sqlalchemy import select
 
 router = APIRouter(prefix="/printing", tags=["printing"])
+
+
+@router.get("/printers")
+def list_printers_endpoint(db: Session = Depends(get_db)) -> list[dict]:
+    """Lista impresoras lógicas; el daemon resuelve cada clave a Windows."""
+    printers = db.scalars(select(Printer).order_by(Printer.printer_key)).all()
+    return [
+        {
+            "id": printer.id,
+            "printer_key": printer.printer_key,
+            "name": printer.name,
+            "station_id": printer.station_id,
+            "active": printer.active,
+        }
+        for printer in printers
+    ]
 
 BUSINESS_ERROR_RESPONSES = {
     400: {"model": BusinessErrorResponse},

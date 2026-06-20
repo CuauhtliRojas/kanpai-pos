@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -27,7 +27,13 @@ from app.domain.constants import (
     TicketLineType,
     TicketPaymentStatus,
     TicketStatus,
+    EmployeeSessionStatus,
+    SmsStatus,
+    TicketSplitStatus,
 )
+
+if TYPE_CHECKING:
+    from app.models.catalog import Employee, ProductVariantGroup, ProductVariantOption
 
 
 class TimestampMixin:
@@ -126,6 +132,20 @@ class PosSession(TimestampMixin, Base):
     closed_at: Mapped[Optional[datetime]] = db_column("closed_at", DateTime)
 
     device: Mapped["PosDevice"] = relationship(back_populates="sessions")
+
+
+class EmployeeSession(Base):
+    __tablename__ = "sesiones_empleado"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    employee_id: Mapped[int] = db_column("employee_id", ForeignKey("empleados.id"), nullable=False)
+    session_token: Mapped[str] = db_column("session_token", String(128), unique=True, nullable=False)
+    status: Mapped[str] = db_column("status", String(32), default=EmployeeSessionStatus.ACTIVE, nullable=False)
+    created_at: Mapped[datetime] = db_column("created_at", DateTime, default=datetime.utcnow, nullable=False)
+    expires_at: Mapped[datetime] = db_column("expires_at", DateTime, nullable=False)
+    closed_at: Mapped[Optional[datetime]] = db_column("closed_at", DateTime)
+
+    employee: Mapped["Employee"] = relationship()
 
 
 class ServiceZone(TimestampMixin, Base):
@@ -315,6 +335,7 @@ class Ticket(TimestampMixin, Base):
     )
     payments: Mapped[list["Payment"]] = relationship(back_populates="ticket")
     discounts: Mapped[list["TicketDiscount"]] = relationship(back_populates="ticket")
+    splits: Mapped[list["TicketSplit"]] = relationship(back_populates="ticket", cascade="all, delete-orphan")
 
 
 class TicketLine(TimestampMixin, Base):
@@ -391,6 +412,27 @@ class TicketLine(TimestampMixin, Base):
         back_populates="ticket_line",
         cascade="all, delete-orphan",
     )
+    variant_selections: Mapped[list["TicketLineVariantSelection"]] = relationship(
+        back_populates="ticket_line", cascade="all, delete-orphan"
+    )
+
+
+class TicketLineVariantSelection(Base):
+    __tablename__ = "selecciones_variante_linea"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    ticket_line_id: Mapped[int] = db_column("ticket_line_id", ForeignKey("lineas_ticket.id"), nullable=False)
+    variant_group_id: Mapped[int] = db_column("variant_group_id", ForeignKey("grupos_variante_producto.id"), nullable=False)
+    variant_option_id: Mapped[int] = db_column("variant_option_id", ForeignKey("opciones_variante_producto.id"), nullable=False)
+    quantity: Mapped[int] = db_column("quantity", Integer, default=1, nullable=False)
+    price_delta_cents_snapshot: Mapped[int] = db_column("price_delta_cents_snapshot", Integer, default=0, nullable=False)
+    name_snapshot: Mapped[str] = db_column("name_snapshot", String(160), nullable=False)
+    sku_snapshot: Mapped[Optional[str]] = db_column("sku_snapshot", String(80))
+    station_id_snapshot: Mapped[Optional[int]] = db_column("station_id_snapshot", Integer)
+
+    ticket_line: Mapped["TicketLine"] = relationship(back_populates="variant_selections")
+    variant_group: Mapped["ProductVariantGroup"] = relationship()
+    variant_option: Mapped["ProductVariantOption"] = relationship()
 
 
 class TicketLineNote(Base):
@@ -487,6 +529,7 @@ class Payment(TimestampMixin, Base):
     ticket_id: Mapped[int] = db_column(
         "ticket_id", ForeignKey("tickets.id"), nullable=False
     )
+    ticket_split_id: Mapped[Optional[int]] = db_column("ticket_split_id", ForeignKey("divisiones_ticket.id"))
     cash_shift_id: Mapped[int] = db_column(
         "cash_shift_id", ForeignKey("cortes_caja.id"), nullable=False
     )
@@ -514,6 +557,38 @@ class Payment(TimestampMixin, Base):
     ticket: Mapped["Ticket"] = relationship(back_populates="payments")
     cash_shift: Mapped["CashShift"] = relationship(back_populates="payments")
     payment_method: Mapped["PaymentMethod"] = relationship()
+    ticket_split: Mapped[Optional["TicketSplit"]] = relationship(back_populates="payments")
+
+
+class TicketSplit(TimestampMixin, Base):
+    __tablename__ = "divisiones_ticket"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    ticket_id: Mapped[int] = db_column("ticket_id", ForeignKey("tickets.id"), nullable=False)
+    name: Mapped[str] = db_column("name", String(120), nullable=False)
+    split_type: Mapped[str] = db_column("split_type", String(32), nullable=False)
+    parts: Mapped[Optional[int]] = db_column("parts", Integer)
+    part_number: Mapped[Optional[int]] = db_column("part_number", Integer)
+    amount_cents: Mapped[int] = db_column("amount_cents", Integer, nullable=False)
+    status: Mapped[str] = db_column("status", String(32), default=TicketSplitStatus.OPEN, nullable=False)
+    created_by_employee_id: Mapped[int] = db_column("created_by_employee_id", ForeignKey("empleados.id"), nullable=False)
+    closed_at: Mapped[Optional[datetime]] = db_column("closed_at", DateTime)
+
+    ticket: Mapped["Ticket"] = relationship(back_populates="splits")
+    lines: Mapped[list["TicketSplitLine"]] = relationship(back_populates="ticket_split", cascade="all, delete-orphan")
+    payments: Mapped[list["Payment"]] = relationship(back_populates="ticket_split")
+
+
+class TicketSplitLine(Base):
+    __tablename__ = "lineas_division_ticket"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    ticket_split_id: Mapped[int] = db_column("ticket_split_id", ForeignKey("divisiones_ticket.id"), nullable=False)
+    ticket_line_id: Mapped[int] = db_column("ticket_line_id", ForeignKey("lineas_ticket.id"), nullable=False)
+    amount_cents: Mapped[int] = db_column("amount_cents", Integer, nullable=False)
+
+    ticket_split: Mapped["TicketSplit"] = relationship(back_populates="lines")
+    ticket_line: Mapped["TicketLine"] = relationship()
 
 
 class CommandBatch(Base):
@@ -755,3 +830,31 @@ class AuditEvent(Base):
     created_at: Mapped[datetime] = db_column(
         "created_at", DateTime, default=datetime.utcnow, nullable=False
     )
+
+
+class NotificationChannel(TimestampMixin, Base):
+    __tablename__ = "canales_notificacion"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    channel_key: Mapped[str] = db_column("channel_key", String(64), unique=True, nullable=False)
+    name: Mapped[str] = db_column("name", String(120), nullable=False)
+    active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+
+
+class SmsNotification(Base):
+    __tablename__ = "notificaciones_sms"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    channel_id: Mapped[Optional[int]] = db_column("channel_id", ForeignKey("canales_notificacion.id"))
+    stock_alert_id: Mapped[Optional[int]] = db_column("stock_alert_id", ForeignKey("alertas_stock.id"), unique=True)
+    employee_id: Mapped[Optional[int]] = db_column("employee_id", ForeignKey("empleados.id"))
+    msisdn: Mapped[str] = db_column("msisdn", String(32), nullable=False)
+    message: Mapped[str] = db_column("message", Text, nullable=False)
+    status: Mapped[str] = db_column("status", String(32), default=SmsStatus.PENDING, nullable=False)
+    test_mode: Mapped[bool] = db_column("test_mode", Boolean, default=True, nullable=False)
+    response_payload: Mapped[Optional[str]] = db_column("response_payload", Text)
+    error: Mapped[Optional[str]] = db_column("error", Text)
+    created_at: Mapped[datetime] = db_column("created_at", DateTime, default=datetime.utcnow, nullable=False)
+    sent_at: Mapped[Optional[datetime]] = db_column("sent_at", DateTime)
+
+    channel: Mapped[Optional["NotificationChannel"]] = relationship()

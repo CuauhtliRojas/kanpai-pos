@@ -27,6 +27,7 @@ from app.models import (
     StockAlert,
     Ticket,
     TicketLine,
+    TicketLineVariantSelection,
     StationOrder,
     Unit,
 )
@@ -244,16 +245,40 @@ def get_sales_by_product(
         )
         .order_by(TicketLine.product_id)
     ).all()
-    return [
-        {
+    result = []
+    for row in rows:
+        variant_rows = db.execute(
+            select(
+                TicketLineVariantSelection.name_snapshot,
+                TicketLineVariantSelection.sku_snapshot,
+                func.sum(TicketLineVariantSelection.quantity * TicketLine.quantity),
+            )
+            .join(TicketLine, TicketLine.id == TicketLineVariantSelection.ticket_line_id)
+            .join(Ticket, Ticket.id == TicketLine.ticket_id)
+            .where(
+                TicketLine.product_id == row[0],
+                Ticket.status == TicketStatus.PAID,
+                TicketLine.status != TicketLineStatus.CANCELLED,
+                *dates,
+            )
+            .group_by(
+                TicketLineVariantSelection.name_snapshot,
+                TicketLineVariantSelection.sku_snapshot,
+            )
+            .order_by(TicketLineVariantSelection.name_snapshot)
+        ).all()
+        result.append({
             "product_id": row[0],
             "sku": row[1],
             "product_name": row[2],
             "quantity_sold": int(row[3]),
             "total_cents": int(row[4]),
-        }
-        for row in rows
-    ]
+            "variant_breakdown": [
+                {"name": variant[0], "sku": variant[1], "quantity_sold": int(variant[2])}
+                for variant in variant_rows
+            ],
+        })
+    return result
 
 
 def get_inventory_consumption(

@@ -1,14 +1,39 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.database import get_db
-from app.models import MenuCategory, PaymentMethod, ProductionStation
+from app.models import MenuCategory, PaymentMethod, Product, ProductVariantGroup, ProductionStation
 from app.schemas import ProductResponse
+from app.schemas.variant import VariantGroupResponse
 from app.services.product_service import list_pos_products
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+
+@router.get("/variant-groups", response_model=list[VariantGroupResponse])
+def list_variant_groups(db: Session = Depends(get_db)) -> list[VariantGroupResponse]:
+    groups = db.scalars(
+        select(ProductVariantGroup)
+        .options(selectinload(ProductVariantGroup.options))
+        .where(ProductVariantGroup.active.is_(True))
+        .order_by(ProductVariantGroup.id)
+    ).all()
+    return [VariantGroupResponse.model_validate(group) for group in groups]
+
+
+@router.get("/products/{product_id}/variant-groups", response_model=list[VariantGroupResponse])
+def product_variant_groups(product_id: int, db: Session = Depends(get_db)) -> list[VariantGroupResponse]:
+    if db.get(Product, product_id) is None:
+        raise HTTPException(status_code=404, detail="El producto no existe.")
+    groups = db.scalars(
+        select(ProductVariantGroup)
+        .options(selectinload(ProductVariantGroup.options))
+        .where(ProductVariantGroup.product_id == product_id, ProductVariantGroup.active.is_(True))
+        .order_by(ProductVariantGroup.id)
+    ).all()
+    return [VariantGroupResponse.model_validate(group) for group in groups]
 
 
 @router.get("/products", response_model=list[ProductResponse])

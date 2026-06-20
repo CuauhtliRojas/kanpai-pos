@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from decimal import Decimal
 
@@ -16,6 +16,9 @@ from sqlalchemy.orm import Mapped, relationship
 
 from app.core.database import Base
 from app.domain.database_contract import db_column
+
+if TYPE_CHECKING:
+    from app.models.catalog import InventoryItem
 from app.domain.constants import (
     ReceiptStatus,
     StockAlertStatus,
@@ -199,3 +202,4 @@ class StockAlert(Base):
         "current_quantity", Numeric(18, 6), default=0, nullable=False
     )
     message: Mapped[str] = db_column("message", Text, default="", nullable=False)
+    inventory_item: Mapped["InventoryItem"] = relationship()

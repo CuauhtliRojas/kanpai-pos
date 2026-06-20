@@ -3,6 +3,7 @@ from collections.abc import Callable
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from app.core.config import get_settings
 
 from app.domain.constants import (
     ActiveStatus,
@@ -363,6 +364,19 @@ def run_local_backend_preflight(db: Session) -> dict:
                 "key": "active_stock_alerts",
                 "status": "WARNING",
                 "message": f"{summary['active_stock_alerts']} stock alert(s) are active",
+            }
+        )
+    sms_settings = get_settings()
+    if sms_settings.sms_enabled and (
+        not sms_settings.labsmobile_user
+        or not sms_settings.labsmobile_token
+        or not sms_settings.labsmobile_default_msisdn
+    ):
+        checks.append(
+            {
+                "key": "labsmobile_credentials",
+                "status": "WARNING",
+                "message": "SMS_ENABLED=true but LabsMobile credentials or default MSISDN are missing",
             }
         )
     statuses = {check["status"] for check in checks}

@@ -33,6 +33,13 @@ class SalesByProductItem(BaseModel):
     product_name: str
     quantity_sold: int
     total_cents: int
+    variant_breakdown: list["SalesVariantItem"] = []
+
+
+class SalesVariantItem(BaseModel):
+    name: str
+    sku: str | None
+    quantity_sold: int
 
 
 class InventoryConsumptionItem(BaseModel):

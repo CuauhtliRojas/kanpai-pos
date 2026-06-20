@@ -11,7 +11,14 @@ from app.domain.constants import (
     TicketLineType,
     TicketStatus,
 )
-from app.models import InventoryMovement, ProductRecipe, Ticket, TicketLine
+from app.models import (
+    InventoryMovement,
+    ProductRecipe,
+    ProductVariantOption,
+    Ticket,
+    TicketLine,
+    TicketLineVariantSelection,
+)
 from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 from app.services.inventory_service import create_inventory_movement
 
@@ -87,6 +94,43 @@ def consume_inventory_for_paid_ticket(
                     require_adjust_permission=False,
                 )
             )
+        selections = db.scalars(
+            select(TicketLineVariantSelection).where(
+                TicketLineVariantSelection.ticket_line_id == line.id
+            )
+        )
+        for selection in selections:
+            option = db.get(ProductVariantOption, selection.variant_option_id)
+            if option is None or option.product_id is None:
+                continue
+            option_recipes = db.scalars(
+                select(ProductRecipe).where(
+                    ProductRecipe.product_id == option.product_id,
+                    ProductRecipe.active.is_(True),
+                )
+            )
+            for recipe in option_recipes:
+                quantity = (
+                    Decimal(line.quantity)
+                    * Decimal(selection.quantity)
+                    * Decimal(recipe.quantity_base)
+                    * (Decimal("1") + Decimal(recipe.waste_pct or 0) / Decimal("100"))
+                )
+                movements.append(
+                    create_inventory_movement(
+                        db,
+                        inventory_item_id=recipe.inventory_item_id,
+                        movement_type=InventoryMovementType.SALE_CONSUMPTION,
+                        quantity_base=quantity,
+                        employee_id=employee_id,
+                        reason=f"Variante {selection.name_snapshot} ticket {ticket.folio}",
+                        unit_cost_cents=recipe.inventory_item.unit_cost_cents,
+                        source_type=InventorySourceType.VARIANT_OPTION,
+                        source_id=selection.id,
+                        ticket_line_id=line.id,
+                        require_adjust_permission=False,
+                    )
+                )
 
     ticket.inventory_consumed_at = datetime.utcnow()
     db.flush()

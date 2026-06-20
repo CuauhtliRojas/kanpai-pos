@@ -40,3 +40,6 @@ Continúan fuera de alcance el frontend, Airtable/sincronización y la impresió
 - Promociones, descuentos y cortesías de extremo a extremo.
 - Reimpresión explícitamente auditada.
 - Modificación explícita tipo `Modificacion` en lugar de inferirla por cancelación + alta.
+# Cobertura adicional Fase 3-N
+
+Quedan cubiertos el acceso local por PIN, la identificación de roles/permisos, órdenes armables con snapshots, división por partes o líneas, pago parcial compatible, alerta SMS tolerante a fallos y salida física mediante daemon Windows. La operación recomendada de una computadora con tres impresoras se resuelve mapeando claves lógicas en el archivo del worker.

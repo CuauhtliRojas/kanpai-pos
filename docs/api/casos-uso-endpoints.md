@@ -221,3 +221,12 @@ Uso: reconstruir corte y contexto financiero. Actor: gerente. Precondiciones: co
 ### GET /api/v1/preflight/local-backend
 
 Uso: validar configuración e invariantes antes de operar/sincronizar. Actor: frontend administrativo/soporte. Precondiciones: DB accesible. Payload: ninguno. Respuesta: `{"status":"OK","checks":[{"key":"database","status":"OK","message":"..."}],"summary":{...}}`; puede ser `WARNING` o `ERROR`. Errores: 500 sólo ante fallo no controlado. Efectos DB: lecturas. Siguiente: operar si `OK`, mostrar advertencias si `WARNING`, bloquear y corregir si `ERROR`.
+# Extensión Fase 3-N
+
+Login y sesión: `POST /api/v1/auth/login-pin`, `POST /api/v1/auth/logout`, `GET /api/v1/auth/me`.
+
+Variantes: los endpoints de catálogo exponen grupos y `POST /api/v1/pos/tickets/{ticket_id}/lines` acepta `variant_selections`.
+
+Cuenta dividida: `POST .../splits/equal`, `POST .../splits/by-lines`, `GET .../splits` y `POST /api/v1/pos/ticket-splits/{split_id}/payments`.
+
+Notificaciones e impresión: `GET/POST /api/v1/notifications/sms`, `GET /api/v1/printing/printers` y la cola worker ya documentada.

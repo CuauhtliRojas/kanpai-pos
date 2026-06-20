@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.domain.constants import (
     CatalogStatus,
@@ -12,6 +13,7 @@ from app.domain.constants import (
     ProductType,
     TableStatus,
     UnitFamily,
+    NotificationChannelKey,
 )
 from app.models import (
     BusinessSetting,
@@ -30,13 +32,17 @@ from app.models import (
     ProductPackageItem,
     ProductRecipe,
     ProductStationAssignment,
+    ProductVariantGroup,
+    ProductVariantOption,
     ProductionStation,
     Role,
     RolePermission,
     ServiceZone,
     Unit,
     UnitConversion,
+    NotificationChannel,
 )
+from app.services.auth_service import hash_pin, verify_pin
 
 
 def get_or_create(
@@ -350,6 +356,12 @@ def seed_development_products(session: Session) -> None:
             ProductionStation.station_key == "BARRA_CALIENTE"
         )
     ).scalar_one()
+    yakitori_category = session.execute(
+        select(MenuCategory).where(MenuCategory.name == "Yakitori")
+    ).scalar_one()
+    kitchen = session.execute(
+        select(ProductionStation).where(ProductionStation.station_key == "COCINA")
+    ).scalar_one()
 
     beer, _ = get_or_create(
         session,
@@ -396,6 +408,21 @@ def seed_development_products(session: Session) -> None:
             "sync_status": CatalogStatus.ACTIVE,
         },
     )
+    yakitori, _ = get_or_create(
+        session,
+        Product,
+        {"sku": "DEV-YAKITORI-ORDEN-3"},
+        {
+            "product_type": ProductType.SIMPLE,
+            "name": "Orden yakitori 3 piezas",
+            "display_name": "Orden yakitori 3 piezas",
+            "category_id": yakitori_category.id,
+            "price_cents": 15_000,
+            "active": True,
+            "visible_pos": True,
+            "sync_status": CatalogStatus.ACTIVE,
+        },
+    )
 
     for product, station in ((beer, cold_bar), (sake, hot_bar)):
         get_or_create(
@@ -403,6 +430,22 @@ def seed_development_products(session: Session) -> None:
             ProductStationAssignment,
             {"product_id": product.id, "station_id": station.id},
             {"is_primary": True, "active": True, "sync_status": CatalogStatus.ACTIVE},
+        )
+    get_or_create(
+        session, ProductStationAssignment,
+        {"product_id": yakitori.id, "station_id": kitchen.id},
+        {"is_primary": True, "active": True, "sync_status": CatalogStatus.ACTIVE},
+    )
+    group, _ = get_or_create(
+        session, ProductVariantGroup,
+        {"product_id": yakitori.id, "name": "Sabores yakitori"},
+        {"min_select": 3, "max_select": 3, "required": True, "active": True},
+    )
+    for index, name in enumerate(("Pollo", "Pulpo", "Verduras"), 1):
+        get_or_create(
+            session, ProductVariantOption,
+            {"variant_group_id": group.id, "sku": f"YAK-{index}"},
+            {"name": name, "price_delta_cents": 0, "station_id": kitchen.id, "active": True},
         )
 
     package, _ = get_or_create(
@@ -471,6 +514,7 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
         ("EXPENSE_CREATE", "Registrar gastos"),
         ("INVENTORY_ADJUST", "Ajustar inventario"),
         ("REPRINT", "Autorizar reimpresiones"),
+        ("SMS_SEND", "Enviar notificaciones SMS"),
     ]
 
     permissions: dict[str, Permission] = {}
@@ -497,6 +541,7 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
             "EXPENSE_CREATE",
             "INVENTORY_ADJUST",
             "REPRINT",
+            "SMS_SEND",
         ],
         "GERENTE": [
             "DISCOUNT_AUTHORIZE",
@@ -549,6 +594,18 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
         EmployeeRole,
         {"employee_id": admin.id, "role_id": roles["ADMIN"].id},
     )
+    configured_pin = get_settings().kanpai_admin_pin
+    if not admin.pin_hash or not verify_pin(configured_pin, admin.pin_hash):
+        admin.pin_hash = hash_pin(configured_pin)
+    admin.pin_enabled = True
+
+
+def seed_notification_channels(session: Session) -> None:
+    """Crea el canal lógico SMS sin almacenar credenciales del proveedor."""
+    get_or_create(
+        session, NotificationChannel, {"channel_key": NotificationChannelKey.SMS},
+        {"name": "SMS LabsMobile", "active": True},
+    )
 
 
 def run_seed() -> None:
@@ -566,6 +623,7 @@ def run_seed() -> None:
         seed_development_products(session)
         seed_development_recipes(session)
         seed_roles_permissions_and_admin(session)
+        seed_notification_channels(session)
         session.commit()
 
 

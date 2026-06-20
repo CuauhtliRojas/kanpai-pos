@@ -102,3 +102,8 @@ de sync, no implementar pull/push y no conectar el daemon físico de impresión.
 3. Pull de catálogos Airtable → SQLite.
 4. Push de transacciones SQLite → Airtable.
 5. Daemon de impresión física ESC/POS.
+# Cierre Fase 3-N
+
+El perímetro local-first ahora incluye sesiones locales, variantes, divisiones y persistencia de notificaciones. LabsMobile es la única salida remota opcional y permanece deshabilitada por defecto. La impresión física queda deliberadamente fuera del proceso API y se ejecuta mediante un worker local recuperable.
+
+Véase `fase-3n-pendientes-operativos-finales.md` y las guías de operaciones para despliegue y QA.

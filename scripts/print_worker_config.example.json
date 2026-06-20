@@ -1,0 +1,12 @@
+{
+  "api_base_url": "http://127.0.0.1:8011",
+  "worker_id": "kanpai-caja-01",
+  "poll_seconds": 2,
+  "printers": {
+    "CAJA": "Nombre exacto impresora caja Windows",
+    "COCINA": "Nombre exacto impresora cocina Windows",
+    "BARRA_FRIA": "Nombre exacto impresora barra Windows",
+    "COCTELERIA": "Nombre exacto impresora barra Windows",
+    "BARRA_CALIENTE": "Nombre exacto impresora barra Windows"
+  }
+}

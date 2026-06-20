@@ -417,6 +417,7 @@ def add_product_to_ticket_endpoint(
             employee_id=payload.employee_id,
             quantity=payload.quantity,
             note=payload.note,
+            variant_selections=[item.model_dump() for item in payload.variant_selections],
         )
         ticket = get_ticket(db, ticket_id)
         db.commit()

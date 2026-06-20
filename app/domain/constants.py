@@ -34,6 +34,36 @@ class TicketLineNoteType:
 class PermissionKey:
     DISCOUNT_AUTHORIZE = "DISCOUNT_AUTHORIZE"
     REPRINT = "REPRINT"
+    SMS_SEND = "SMS_SEND"
+
+
+class EmployeeSessionStatus:
+    ACTIVE = "Activa"
+    CLOSED = "Cerrada"
+    EXPIRED = "Expirada"
+
+
+class TicketSplitStatus:
+    OPEN = "Abierta"
+    PAID = "Pagada"
+    CANCELLED = "Cancelada"
+
+
+class TicketSplitType:
+    EQUAL = "Partes iguales"
+    BY_LINES = "Por lineas"
+
+
+class NotificationChannelKey:
+    SMS = "SMS"
+
+
+class SmsStatus:
+    PENDING = "Pendiente"
+    SENT = "Enviada"
+    FAILED = "Fallida"
+    SIMULATED = "Simulada"
+    CANCELLED = "Cancelada"
 
 
 class PriceMode:
@@ -170,6 +200,7 @@ class InventorySourceType:
     TICKET_LINE = "Linea ticket"
     PACKAGE_COMPONENT = "Componente de paquete"
     MANUAL = "Manual"
+    VARIANT_OPTION = "Opcion variante"
 
 
 AUDIT_EVENT_VALUES = {
@@ -198,6 +229,9 @@ AUDIT_EVENT_VALUES = {
     "DISCOUNT_APPLIED": "Descuento aplicado",
     "COURTESY_APPLIED": "Cortesia aplicada",
     "REPRINT_REQUESTED": "Reimpresion solicitada",
+    "TICKET_SPLIT_CREATED": "Division de cuenta creada",
+    "TICKET_SPLIT_PAYMENT": "Pago de division registrado",
+    "SMS_FAILED": "Notificacion SMS fallida",
 }
 
 

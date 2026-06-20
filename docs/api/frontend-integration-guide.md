@@ -140,3 +140,8 @@ interface PaymentPayload {
 - No ocultar trabajos `Fallido`; ofrecer detalle y reintento.
 - Usar centavos enteros para dinero y strings decimales para cantidades de inventario.
 - No inferir cierre por monto en cliente: usar `closed` y estado devueltos por backend.
+# Identidad y nuevas operaciones (Fase 3-N)
+
+El frontend inicia sesión por PIN, conserva el token durante la sesión y usa `/auth/me` para resolver `employee.id`. Hasta activar middleware global, debe seguir enviando ese `employee_id` en captura, cobro y autorizaciones. No debe guardar ni registrar el PIN.
+
+Para productos armables, consulte grupos antes de agregar la línea y respete mínimos/máximos. Para cobro dividido, refresque `GET /splits` después de cada pago. El frontend nunca llama impresoras Windows: solo muestra estado de la cola del backend.
