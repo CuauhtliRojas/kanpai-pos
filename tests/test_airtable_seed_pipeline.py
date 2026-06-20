@@ -291,5 +291,5 @@ def test_fixed_seed_contains_role_and_unit_dependencies(tmp_path: Path) -> None:
         "BARRA_CALIENTE",
         "COCINA",
     }
-    assert printers["COCINA"]["activo"] is False
+    assert printers["COCINA"]["activo"] is True
     assert TABLE_ORDER.index("EstacionesProduccion") < TABLE_ORDER.index("Impresoras")

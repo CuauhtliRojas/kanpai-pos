@@ -55,7 +55,7 @@
     {"clave_impresora": "BARRA_FRIA", "nombre": "Barra fria", "estacion": ["BARRA_FRIA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "BARRA_FRIA", "autocorte_activo": true, "activo": true},
     {"clave_impresora": "COCTELERIA", "nombre": "Cocteleria", "estacion": ["COCTELERIA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCTELERIA", "autocorte_activo": true, "activo": true},
     {"clave_impresora": "BARRA_CALIENTE", "nombre": "Barra caliente", "estacion": ["BARRA_CALIENTE"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "BARRA_CALIENTE", "autocorte_activo": true, "activo": true},
-    {"clave_impresora": "COCINA", "nombre": "Cocina (legacy)", "estacion": [], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCINA", "autocorte_activo": true, "activo": false}
+    {"clave_impresora": "COCINA", "nombre": "Cocina (legacy)", "estacion": [], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCINA", "autocorte_activo": true, "activo": true}
   ],
   "CategoriasMenu": [
     {"nombre": "Bebidas alcohol", "orden": 1, "activo": true},
