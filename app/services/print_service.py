@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from unicodedata import normalize
@@ -17,9 +19,29 @@ from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 from app.services.folio_service import generate_folio
 
 
-def _ascii_text(value: str) -> str:
-    """Normaliza texto dinámico al subconjunto ASCII admitido por impresoras."""
-    return normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+def sanitize_print_content(content: str) -> str:
+    """Convierte contenido a ASCII imprimible y conserva sus saltos de línea.
+
+    También intenta reparar mojibake UTF-8 frecuente en Windows antes de quitar
+    acentos. El resultado solo contiene caracteres ASCII visibles y ``\n``;
+    tabuladores, emojis y otros controles no se envían a la impresora.
+    """
+    def repair_mojibake(match: re.Match[str]) -> str:
+        """Repara un token dañado sin afectar texto Unicode válido alrededor."""
+        try:
+            return match.group(0).encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return match.group(0)
+
+    content = re.sub(r"\S*[ÃÂâ]\S*", repair_mojibake, content)
+
+    content = content.replace("\r\n", "\n").replace("\r", "\n")
+    ascii_content = normalize("NFKD", content).encode("ascii", "ignore").decode("ascii")
+    return "".join(
+        character
+        for character in ascii_content
+        if character == "\n" or 32 <= ord(character) <= 126
+    )
 
 
 def get_active_printer(db: Session, printer_key: str) -> Printer:
@@ -63,7 +85,7 @@ def create_ticket_print_job(
             "KANPAI",
             "TICKET",
             f"FOLIO: {ticket.folio}",
-            f"MESA: {_ascii_text(ticket.table.display_name)}",
+            f"MESA: {ticket.table.display_name}",
             f"TOTAL: {ticket.total_cents / 100:.2f}",
             "PAGOS:",
             *payment_lines,
@@ -77,7 +99,7 @@ def create_ticket_print_job(
         printer_key_snapshot="CAJA",
         ticket_id=ticket.id,
         cash_shift_id=ticket.cash_shift_id,
-        content_snapshot=content,
+        content_snapshot=sanitize_print_content(content),
         status="PENDING",
         attempts=0,
         idempotency_key=f"TICKET:{ticket.id}",
@@ -103,7 +125,7 @@ def create_cash_shift_print_job(
         [
             "KANPAI",
             "CORTE",
-            f"FOLIO: {_ascii_text(cash_shift.folio)}",
+            f"FOLIO: {cash_shift.folio}",
             f"VENTAS: {summary['total_sales_cents'] / 100:.2f}",
             f"EFECTIVO ESPERADO: {cash_shift.expected_cash_cents / 100:.2f}",
             f"EFECTIVO DECLARADO: {cash_shift.declared_cash_cents / 100:.2f}",
@@ -119,7 +141,7 @@ def create_cash_shift_print_job(
         printer_id=printer.id,
         printer_key_snapshot="CAJA",
         cash_shift_id=cash_shift.id,
-        content_snapshot=content,
+        content_snapshot=sanitize_print_content(content),
         status="PENDING",
         attempts=0,
         idempotency_key=idempotency_key,
@@ -169,11 +191,11 @@ def create_cancellation_print_job(
         [
             "KANPAI",
             "CANCELACION COMANDA",
-            f"FOLIO: {_ascii_text(ticket.folio)}",
-            f"ESTACION: {_ascii_text(station.name)}",
-            f"PRODUCTO: {_ascii_text(line.product_name_snapshot)}",
+            f"FOLIO: {ticket.folio}",
+            f"ESTACION: {station.name}",
+            f"PRODUCTO: {line.product_name_snapshot}",
             f"CANTIDAD: {line.quantity}",
-            f"MOTIVO: {_ascii_text(reason or 'SIN MOTIVO')}",
+            f"MOTIVO: {reason or 'SIN MOTIVO'}",
         ]
     )
     print_job = PrintJob(
@@ -184,7 +206,7 @@ def create_cancellation_print_job(
         ticket_id=ticket.id,
         cash_shift_id=ticket.cash_shift_id,
         station_order_id=station_order_id,
-        content_snapshot=content,
+        content_snapshot=sanitize_print_content(content),
         status="PENDING",
         attempts=0,
         idempotency_key=idempotency_key,

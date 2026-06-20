@@ -34,11 +34,19 @@ from app.schemas.payment import (
     StartPaymentRequest,
 )
 from app.schemas.order import (
-    PrintJobResponse,
     SendRoundRequest,
     SendRoundResponse,
     StationOrderLineResponse,
     StationOrderResponse,
+)
+from app.schemas.print_job import (
+    PrintJobClaimRequest,
+    PrintJobClaimResponse,
+    PrintJobFailedRequest,
+    PrintJobResponse,
+    PrintJobRetryRequest,
+    PrintJobRetryResponse,
+    PrintJobWorkerRequest,
 )
 from app.schemas.table import TableResponse
 from app.schemas.ticket import (
@@ -79,6 +87,12 @@ __all__ = [
     "PaymentResponse",
     "PaymentSummaryResponse",
     "PrintJobResponse",
+    "PrintJobClaimRequest",
+    "PrintJobClaimResponse",
+    "PrintJobFailedRequest",
+    "PrintJobRetryRequest",
+    "PrintJobRetryResponse",
+    "PrintJobWorkerRequest",
     "SendRoundRequest",
     "SendRoundResponse",
     "StationOrderLineResponse",

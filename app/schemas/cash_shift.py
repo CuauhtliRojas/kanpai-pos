@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.order import PrintJobResponse
+from app.schemas.print_job import PrintJobResponse
 
 
 class CashShiftOpenRequest(BaseModel):

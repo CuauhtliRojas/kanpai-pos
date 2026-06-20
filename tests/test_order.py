@@ -122,7 +122,7 @@ def test_send_simple_line_creates_complete_logical_command() -> None:
         assert print_job.attempts == 0
         assert "KANPAI\nCOMANDA" in print_job.content_snapshot
         assert ticket.folio in print_job.content_snapshot
-        assert "Muy fría" in print_job.content_snapshot
+        assert "Muy fria" in print_job.content_snapshot
 
         db.refresh(line)
         assert line.status == "ENVIADO_COMANDA"

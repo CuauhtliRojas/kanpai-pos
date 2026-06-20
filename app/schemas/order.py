@@ -38,22 +38,3 @@ class StationOrderResponse(BaseModel):
     status: str
     created_at: datetime
     lines: list[StationOrderLineResponse]
-
-
-class PrintJobResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    folio: str
-    job_type: str
-    printer_id: int
-    printer_key_snapshot: str
-    ticket_id: int | None
-    cash_shift_id: int | None
-    station_order_id: int | None
-    command_batch_id: int | None
-    content_snapshot: str
-    status: str
-    attempts: int
-    idempotency_key: str
-    created_at: datetime

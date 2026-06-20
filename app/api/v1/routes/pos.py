@@ -57,7 +57,7 @@ from app.services.payment_service import (
     list_ticket_payments,
     start_payment,
 )
-from app.services.print_service import list_pending_print_jobs
+from app.services.print_queue_service import list_pending_print_jobs
 from app.services.sales_inventory_service import list_ticket_inventory_movements
 
 router = APIRouter(prefix="/pos", tags=["pos"])

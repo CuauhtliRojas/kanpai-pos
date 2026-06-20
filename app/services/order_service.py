@@ -22,7 +22,7 @@ from app.services.exceptions import (
     InvalidBusinessDataError,
 )
 from app.services.folio_service import generate_folio
-from app.services.print_service import get_active_printer
+from app.services.print_service import get_active_printer, sanitize_print_content
 
 SENDABLE_LINE_TYPES = ("SIMPLE", "PACKAGE_COMPONENT")
 SENDABLE_TICKET_STATUSES = ("OPEN", "IN_PAYMENT")
@@ -177,8 +177,8 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
                 ticket_id=ticket.id,
                 station_order_id=station_order.id,
                 command_batch_id=batch.id,
-                content_snapshot=_command_content(
-                    ticket, station, round_number, lines
+                content_snapshot=sanitize_print_content(
+                    _command_content(ticket, station, round_number, lines)
                 ),
                 status="PENDING",
                 attempts=0,

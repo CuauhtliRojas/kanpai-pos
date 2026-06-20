@@ -387,9 +387,13 @@ class PrintJob(TimestampMixin, Base):
     content_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="PENDING", nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    claimed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    claimed_by: Mapped[Optional[str]] = mapped_column(String(160))
     last_error: Mapped[Optional[str]] = mapped_column(Text)
     idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
     printed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    failed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    next_retry_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     printer: Mapped["Printer"] = relationship()
 
