@@ -8,10 +8,15 @@ from app.schemas import (
     BusinessErrorResponse,
     CashShiftOpenRequest,
     CashShiftResponse,
+    PaymentCreateRequest,
+    PaymentCreateResponse,
+    PaymentResponse,
+    PaymentSummaryResponse,
     PrintJobResponse,
     SendRoundRequest,
     SendRoundResponse,
     StationOrderResponse,
+    StartPaymentRequest,
     TicketLineCreateRequest,
     TicketLineResponse,
     TicketLinesCreatedResponse,
@@ -28,6 +33,12 @@ from app.services.exceptions import (
 from app.services.ticket_service import get_ticket, open_ticket_for_table
 from app.services.product_service import add_product_to_ticket, get_ticket_lines
 from app.services.order_service import list_ticket_station_orders, send_round
+from app.services.payment_service import (
+    create_payment,
+    get_active_payment_total,
+    list_ticket_payments,
+    start_payment,
+)
 from app.services.print_service import list_pending_print_jobs
 
 router = APIRouter(prefix="/pos", tags=["pos"])
@@ -132,6 +143,86 @@ def get_ticket_endpoint(
         return TicketResponse.model_validate(get_ticket(db, ticket_id))
     except BusinessError as error:
         db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/tickets/{ticket_id}/start-payment",
+    response_model=TicketResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def start_payment_endpoint(
+    ticket_id: int,
+    payload: StartPaymentRequest,
+    db: Session = Depends(get_db),
+) -> TicketResponse:
+    try:
+        ticket = start_payment(db, ticket_id, payload.employee_id)
+        db.commit()
+        db.refresh(ticket)
+        return TicketResponse.model_validate(ticket)
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/tickets/{ticket_id}/payments",
+    response_model=PaymentCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def create_payment_endpoint(
+    ticket_id: int,
+    payload: PaymentCreateRequest,
+    db: Session = Depends(get_db),
+) -> PaymentCreateResponse:
+    try:
+        payment = create_payment(
+            db,
+            ticket_id=ticket_id,
+            employee_id=payload.employee_id,
+            payment_method_id=payload.payment_method_id,
+            amount_cents=payload.amount_cents,
+            received_cents=payload.received_cents,
+            reference=payload.reference,
+        )
+        ticket = get_ticket(db, ticket_id)
+        total_paid = get_active_payment_total(db, ticket_id)
+        response = PaymentCreateResponse(
+            payment=PaymentResponse.model_validate(payment),
+            ticket=TicketResponse.model_validate(ticket),
+            total_paid_cents=total_paid,
+            remaining_cents=max(ticket.total_cents - total_paid, 0),
+            closed=ticket.status == "PAID",
+        )
+        db.commit()
+        return response
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/tickets/{ticket_id}/payments",
+    response_model=PaymentSummaryResponse,
+    responses={404: {"model": BusinessErrorResponse}},
+)
+def list_ticket_payments_endpoint(
+    ticket_id: int, db: Session = Depends(get_db)
+) -> PaymentSummaryResponse:
+    try:
+        ticket = get_ticket(db, ticket_id)
+        payments = list_ticket_payments(db, ticket_id)
+        total_paid = get_active_payment_total(db, ticket_id)
+        return PaymentSummaryResponse(
+            ticket_id=ticket_id,
+            payments=[PaymentResponse.model_validate(item) for item in payments],
+            total_paid_cents=total_paid,
+            remaining_cents=max(ticket.total_cents - total_paid, 0),
+            closed=ticket.status == "PAID",
+        )
+    except BusinessError as error:
         raise _to_http_exception(error) from None
 
 

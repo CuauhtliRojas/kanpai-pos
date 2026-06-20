@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import DiningTable
+from app.models import DiningTable, TableStatusEvent, Ticket
 from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 
 
@@ -13,4 +13,27 @@ def get_free_active_table(db: Session, table_id: int) -> DiningTable:
         raise BusinessConflictError("La mesa está inactiva.")
     if table.status_cache != "FREE":
         raise BusinessConflictError("La mesa no está libre.")
+    return table
+
+
+def release_table_for_paid_ticket(
+    db: Session, ticket: Ticket, employee_id: int
+) -> DiningTable:
+    """Libera la mesa de un ticket pagado y registra su transición de estado."""
+    table = db.get(DiningTable, ticket.table_id)
+    if table is None:
+        raise EntityNotFoundError("La mesa no existe.")
+
+    table.status_cache = "FREE"
+    db.add(
+        TableStatusEvent(
+            table_id=table.id,
+            ticket_id=ticket.id,
+            actor_employee_id=employee_id,
+            from_status="IN_PAYMENT",
+            to_status="FREE",
+            reason="TICKET_PAID",
+        )
+    )
+    db.flush()
     return table

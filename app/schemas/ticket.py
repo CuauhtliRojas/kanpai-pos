@@ -24,6 +24,9 @@ class TicketResponse(BaseModel):
     payment_status: str
     note: str | None
     opened_at: datetime
+    billing_started_at: datetime | None
+    paid_at: datetime | None
+    closed_by_employee_id: int | None
     subtotal_cents: int
     discount_cents: int
     tax_cents: int

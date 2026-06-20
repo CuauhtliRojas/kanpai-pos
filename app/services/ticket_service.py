@@ -14,7 +14,8 @@ from app.services.folio_service import generate_folio
 from app.services.table_service import get_free_active_table
 
 
-def _get_active_employee(db: Session, employee_id: int, label: str) -> Employee:
+def get_active_employee(db: Session, employee_id: int, label: str = "El empleado") -> Employee:
+    """Obtiene un empleado activo o reporta una regla de dominio estable."""
     employee = db.get(Employee, employee_id)
     if employee is None:
         raise EntityNotFoundError(f"{label} no existe.")
@@ -48,9 +49,9 @@ def open_ticket_for_table(
     if cash_shift is None:
         raise BusinessConflictError("No existe un corte de caja abierto.")
 
-    _get_active_employee(db, employee_id, "El empleado")
+    get_active_employee(db, employee_id, "El empleado")
     if waiter_employee_id is not None:
-        _get_active_employee(db, waiter_employee_id, "El mesero")
+        get_active_employee(db, waiter_employee_id, "El mesero")
     table = get_free_active_table(db, table_id)
     if guest_count <= 0:
         raise InvalidBusinessDataError("El número de comensales debe ser mayor a cero.")
