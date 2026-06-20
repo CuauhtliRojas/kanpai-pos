@@ -273,3 +273,20 @@ def test_fixed_seed_contains_role_and_unit_dependencies(tmp_path: Path) -> None:
         "OZ",
         "PZA",
     }
+    assert {method["clave_metodo"] for method in result.tables["MetodosPago"]} == {
+        "Efectivo",
+        "Tarjeta",
+        "Transferencia",
+    }
+    printers = {
+        printer["clave_impresora"]: printer for printer in result.tables["Impresoras"]
+    }
+    assert set(printers) == {
+        "CAJA",
+        "BARRA_FRIA",
+        "COCTELERIA",
+        "BARRA_CALIENTE",
+        "COCINA",
+    }
+    assert printers["COCINA"]["activo"] is False
+    assert TABLE_ORDER.index("EstacionesProduccion") < TABLE_ORDER.index("Impresoras")

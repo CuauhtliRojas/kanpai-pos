@@ -18,6 +18,11 @@
     {"clave_zona": "BARRA", "nombre": "Barra", "orden": 1, "activo": true},
     {"clave_zona": "SALON", "nombre": "Salon", "orden": 2, "activo": true}
   ],
+  "MetodosPago": [
+    {"clave_metodo": "Efectivo", "nombre": "Efectivo", "requiere_referencia": false, "activo": true},
+    {"clave_metodo": "Tarjeta", "nombre": "Tarjeta", "requiere_referencia": true, "activo": true},
+    {"clave_metodo": "Transferencia", "nombre": "Transferencia", "requiere_referencia": true, "activo": true}
+  ],
   "Mesas": [
     {"codigo_mesa": "M01", "nombre_mesa": "M01 Barra", "zona": "BARRA", "orden": 1, "estado_temporal": "Libre", "activo": true},
     {"codigo_mesa": "M02", "nombre_mesa": "M02 Barra", "zona": "BARRA", "orden": 2, "estado_temporal": "Libre", "activo": true},
@@ -41,6 +46,13 @@
     {"clave_estacion": "BARRA_FRIA", "nombre": "Barra fria", "orden": 1, "activo": true},
     {"clave_estacion": "COCTELERIA", "nombre": "Cocteleria", "orden": 2, "activo": true},
     {"clave_estacion": "BARRA_CALIENTE", "nombre": "Barra Caliente", "orden": 3, "activo": true}
+  ],
+  "Impresoras": [
+    {"clave_impresora": "CAJA", "nombre": "Caja", "estacion": [], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "CAJA", "autocorte_activo": true, "activo": true},
+    {"clave_impresora": "BARRA_FRIA", "nombre": "Barra fria", "estacion": ["BARRA_FRIA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "BARRA_FRIA", "autocorte_activo": true, "activo": true},
+    {"clave_impresora": "COCTELERIA", "nombre": "Cocteleria", "estacion": ["COCTELERIA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCTELERIA", "autocorte_activo": true, "activo": true},
+    {"clave_impresora": "BARRA_CALIENTE", "nombre": "Barra caliente", "estacion": ["BARRA_CALIENTE"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "BARRA_CALIENTE", "autocorte_activo": true, "activo": true},
+    {"clave_impresora": "COCINA", "nombre": "Cocina (legacy)", "estacion": [], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCINA", "autocorte_activo": true, "activo": false}
   ],
   "CategoriasMenu": [
     {"nombre": "Bebidas alcohol", "orden": 1, "activo": true},

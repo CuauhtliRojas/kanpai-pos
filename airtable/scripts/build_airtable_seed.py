@@ -22,7 +22,9 @@ TABLE_ORDER = (
     "Roles",
     "Unidades",
     "ZonasServicio",
+    "MetodosPago",
     "EstacionesProduccion",
+    "Impresoras",
     "CategoriasMenu",
     "Empleados",
     "Mesas",
@@ -35,7 +37,9 @@ NATURAL_KEYS = {
     "Roles": "clave_rol",
     "Unidades": "clave_unidad",
     "ZonasServicio": "clave_zona",
+    "MetodosPago": "clave_metodo",
     "EstacionesProduccion": "clave_estacion",
+    "Impresoras": "clave_impresora",
     "CategoriasMenu": "nombre",
     "Empleados": "codigo_empleado",
     "Mesas": "codigo_mesa",
@@ -45,6 +49,7 @@ NATURAL_KEYS = {
     "RecetasProducto": "nombre_registro",
 }
 LINK_FIELDS = {
+    "Impresoras": {"estacion": ("EstacionesProduccion", "clave_estacion")},
     "Empleados": {"roles": ("Roles", "clave_rol")},
     "Mesas": {"zona": ("ZonasServicio", "clave_zona")},
     "InsumosInventario": {"unidad_base": ("Unidades", "clave_unidad")},
@@ -345,7 +350,9 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
     tables["Roles"] = fixed["Roles"]
     tables["Unidades"] = fixed["Unidades"]
     tables["ZonasServicio"] = fixed["ZonasServicio"]
+    tables["MetodosPago"] = fixed["MetodosPago"]
     tables["EstacionesProduccion"] = fixed["EstacionesProduccion"]
+    tables["Impresoras"] = fixed["Impresoras"]
     tables["CategoriasMenu"] = fixed["CategoriasMenu"]
     tables["Mesas"] = [
         {

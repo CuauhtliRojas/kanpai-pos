@@ -85,18 +85,77 @@
       "sqlite_table": "canales_notificacion", "direction": "pull_to_sqlite", "primary_key": "clave_canal",
       "fields": {"clave_canal": "channel_key", "nombre": "name", "activo": "active"}
     },
+    "CortesCaja": {
+      "sqlite_table": "cortes_caja", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "fields": {
+        "folio": "folio", "estado": "status", "abierto_por": "opened_by_employee_id",
+        "cerrado_por": "closed_by_employee_id", "apertura_caja_centavos": "opening_cash_cents",
+        "declarado_caja_centavos": "declared_cash_cents", "esperado_caja_centavos": "expected_cash_cents",
+        "diferencia_caja_centavos": "cash_difference_cents", "ventas_total_centavos": "sales_total_cents",
+        "gastos_total_centavos": "expenses_total_cents", "neto_total_centavos": "net_total_cents",
+        "abierto_en": "opened_at", "cerrado_en": "closed_at", "id_sqlite": "id",
+        "actualizado_sqlite_en": "updated_at"
+      }
+    },
     "Tickets": {
       "sqlite_table": "tickets",
       "direction": "push_to_airtable_readonly",
-      "primary_key": "folio",
+      "primary_key": "id_sqlite",
       "fields": {
-        "folio": "folio",
-        "estado": "status",
-        "estado_pago": "payment_status",
-        "subtotal_centavos": "subtotal_cents",
-        "descuento_centavos": "discount_cents",
-        "impuesto_centavos": "tax_cents",
-        "total_centavos": "total_cents"
+        "folio": "folio", "corte_caja": "cash_shift_id", "mesa": "table_id",
+        "abierto_por": "opened_by_employee_id", "estado": "status", "estado_pago": "payment_status",
+        "subtotal_centavos": "subtotal_cents", "descuento_centavos": "discount_cents",
+        "impuesto_centavos": "tax_cents", "total_centavos": "total_cents",
+        "abierto_en": "opened_at", "pagado_en": "paid_at", "id_sqlite": "id",
+        "actualizado_sqlite_en": "updated_at"
+      }
+    },
+    "LineasTicket": {
+      "sqlite_table": "lineas_ticket", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "fields": {
+        "ticket": "ticket_id", "producto": "product_id", "tipo_linea": "line_type",
+        "cantidad": "quantity", "precio_unitario_centavos": "unit_price_cents",
+        "total_linea_centavos": "line_total_cents", "nombre_producto_snapshot": "product_name_snapshot",
+        "estado": "status", "ronda": "round_number", "id_sqlite": "id",
+        "actualizado_sqlite_en": "updated_at"
+      }
+    },
+    "Pagos": {
+      "sqlite_table": "pagos", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "fields": {
+        "folio": "folio", "ticket": "ticket_id", "corte_caja": "cash_shift_id",
+        "metodo_pago": "payment_method_id", "cajero": "cashier_employee_id",
+        "importe_centavos": "amount_cents", "recibido_centavos": "received_cents",
+        "cambio_centavos": "change_cents", "referencia": "reference", "estado": "status",
+        "id_sqlite": "id", "actualizado_sqlite_en": "updated_at"
+      }
+    },
+    "TrabajosImpresion": {
+      "sqlite_table": "trabajos_impresion", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "fields": {
+        "folio": "folio", "tipo_trabajo": "job_type", "impresora": "printer_id",
+        "clave_impresora_snapshot": "printer_key_snapshot", "ticket": "ticket_id",
+        "contenido_snapshot": "content_snapshot", "estado": "status", "intentos": "attempts",
+        "ultimo_error": "last_error", "impreso_en": "printed_at", "fallido_en": "failed_at",
+        "id_sqlite": "id", "actualizado_sqlite_en": "updated_at"
+      }
+    },
+    "HistorialSMS": {
+      "sqlite_table": "notificaciones_sms", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "fields": {
+        "canal": "channel_id", "empleado": "employee_id", "msisdn": "msisdn",
+        "mensaje": "message", "estado": "status", "modo_prueba": "test_mode",
+        "respuesta_contenido": "response_payload", "error": "error", "creado_en": "created_at",
+        "enviado_en": "sent_at", "id_sqlite": "id"
+      }
+    },
+    "EventosAuditoria": {
+      "sqlite_table": "eventos_auditoria", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "fields": {
+        "tipo_evento": "event_type", "tipo_entidad": "entity_type", "entidad_id": "entity_id",
+        "actor_empleado": "actor_employee_id", "corte_caja": "cash_shift_id", "ticket": "ticket_id",
+        "snapshot_antes": "before_snapshot", "snapshot_despues": "after_snapshot",
+        "motivo": "reason", "creado_en": "created_at", "id_sqlite": "id"
       }
     }
   }
