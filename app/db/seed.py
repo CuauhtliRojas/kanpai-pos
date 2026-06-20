@@ -19,6 +19,7 @@ from app.models import (
     Product,
     ProductPackage,
     ProductPackageItem,
+    ProductRecipe,
     ProductStationAssignment,
     ProductionStation,
     Role,
@@ -413,6 +414,33 @@ def seed_development_products(session: Session) -> None:
         },
     )
 
+
+def seed_development_recipes(session: Session) -> None:
+    """Crea recetas temporales e idempotentes para validar consumo por venta."""
+    sake_item = session.execute(
+        select(InventoryItem).where(InventoryItem.item_code == "INV-SAKE")
+    ).scalar_one()
+    quantities = {"DEV-CHELA": 100, "DEV-SAKE": 120}
+    for sku, quantity_base in quantities.items():
+        product = session.execute(
+            select(Product).where(Product.sku == sku)
+        ).scalar_one()
+        get_or_create(
+            session,
+            ProductRecipe,
+            {
+                "product_id": product.id,
+                "inventory_item_id": sake_item.id,
+            },
+            {
+                "quantity_base": quantity_base,
+                "waste_pct": 0,
+                "active": True,
+                "sync_status": "ACTIVE",
+            },
+        )
+
+
 def seed_roles_permissions_and_admin(session: Session) -> None:
     permission_defs = [
         ("DISCOUNT_AUTHORIZE", "Autorizar descuentos"),
@@ -492,6 +520,7 @@ def run_seed() -> None:
         seed_categories_and_stations(session)
         seed_logical_printers(session)
         seed_development_products(session)
+        seed_development_recipes(session)
         seed_roles_permissions_and_admin(session)
         session.commit()
 

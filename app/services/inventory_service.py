@@ -151,15 +151,22 @@ def create_inventory_movement(
     unit_cost_cents: int | None = None,
     source_type: str | None = None,
     source_id: int | None = None,
+    ticket_line_id: int | None = None,
+    require_adjust_permission: bool = True,
 ) -> InventoryMovement:
-    """Registra un movimiento firmado, auditoría y alerta sin hacer commit."""
+    """Registra un movimiento firmado, auditoría y alerta sin hacer commit.
+
+    ``require_adjust_permission`` solo se desactiva desde flujos internos que
+    ya autorizaron la operación de negocio, como el consumo por venta.
+    """
     item = db.get(InventoryItem, inventory_item_id)
     if item is None:
         raise EntityNotFoundError("El insumo no existe.")
     if not item.active:
         raise BusinessConflictError("El insumo está inactivo.")
     get_active_employee(db, employee_id)
-    require_employee_permission(db, employee_id, "INVENTORY_ADJUST")
+    if require_adjust_permission:
+        require_employee_permission(db, employee_id, "INVENTORY_ADJUST")
 
     normalized_type = movement_type.strip().upper()
     if normalized_type not in MOVEMENT_SIGNS:
@@ -184,6 +191,7 @@ def create_inventory_movement(
         unit_cost_cents_snapshot=cost,
         total_cost_cents=int(normalized_quantity * cost),
         registered_by_employee_id=employee_id,
+        ticket_line_id=ticket_line_id,
         source_type=source_type,
         source_id=source_id,
         reason=normalized_reason,

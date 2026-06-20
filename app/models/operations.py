@@ -170,6 +170,7 @@ class Ticket(TimestampMixin, Base):
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     billing_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    inventory_consumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     cancel_reason: Mapped[Optional[str]] = mapped_column(Text)
     subtotal_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

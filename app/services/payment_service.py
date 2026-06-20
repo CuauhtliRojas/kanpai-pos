@@ -12,6 +12,7 @@ from app.services.exceptions import (
 )
 from app.services.folio_service import generate_folio
 from app.services.print_service import create_ticket_print_job
+from app.services.sales_inventory_service import consume_inventory_for_paid_ticket
 from app.services.table_service import release_table_for_paid_ticket
 from app.services.ticket_service import get_active_employee, get_ticket
 
@@ -168,6 +169,7 @@ def create_payment(
     ticket.payment_status = "PAID"
     ticket.paid_at = now
     ticket.closed_by_employee_id = employee_id
+    consume_inventory_for_paid_ticket(db, ticket.id, employee_id)
     release_table_for_paid_ticket(db, ticket, employee_id)
     db.add(
         AuditEvent(

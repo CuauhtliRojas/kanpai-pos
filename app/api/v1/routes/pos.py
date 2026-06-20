@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import Payment, PrintJob, TicketLine
+from app.models import InventoryMovement, Payment, PrintJob, TicketLine
 from app.schemas import (
     BusinessErrorResponse,
     CashExpenseCreateRequest,
@@ -13,6 +13,7 @@ from app.schemas import (
     CashShiftOpenRequest,
     CashShiftResponse,
     CashShiftSummaryResponse,
+    InventoryMovementResponse,
     PaymentCreateRequest,
     PaymentCreateResponse,
     PaymentResponse,
@@ -57,6 +58,7 @@ from app.services.payment_service import (
     start_payment,
 )
 from app.services.print_service import list_pending_print_jobs
+from app.services.sales_inventory_service import list_ticket_inventory_movements
 
 router = APIRouter(prefix="/pos", tags=["pos"])
 
@@ -66,6 +68,26 @@ BUSINESS_ERROR_RESPONSES = {
     404: {"model": BusinessErrorResponse},
     409: {"model": BusinessErrorResponse},
 }
+
+
+def _inventory_movement_response(
+    movement: InventoryMovement,
+) -> InventoryMovementResponse:
+    """Traduce un movimiento persistido al contrato público de inventario."""
+    return InventoryMovementResponse(
+        id=movement.id,
+        folio=movement.folio,
+        inventory_item_id=movement.inventory_item_id,
+        movement_type=movement.movement_type,
+        quantity_base=movement.quantity_base,
+        signed_quantity_base=movement.signed_quantity_base,
+        unit_cost_cents=movement.unit_cost_cents_snapshot,
+        source_type=movement.source_type,
+        source_id=movement.source_id,
+        reason=movement.reason,
+        created_by_employee_id=movement.registered_by_employee_id,
+        created_at=movement.created_at,
+    )
 
 
 def _to_http_exception(error: BusinessError) -> HTTPException:
@@ -324,6 +346,24 @@ def list_ticket_payments_endpoint(
             remaining_cents=max(ticket.total_cents - total_paid, 0),
             closed=ticket.status == "PAID",
         )
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/tickets/{ticket_id}/inventory-movements",
+    response_model=list[InventoryMovementResponse],
+    responses={404: {"model": BusinessErrorResponse}},
+)
+def list_ticket_inventory_movements_endpoint(
+    ticket_id: int, db: Session = Depends(get_db)
+) -> list[InventoryMovementResponse]:
+    """Expone únicamente consumos de venta asociados a líneas del ticket."""
+    try:
+        return [
+            _inventory_movement_response(movement)
+            for movement in list_ticket_inventory_movements(db, ticket_id)
+        ]
     except BusinessError as error:
         raise _to_http_exception(error) from None
 

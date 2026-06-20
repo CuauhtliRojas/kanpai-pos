@@ -26,6 +26,7 @@ class TicketResponse(BaseModel):
     opened_at: datetime
     billing_started_at: datetime | None
     paid_at: datetime | None
+    inventory_consumed_at: datetime | None
     closed_by_employee_id: int | None
     cancelled_by_employee_id: int | None
     cancelled_at: datetime | None
