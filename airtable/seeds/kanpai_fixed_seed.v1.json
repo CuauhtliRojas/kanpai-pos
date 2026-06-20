@@ -1,0 +1,56 @@
+{
+  "seed_version": "1.0.0",
+  "Roles": [
+    {"clave_rol": "ADMIN", "nombre": "Administrador", "activo": true},
+    {"clave_rol": "GERENTE", "nombre": "Gerente", "activo": true},
+    {"clave_rol": "CAJERO", "nombre": "Cajero", "activo": true},
+    {"clave_rol": "ALMACEN", "nombre": "Almacen", "activo": true}
+  ],
+  "Unidades": [
+    {"clave_unidad": "G", "nombre": "g", "familia_unidad": "Masa", "activo": true},
+    {"clave_unidad": "KG", "nombre": "kg", "familia_unidad": "Masa", "activo": true},
+    {"clave_unidad": "LT", "nombre": "lt", "familia_unidad": "Volumen", "activo": true},
+    {"clave_unidad": "ML", "nombre": "ml", "familia_unidad": "Volumen", "activo": true},
+    {"clave_unidad": "OZ", "nombre": "oz", "familia_unidad": "Volumen", "activo": true},
+    {"clave_unidad": "PZA", "nombre": "pza", "familia_unidad": "Conteo", "activo": true}
+  ],
+  "ZonasServicio": [
+    {"clave_zona": "BARRA", "nombre": "Barra", "orden": 1, "activo": true},
+    {"clave_zona": "SALON", "nombre": "Salon", "orden": 2, "activo": true}
+  ],
+  "Mesas": [
+    {"codigo_mesa": "M01", "nombre_mesa": "M01 Barra", "zona": "BARRA", "orden": 1, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M02", "nombre_mesa": "M02 Barra", "zona": "BARRA", "orden": 2, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M03", "nombre_mesa": "M03 Barra", "zona": "BARRA", "orden": 3, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M04", "nombre_mesa": "M04 Barra", "zona": "BARRA", "orden": 4, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M05", "nombre_mesa": "M05 Barra", "zona": "BARRA", "orden": 5, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M06", "nombre_mesa": "M06 Barra", "zona": "BARRA", "orden": 6, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M07", "nombre_mesa": "M07 Barra", "zona": "BARRA", "orden": 7, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M08", "nombre_mesa": "M08 Barra", "zona": "BARRA", "orden": 8, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M09", "nombre_mesa": "M09 Barra", "zona": "BARRA", "orden": 9, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M10", "nombre_mesa": "M10 Salon", "zona": "SALON", "orden": 10, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M11", "nombre_mesa": "M11 Salon", "zona": "SALON", "orden": 11, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M12", "nombre_mesa": "M12 Salon", "zona": "SALON", "orden": 12, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M13", "nombre_mesa": "M13 Salon", "zona": "SALON", "orden": 13, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M14", "nombre_mesa": "M14 Salon", "zona": "SALON", "orden": 14, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M15", "nombre_mesa": "M15 Salon", "zona": "SALON", "orden": 15, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M16", "nombre_mesa": "M16 Salon", "zona": "SALON", "orden": 16, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M17", "nombre_mesa": "M17 Salon", "zona": "SALON", "orden": 17, "estado_temporal": "Libre", "activo": true}
+  ],
+  "EstacionesProduccion": [
+    {"clave_estacion": "BARRA_FRIA", "nombre": "Barra fria", "orden": 1, "activo": true},
+    {"clave_estacion": "COCTELERIA", "nombre": "Cocteleria", "orden": 2, "activo": true},
+    {"clave_estacion": "BARRA_CALIENTE", "nombre": "Barra Caliente", "orden": 3, "activo": true}
+  ],
+  "CategoriasMenu": [
+    {"nombre": "Bebidas alcohol", "orden": 1, "activo": true},
+    {"nombre": "Bebidas sin alcohol", "orden": 2, "activo": true},
+    {"nombre": "Cervezas", "orden": 3, "activo": true},
+    {"nombre": "Sake", "orden": 4, "activo": true},
+    {"nombre": "Refrescos", "orden": 5, "activo": true},
+    {"nombre": "Yakitori", "orden": 6, "activo": true}
+  ],
+  "Empleados": [
+    {"codigo_empleado": "EMP-0001", "nombre_completo": "Alejo", "alias_pos": "Alejo", "rol": "Cajero", "rol_clave": "CAJERO", "activo": true, "pin_activo": true}
+  ]
+}

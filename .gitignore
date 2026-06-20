@@ -53,3 +53,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Airtable live import artifacts
+airtable/seeds/kanpai_seed.generated.json
+
