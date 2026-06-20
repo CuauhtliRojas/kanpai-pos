@@ -49,6 +49,7 @@ class PrintJobResponse(BaseModel):
     printer_id: int
     printer_key_snapshot: str
     ticket_id: int | None
+    cash_shift_id: int | None
     station_order_id: int | None
     command_batch_id: int | None
     content_snapshot: str

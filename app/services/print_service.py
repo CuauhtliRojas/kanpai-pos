@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from unicodedata import normalize
 
 from app.models import (
+    CashShift,
     Payment,
     PrintJob,
     Printer,
@@ -80,6 +81,48 @@ def create_ticket_print_job(
         status="PENDING",
         attempts=0,
         idempotency_key=f"TICKET:{ticket.id}",
+    )
+    db.add(print_job)
+    db.flush()
+    return print_job
+
+
+def create_cash_shift_print_job(
+    db: Session, cash_shift: CashShift, summary: dict
+) -> PrintJob:
+    """Encola el corte ASCII en caja con una clave idempotente, sin commit."""
+    idempotency_key = f"CORTE:{cash_shift.id}"
+    existing = db.execute(
+        select(PrintJob).where(PrintJob.idempotency_key == idempotency_key)
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+
+    printer = get_active_printer(db, "CAJA")
+    content = "\n".join(
+        [
+            "KANPAI",
+            "CORTE",
+            f"FOLIO: {_ascii_text(cash_shift.folio)}",
+            f"VENTAS: {summary['total_sales_cents'] / 100:.2f}",
+            f"EFECTIVO ESPERADO: {cash_shift.expected_cash_cents / 100:.2f}",
+            f"EFECTIVO DECLARADO: {cash_shift.declared_cash_cents / 100:.2f}",
+            f"DIFERENCIA: {cash_shift.cash_difference_cents / 100:.2f}",
+            f"GASTOS: {summary['total_expenses_cents'] / 100:.2f}",
+            f"TICKETS PAGADOS: {summary['paid_ticket_count']}",
+            f"TICKETS CANCELADOS: {summary['cancelled_ticket_count']}",
+        ]
+    )
+    print_job = PrintJob(
+        folio=generate_folio(db, "IMPRESION"),
+        job_type="CORTE",
+        printer_id=printer.id,
+        printer_key_snapshot="CAJA",
+        cash_shift_id=cash_shift.id,
+        content_snapshot=content,
+        status="PENDING",
+        attempts=0,
+        idempotency_key=idempotency_key,
     )
     db.add(print_job)
     db.flush()

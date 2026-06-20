@@ -1,4 +1,10 @@
-from app.schemas.cash_shift import CashShiftOpenRequest, CashShiftResponse
+from app.schemas.cash_shift import (
+    CashShiftCloseRequest,
+    CashShiftCloseResponse,
+    CashShiftOpenRequest,
+    CashShiftResponse,
+    CashShiftSummaryResponse,
+)
 from app.schemas.cancellation import (
     TicketCancelRequest,
     TicketCancelResponse,
@@ -6,6 +12,7 @@ from app.schemas.cancellation import (
     TicketLineCancelResponse,
 )
 from app.schemas.common import BusinessErrorResponse
+from app.schemas.expense import CashExpenseCreateRequest, CashExpenseResponse
 from app.schemas.product import ProductResponse
 from app.schemas.payment import (
     PaymentCreateRequest,
@@ -35,6 +42,11 @@ __all__ = [
     "BusinessErrorResponse",
     "CashShiftOpenRequest",
     "CashShiftResponse",
+    "CashShiftSummaryResponse",
+    "CashShiftCloseRequest",
+    "CashShiftCloseResponse",
+    "CashExpenseCreateRequest",
+    "CashExpenseResponse",
     "TicketCancelRequest",
     "TicketCancelResponse",
     "TicketLineCancelRequest",

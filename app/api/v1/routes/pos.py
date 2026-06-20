@@ -6,8 +6,13 @@ from app.core.database import get_db
 from app.models import Payment, PrintJob, TicketLine
 from app.schemas import (
     BusinessErrorResponse,
+    CashExpenseCreateRequest,
+    CashExpenseResponse,
+    CashShiftCloseRequest,
+    CashShiftCloseResponse,
     CashShiftOpenRequest,
     CashShiftResponse,
+    CashShiftSummaryResponse,
     PaymentCreateRequest,
     PaymentCreateResponse,
     PaymentResponse,
@@ -27,7 +32,12 @@ from app.schemas import (
     TicketOpenRequest,
     TicketResponse,
 )
-from app.services.cash_shift_service import get_current_cash_shift, open_cash_shift
+from app.services.cash_shift_service import (
+    close_cash_shift,
+    get_cash_shift_summary,
+    get_current_cash_shift,
+    open_cash_shift,
+)
 from app.services.exceptions import (
     BusinessConflictError,
     BusinessError,
@@ -36,6 +46,7 @@ from app.services.exceptions import (
     PermissionDeniedError,
 )
 from app.services.cancellation_service import cancel_ticket, cancel_ticket_line
+from app.services.expense_service import create_cash_expense
 from app.services.ticket_service import get_ticket, open_ticket_for_table
 from app.services.product_service import add_product_to_ticket, get_ticket_lines
 from app.services.order_service import list_ticket_station_orders, send_round
@@ -110,6 +121,88 @@ def get_current_cash_shift_endpoint(
             detail="No existe un corte de caja abierto.",
         )
     return CashShiftResponse.model_validate(cash_shift)
+
+
+@router.post(
+    "/cash-expenses",
+    response_model=CashExpenseResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def create_cash_expense_endpoint(
+    payload: CashExpenseCreateRequest, db: Session = Depends(get_db)
+) -> CashExpenseResponse:
+    try:
+        expense = create_cash_expense(
+            db,
+            employee_id=payload.employee_id,
+            amount_cents=payload.amount_cents,
+            description=payload.description,
+            category=payload.category,
+            payment_method_id=payload.payment_method_id,
+            note=payload.note,
+        )
+        db.commit()
+        db.refresh(expense)
+        return CashExpenseResponse.model_validate(expense)
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/cash-shifts/{cash_shift_id}/summary",
+    response_model=CashShiftSummaryResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def get_cash_shift_summary_endpoint(
+    cash_shift_id: int, db: Session = Depends(get_db)
+) -> CashShiftSummaryResponse:
+    try:
+        return CashShiftSummaryResponse.model_validate(
+            get_cash_shift_summary(db, cash_shift_id)
+        )
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/cash-shifts/{cash_shift_id}/close",
+    response_model=CashShiftCloseResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def close_cash_shift_endpoint(
+    cash_shift_id: int,
+    payload: CashShiftCloseRequest,
+    db: Session = Depends(get_db),
+) -> CashShiftCloseResponse:
+    try:
+        cash_shift = close_cash_shift(
+            db,
+            cash_shift_id=cash_shift_id,
+            employee_id=payload.employee_id,
+            declared_cash_cents=payload.declared_cash_cents,
+            note=payload.note,
+            allow_pending_print_jobs=payload.allow_pending_print_jobs,
+        )
+        print_job = db.execute(
+            select(PrintJob).where(
+                PrintJob.idempotency_key == f"CORTE:{cash_shift_id}"
+            )
+        ).scalar_one()
+        response = CashShiftCloseResponse(
+            cash_shift=CashShiftResponse.model_validate(cash_shift),
+            summary=CashShiftSummaryResponse.model_validate(
+                get_cash_shift_summary(db, cash_shift_id)
+            ),
+            print_job=PrintJobResponse.model_validate(print_job),
+            closed=True,
+        )
+        db.commit()
+        return response
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
 
 
 @router.post(
