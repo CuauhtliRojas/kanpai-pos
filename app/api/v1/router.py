@@ -6,6 +6,7 @@ from app.api.v1.routes import (
     inventory,
     operations,
     pos,
+    preflight,
     printing,
     reports,
     system,
@@ -21,3 +22,4 @@ api_router.include_router(inventory.router)
 api_router.include_router(printing.router)
 api_router.include_router(reports.router)
 api_router.include_router(audit.router)
+api_router.include_router(preflight.router)
