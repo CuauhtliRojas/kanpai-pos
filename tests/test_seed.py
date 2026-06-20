@@ -10,6 +10,7 @@ from app.models import (
     Product,
     ProductPackage,
     ProductPackageItem,
+    Printer,
     Role,
 )
 from app.core.database import SessionLocal
@@ -57,6 +58,21 @@ def test_seed_initial_data_is_idempotent() -> None:
                 )
             ).scalars().all()
         )
+        logical_printer_count = len(
+            session.execute(
+                select(Printer).where(
+                    Printer.printer_key.in_(
+                        (
+                            "CAJA",
+                            "COCINA",
+                            "BARRA_FRIA",
+                            "COCTELERIA",
+                            "BARRA_CALIENTE",
+                        )
+                    )
+                )
+            ).scalars().all()
+        )
 
     assert business_count == 1
     assert ticket_sequence_count == 1
@@ -66,3 +82,4 @@ def test_seed_initial_data_is_idempotent() -> None:
     assert table_count >= 20
     assert len(demo_products) == 3
     assert package_item_count == 2
+    assert logical_printer_count == 5

@@ -12,6 +12,7 @@ from app.models import (
     PaymentMethod,
     Permission,
     PosDevice,
+    Printer,
     Product,
     ProductPackage,
     ProductPackageItem,
@@ -229,6 +230,35 @@ def seed_categories_and_stations(session: Session) -> None:
         )
 
 
+def seed_logical_printers(session: Session) -> None:
+    """Crea las impresoras lógicas usadas para encolar trabajos locales."""
+    stations = {
+        station.station_key: station
+        for station in session.execute(select(ProductionStation)).scalars()
+    }
+    printers = [
+        ("CAJA", "Caja", None),
+        ("COCINA", "Cocina", "COCINA"),
+        ("BARRA_FRIA", "Barra fría", "BARRA_FRIA"),
+        ("COCTELERIA", "Coctelería", "COCTELERIA"),
+        ("BARRA_CALIENTE", "Barra caliente", "BARRA_CALIENTE"),
+    ]
+
+    for printer_key, name, station_key in printers:
+        station = stations.get(station_key) if station_key else None
+        get_or_create(
+            session,
+            Printer,
+            {"printer_key": printer_key},
+            {
+                "name": name,
+                "station_id": station.id if station else None,
+                "connection_type": "LOGICAL",
+                "active": True,
+            },
+        )
+
+
 def seed_development_products(session: Session) -> None:
     """Crea productos temporales para probar captura simple y paquetes."""
     beer_category = session.execute(
@@ -402,6 +432,7 @@ def run_seed() -> None:
         seed_pos_devices(session)
         seed_units(session)
         seed_categories_and_stations(session)
+        seed_logical_printers(session)
         seed_development_products(session)
         seed_roles_permissions_and_admin(session)
         session.commit()

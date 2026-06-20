@@ -1,11 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.models import PrintJob, TicketLine
 from app.schemas import (
     BusinessErrorResponse,
     CashShiftOpenRequest,
     CashShiftResponse,
+    PrintJobResponse,
+    SendRoundRequest,
+    SendRoundResponse,
+    StationOrderResponse,
     TicketLineCreateRequest,
     TicketLineResponse,
     TicketLinesCreatedResponse,
@@ -21,6 +27,8 @@ from app.services.exceptions import (
 )
 from app.services.ticket_service import get_ticket, open_ticket_for_table
 from app.services.product_service import add_product_to_ticket, get_ticket_lines
+from app.services.order_service import list_ticket_station_orders, send_round
+from app.services.print_service import list_pending_print_jobs
 
 router = APIRouter(prefix="/pos", tags=["pos"])
 
@@ -180,3 +188,71 @@ def add_product_to_ticket_endpoint(
     except BusinessError as error:
         db.rollback()
         raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/tickets/{ticket_id}/send-round",
+    response_model=SendRoundResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def send_round_endpoint(
+    ticket_id: int,
+    payload: SendRoundRequest,
+    db: Session = Depends(get_db),
+) -> SendRoundResponse:
+    try:
+        batch = send_round(db, ticket_id, payload.employee_id)
+        print_jobs_created = db.scalar(
+            select(func.count(PrintJob.id)).where(
+                PrintJob.command_batch_id == batch.id
+            )
+        )
+        lines_sent = db.scalar(
+            select(func.count(TicketLine.id)).where(
+                TicketLine.ticket_id == ticket_id,
+                TicketLine.round_number == batch.round_number,
+            )
+        )
+        response = SendRoundResponse(
+            ticket_id=ticket_id,
+            command_batch_id=batch.id,
+            round_number=batch.round_number,
+            station_orders_created=len(batch.station_orders),
+            print_jobs_created=print_jobs_created or 0,
+            lines_sent=lines_sent or 0,
+        )
+        db.commit()
+        return response
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/tickets/{ticket_id}/station-orders",
+    response_model=list[StationOrderResponse],
+    responses={404: {"model": BusinessErrorResponse}},
+)
+def list_ticket_station_orders_endpoint(
+    ticket_id: int, db: Session = Depends(get_db)
+) -> list[StationOrderResponse]:
+    try:
+        return [
+            StationOrderResponse.model_validate(order)
+            for order in list_ticket_station_orders(db, ticket_id)
+        ]
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/print-jobs/pending",
+    response_model=list[PrintJobResponse],
+)
+def list_pending_print_jobs_endpoint(
+    db: Session = Depends(get_db),
+) -> list[PrintJobResponse]:
+    return [
+        PrintJobResponse.model_validate(job) for job in list_pending_print_jobs(db)
+    ]
