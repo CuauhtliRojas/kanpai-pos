@@ -268,8 +268,10 @@ Regla: los assets de identidad visual deben vivir en una carpeta estable, por ej
 frontend/src/assets/brand/
   app-logo.svg
   app-icon.svg
-  product-placeholder.webp
+  product-placeholder.svg
 ```
+
+La ubicación, los nombres estables y el procedimiento de reemplazo se detallan en `docs/frontend/frontend-brand-assets-v1.md`. Los componentes deben consumir la capa centralizada y no importar archivos de marca de forma dispersa.
 
 Si se reemplaza `app-logo.svg` por otro archivo con el mismo nombre, la aplicación debe tomar automáticamente el nuevo logo sin cambiar imports, componentes ni rutas.
 

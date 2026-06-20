@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 48" role="img" aria-labelledby="title">
+  <title id="title">Kanpai</title>
+  <path fill="#f9fafb" d="M5 5h8v15h4L28 5h10L24 23l15 20H29L17 27h-4v16H5V5Z"/>
+  <path fill="#a1a1aa" d="M39 5h4v38h-4z"/>
+  <path fill="#f9fafb" d="M59 9h8v12h4l9-12h10L77 25l14 14H80L70 28h-3v11h-8V9Zm44 0h11l13 30h-9l-2-6h-15l-2 6h-9l13-30Zm5 7-5 11h10l-5-11Zm22-7h9l13 17V9h8v30h-9l-13-17v17h-8V9Zm37 0h17c9 0 14 5 14 13s-5 13-14 13h-9v4h-8V9Zm8 7v12h8c5 0 7-2 7-6s-2-6-7-6h-8Zm35 0h9l13 30h-9l-2-6h-15l-2 6h-9l13-30Zm5 7-5 11h10l-5-11Z"/>
+  <path fill="#a1a1aa" d="M216 9h8v30h-8z"/>
+</svg>

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
 import { useAirtableSyncStatusQuery } from "../features/system/hooks/useAirtableSyncStatusQuery";
+import { BrandMark } from "../shared/components/BrandMark";
 
 const menuItems = [
   { to: "/", label: "Inicio", icon: Home, enabled: true },
@@ -92,8 +93,9 @@ export function AppShell() {
           </button>
 
           <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-            <div className="hidden min-h-9 items-center border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] px-3 text-xs font-black uppercase tracking-[0.08em] text-[var(--kp-ink)] sm:flex">
-              KANPAI
+            <div className="flex h-9 shrink-0 items-center border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] px-1 sm:px-2">
+              <BrandMark variant="icon" className="h-6 w-6 sm:hidden" />
+              <BrandMark variant="logo" className="hidden h-6 w-auto sm:block" />
             </div>
             <div className="min-w-0 truncate text-xs font-black uppercase tracking-[0.08em] sm:text-sm">
               CAJERO: SIN SESION
@@ -115,11 +117,11 @@ export function AppShell() {
         <div className="fixed inset-0 z-40 bg-[rgba(0,0,0,0.72)]">
           <aside className="h-full w-full max-w-md border-r-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
                   Menu
                 </p>
-                <h2 className="text-3xl font-black uppercase text-[var(--kp-ink)]">Kanpai</h2>
+                <BrandMark variant="logo" className="mt-1 h-10 w-auto max-w-full" />
               </div>
               <button
                 type="button"

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title description">
+  <title id="title">Producto sin imagen</title>
+  <desc id="description">Marcador visual neutro para un producto</desc>
+  <rect width="640" height="480" fill="#27272a"/>
+  <path fill="#3f3f46" d="M0 352h640v128H0z"/>
+  <g fill="none" stroke="#a1a1aa" stroke-linecap="square" stroke-linejoin="miter" stroke-width="18">
+    <path d="M192 198h256c0 91-50 146-128 146s-128-55-128-146Z"/>
+    <path d="M168 344h304M232 154h176"/>
+  </g>
+  <path fill="#71717a" d="M276 96h88v18h-88z"/>
+</svg>
