@@ -1,5 +1,11 @@
 # Cobertura del procedimiento operativo
 
+## Cierre Fase 3-M
+
+Los pendientes de producción quedan cubiertos en backend: aceptación, inicio, terminado y entrega; actores y timestamps; promedios por estación; modificación explícita; descuentos, porcentajes y cortesías autorizadas; política IVA central; y reimpresión auditada. La tabla histórica inferior conserva la fotografía previa a 3-M.
+
+Continúan fuera de alcance el frontend, Airtable/sincronización y la impresión física ESC/POS. La cola sólo produce snapshots lógicos.
+
 `Procedimiento operativo.txt` no se encontró dentro de `kanpai-pos` ni en su directorio padre durante esta auditoría. La matriz usa como fuente conceptual los requisitos operativos enumerados en el encargo y el comportamiento comprobable de routers/modelos actuales. Debe reconciliarse con el archivo original cuando esté disponible.
 
 | Requisito operativo | Soportado | Endpoint/modelo relacionado | Observaciones | Pendiente técnico |

@@ -1,5 +1,17 @@
 # Casos de uso de endpoints
 
+## Fase 3-M
+
+- `GET /api/v1/production/station-orders`: filtros de estación, estado y fecha; incluye líneas.
+- `POST /api/v1/production/station-orders/{id}/receive|start|complete|deliver`: transición estricta con empleado, timestamp y auditoría.
+- `GET /api/v1/reports/production-times`: promedios de recepción, preparación y servicio por estación.
+- `POST /api/v1/pos/ticket-lines/{line_id}/modify`: registra nota y, si ya fue enviada, encola `Modificacion`.
+- `POST|GET /api/v1/pos/tickets/{ticket_id}/discounts`: aplica/lista descuentos y cortesías autorizados.
+- `GET /api/v1/system/business-settings`: expone la política fiscal activa.
+- `GET /api/v1/printing/jobs/{id}` y `POST /api/v1/printing/jobs/{id}/reprint`: inspección y reimpresión auditada.
+
+Producción sigue `En cola` → `Recibida` → `En preparacion` → `Terminada` → `Entregada`. `Cancelada` es terminal.
+
 Fuente: router y `app.openapi()` reales al 2026-06-19. Base URL: `http://127.0.0.1:8011`. En los ejemplos se omiten campos de respuesta no esenciales. Los errores de negocio usan `{"detail":"mensaje"}` y normalmente son 400, 403, 404 o 409; 422 corresponde a validación FastAPI.
 
 ## System / health

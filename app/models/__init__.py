@@ -43,6 +43,7 @@ from app.models.operations import (
     Ticket,
     TicketDiscount,
     TicketLine,
+    TicketLineModification,
     TicketLineNote,
 )
 from app.models.sync import SyncInbox, SyncOutbox, SyncWatermark
@@ -89,6 +90,7 @@ __all__ = [
     "Ticket",
     "TicketDiscount",
     "TicketLine",
+    "TicketLineModification",
     "TicketLineNote",
     "Unit",
     "UnitConversion",

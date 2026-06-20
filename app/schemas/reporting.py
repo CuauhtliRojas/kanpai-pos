@@ -47,6 +47,7 @@ class InventoryConsumptionItem(BaseModel):
 
 class PrintJobsSummaryResponse(BaseModel):
     total_print_jobs: int
+    reprint_count: int
     pending_count: int
     claimed_count: int
     printed_count: int
@@ -54,3 +55,12 @@ class PrintJobsSummaryResponse(BaseModel):
     cancelled_count: int
     by_printer: dict[str, int]
     by_job_type: dict[str, int]
+
+
+class ProductionTimesItem(BaseModel):
+    station_id: int
+    station_name: str
+    orders_count: int
+    average_receive_seconds: float | None
+    average_prepare_seconds: float | None
+    average_total_service_seconds: float | None

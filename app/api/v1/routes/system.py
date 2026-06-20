@@ -2,6 +2,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends
+from fastapi import HTTPException, status
 
 from app.core.database import get_db
 from app.models import (
@@ -12,8 +13,21 @@ from app.models import (
     PaymentMethod,
     ProductionStation,
 )
+from app.schemas.business_setting import BusinessSettingResponse
 
 router = APIRouter(prefix="/system", tags=["system"])
+
+
+@router.get("/business-settings", response_model=BusinessSettingResponse)
+def business_settings(db: Session = Depends(get_db)) -> BusinessSettingResponse:
+    """Expose the active fiscal policy used by all ticket recalculations."""
+    setting = db.scalar(select(BusinessSetting).where(BusinessSetting.active.is_(True)))
+    if setting is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No existe configuracion de negocio activa.",
+        )
+    return BusinessSettingResponse.model_validate(setting)
 
 
 @router.get("/db")

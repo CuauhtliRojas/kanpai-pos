@@ -17,7 +17,10 @@ from app.services.exceptions import (
     BusinessError,
     EntityNotFoundError,
     InvalidBusinessDataError,
+    PermissionDeniedError,
 )
+from app.schemas.reprint import ReprintRequest
+from app.services.reprint_service import get_print_job, request_reprint
 from app.services.print_queue_service import (
     claim_next_print_job,
     list_pending_print_jobs,
@@ -30,6 +33,7 @@ router = APIRouter(prefix="/printing", tags=["printing"])
 
 BUSINESS_ERROR_RESPONSES = {
     400: {"model": BusinessErrorResponse},
+    403: {"model": BusinessErrorResponse},
     404: {"model": BusinessErrorResponse},
     409: {"model": BusinessErrorResponse},
 }
@@ -41,6 +45,8 @@ def _to_http_exception(error: BusinessError) -> HTTPException:
         status_code = status.HTTP_400_BAD_REQUEST
     elif isinstance(error, EntityNotFoundError):
         status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(error, PermissionDeniedError):
+        status_code = status.HTTP_403_FORBIDDEN
     elif isinstance(error, BusinessConflictError):
         status_code = status.HTTP_409_CONFLICT
     else:
@@ -148,6 +154,41 @@ def retry_failed_print_jobs_endpoint(
         )
         db.commit()
         return PrintJobRetryResponse(jobs_requeued=jobs_requeued)
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/jobs/{print_job_id}",
+    response_model=PrintJobResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def get_print_job_endpoint(
+    print_job_id: int, db: Session = Depends(get_db)
+) -> PrintJobResponse:
+    try:
+        return PrintJobResponse.model_validate(get_print_job(db, print_job_id))
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/jobs/{print_job_id}/reprint",
+    response_model=PrintJobResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def reprint_job_endpoint(
+    print_job_id: int,
+    payload: ReprintRequest,
+    db: Session = Depends(get_db),
+) -> PrintJobResponse:
+    try:
+        job = request_reprint(db, print_job_id, payload.employee_id, payload.reason)
+        response = PrintJobResponse.model_validate(job)
+        db.commit()
+        return response
     except BusinessError as error:
         db.rollback()
         raise _to_http_exception(error) from None

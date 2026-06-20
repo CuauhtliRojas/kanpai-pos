@@ -22,10 +22,12 @@ from app.models import (
     Payment,
     PaymentMethod,
     PrintJob,
+    ProductionStation,
     Product,
     StockAlert,
     Ticket,
     TicketLine,
+    StationOrder,
     Unit,
 )
 from app.services.exceptions import InvalidBusinessDataError
@@ -330,6 +332,9 @@ def get_print_jobs_summary(
     )
     return {
         "total_print_jobs": sum(status_counts.values()),
+        "reprint_count": _count(
+            db, PrintJob, PrintJob.idempotency_key.like("REPRINT:%"), *dates
+        ),
         "pending_count": status_counts.get(PrintStatus.PENDING, 0),
         "claimed_count": status_counts.get(PrintStatus.CLAIMED, 0),
         "printed_count": status_counts.get(PrintStatus.PRINTED, 0),
@@ -338,3 +343,55 @@ def get_print_jobs_summary(
         "by_printer": by_printer,
         "by_job_type": by_job_type,
     }
+
+
+def get_production_times(
+    db: Session, date_from: str | None = None, date_to: str | None = None
+) -> list[dict]:
+    """Average production intervals per station using only complete pairs."""
+    conditions = _date_conditions(
+        StationOrder.created_at, parse_date_range(date_from, date_to)
+    )
+    orders = list(
+        db.scalars(select(StationOrder).where(*conditions).order_by(StationOrder.id))
+    )
+    station_ids = sorted({order.station_id for order in orders})
+    stations = {
+        station.id: station
+        for station in db.scalars(
+            select(ProductionStation).where(ProductionStation.id.in_(station_ids))
+        )
+    } if station_ids else {}
+
+    def average(values: list[float]) -> float | None:
+        return sum(values) / len(values) if values else None
+
+    result = []
+    for station_id in station_ids:
+        station_orders = [order for order in orders if order.station_id == station_id]
+        receive = [
+            (order.received_at - order.created_at).total_seconds()
+            for order in station_orders
+            if order.received_at is not None
+        ]
+        prepare = [
+            (order.completed_at - order.started_at).total_seconds()
+            for order in station_orders
+            if order.started_at is not None and order.completed_at is not None
+        ]
+        total = [
+            (order.delivered_at - order.created_at).total_seconds()
+            for order in station_orders
+            if order.delivered_at is not None
+        ]
+        result.append(
+            {
+                "station_id": station_id,
+                "station_name": stations[station_id].name,
+                "orders_count": len(station_orders),
+                "average_receive_seconds": average(receive),
+                "average_prepare_seconds": average(prepare),
+                "average_total_service_seconds": average(total),
+            }
+        )
+    return result

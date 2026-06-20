@@ -8,6 +8,7 @@ from app.domain.constants import (
     CommandValue,
     PrintJobType,
     PrintStatus,
+    ProductionOrderStatus,
     TicketLineStatus,
     TicketLineType,
     TicketStatus,
@@ -159,7 +160,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
             ticket_id=ticket.id,
             station_id=station.id,
             folio=generate_folio(db, "COMANDA"),
-            status=CommandValue.QUEUED,
+            status=ProductionOrderStatus.QUEUED,
         )
         db.add(station_order)
         db.flush()

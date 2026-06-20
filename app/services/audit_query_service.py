@@ -13,7 +13,9 @@ from app.models import (
     PrintJob,
     StationOrder,
     Ticket,
+    TicketDiscount,
     TicketLine,
+    TicketLineModification,
 )
 from app.services.cash_shift_service import get_cash_shift_summary
 from app.services.exceptions import EntityNotFoundError, InvalidBusinessDataError
@@ -133,6 +135,16 @@ def get_ticket_audit(db: Session, ticket_id: int) -> dict:
         "lines": lines,
         "payments": db.scalars(
             select(Payment).where(Payment.ticket_id == ticket_id).order_by(Payment.id)
+        ).all(),
+        "discounts": db.scalars(
+            select(TicketDiscount)
+            .where(TicketDiscount.ticket_id == ticket_id)
+            .order_by(TicketDiscount.id)
+        ).all(),
+        "modifications": db.scalars(
+            select(TicketLineModification)
+            .where(TicketLineModification.ticket_id == ticket_id)
+            .order_by(TicketLineModification.id)
         ).all(),
         "station_orders": station_orders,
         "print_jobs": db.scalars(

@@ -20,6 +20,7 @@ from app.domain.constants import (
     CommandValue,
     ConnectionType,
     PriceMode,
+    ProductionOrderStatus,
     SyncStatus,
     TableStatus,
     TicketLineStatus,
@@ -61,6 +62,18 @@ class BusinessSetting(TimestampMixin, Base):
         "timezone", String(80), default="America/Mexico_City", nullable=False
     )
     active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+    tax_enabled: Mapped[bool] = db_column(
+        "tax_enabled", Boolean, default=True, nullable=False
+    )
+    tax_rate_bps: Mapped[int] = db_column(
+        "tax_rate_bps", Integer, default=1600, nullable=False
+    )
+    tax_included: Mapped[bool] = db_column(
+        "tax_included", Boolean, default=False, nullable=False
+    )
+    tax_label: Mapped[str] = db_column(
+        "tax_label", String(40), default="IVA", nullable=False
+    )
 
 
 class FolioSequence(TimestampMixin, Base):
@@ -399,6 +412,28 @@ class TicketLineNote(Base):
     ticket_line: Mapped["TicketLine"] = relationship(back_populates="notes")
 
 
+class TicketLineModification(Base):
+    __tablename__ = "modificaciones_linea_ticket"
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    ticket_line_id: Mapped[int] = db_column(
+        "ticket_line_id", ForeignKey("lineas_ticket.id"), nullable=False
+    )
+    ticket_id: Mapped[int] = db_column(
+        "ticket_id", ForeignKey("tickets.id"), nullable=False
+    )
+    note: Mapped[str] = db_column("note", Text, nullable=False)
+    created_by_employee_id: Mapped[int] = db_column(
+        "created_by_employee_id", ForeignKey("empleados.id"), nullable=False
+    )
+    created_at: Mapped[datetime] = db_column(
+        "created_at", DateTime, default=datetime.utcnow, nullable=False
+    )
+    print_job_id: Mapped[Optional[int]] = db_column(
+        "print_job_id", ForeignKey("trabajos_impresion.id")
+    )
+
+
 class TicketDiscount(Base):
     __tablename__ = "descuentos_ticket"
 
@@ -409,6 +444,10 @@ class TicketDiscount(Base):
     promotion_id: Mapped[Optional[int]] = db_column("promotion_id", Integer)
     discount_source: Mapped[str] = db_column(
         "discount_source", String(32), nullable=False
+    )
+    percent_bps: Mapped[Optional[int]] = db_column("percent_bps", Integer)
+    is_courtesy: Mapped[bool] = db_column(
+        "is_courtesy", Boolean, default=False, nullable=False
     )
     amount_cents: Mapped[int] = db_column(
         "amount_cents", Integer, default=0, nullable=False
@@ -524,13 +563,24 @@ class StationOrder(Base):
     )
     folio: Mapped[str] = db_column("folio", String(40), unique=True, nullable=False)
     status: Mapped[str] = db_column(
-        "status", String(32), default=CommandValue.QUEUED, nullable=False
+        "status", String(32), default=ProductionOrderStatus.QUEUED, nullable=False
     )
     received_at: Mapped[Optional[datetime]] = db_column("received_at", DateTime)
-    accepted_at: Mapped[Optional[datetime]] = db_column("accepted_at", DateTime)
     started_at: Mapped[Optional[datetime]] = db_column("started_at", DateTime)
-    finished_at: Mapped[Optional[datetime]] = db_column("finished_at", DateTime)
+    completed_at: Mapped[Optional[datetime]] = db_column("completed_at", DateTime)
     delivered_at: Mapped[Optional[datetime]] = db_column("delivered_at", DateTime)
+    received_by_employee_id: Mapped[Optional[int]] = db_column(
+        "received_by_employee_id", ForeignKey("empleados.id")
+    )
+    started_by_employee_id: Mapped[Optional[int]] = db_column(
+        "started_by_employee_id", ForeignKey("empleados.id")
+    )
+    completed_by_employee_id: Mapped[Optional[int]] = db_column(
+        "completed_by_employee_id", ForeignKey("empleados.id")
+    )
+    delivered_by_employee_id: Mapped[Optional[int]] = db_column(
+        "delivered_by_employee_id", ForeignKey("empleados.id")
+    )
     created_at: Mapped[datetime] = db_column(
         "created_at", DateTime, default=datetime.utcnow, nullable=False
     )

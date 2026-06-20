@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict
 
 from app.schemas.cash_shift import CashShiftResponse, CashShiftSummaryResponse
 from app.schemas.expense import CashExpenseResponse
+from app.schemas.discount import DiscountResponse
+from app.schemas.modification import TicketLineModificationResponse
 from app.schemas.order import StationOrderResponse
 from app.schemas.payment import PaymentResponse
 from app.schemas.print_job import PrintJobResponse
@@ -57,6 +59,8 @@ class TicketAuditResponse(BaseModel):
     ticket: TicketResponse
     lines: list[TicketLineResponse]
     payments: list[PaymentResponse]
+    discounts: list[DiscountResponse]
+    modifications: list[TicketLineModificationResponse]
     station_orders: list[StationOrderResponse]
     print_jobs: list[PrintJobResponse]
     inventory_movements: list[AuditInventoryMovementResponse]

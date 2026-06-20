@@ -1,5 +1,16 @@
 # Guía de integración frontend
 
+## Integración Fase 3-M
+
+El contrato backend está disponible, pero esta fase no implementa frontend. Cocina/barra debe consultar `/production/station-orders` y mostrar sólo la siguiente acción válida. Las modificaciones usan `/ticket-lines/{id}/modify`; una línea enviada genera el aviso lógico automáticamente.
+
+Consultar `/system/business-settings` antes de presentar importes. Si `tax_included=true`, `tax_cents` es informativo y no debe sumarse otra vez. Los porcentajes usan bps (1000 = 10 %). Descuentos y reimpresiones siempre solicitan motivo y empleado autorizador.
+
+```ts
+type ProductionStatus = "En cola" | "Recibida" | "En preparacion" | "Terminada" | "Entregada" | "Cancelada";
+type DiscountType = "Monto" | "Porcentaje" | "Cortesia";
+```
+
 Base local: `http://127.0.0.1:8011`. Consumir JSON con `Content-Type: application/json`. Los endpoints siguen en inglés; las claves JSON siguen en inglés; estados, tipos y métodos persistidos llegan y se envían en español legible, incluyendo espacios.
 
 ## Errores y estados

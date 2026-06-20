@@ -31,10 +31,12 @@ from app.models import (  # noqa: E402
     Ticket,
     TicketDiscount,
     TicketLine,
+    TicketLineModification,
     TicketLineNote,
 )
 
 OPERATIONAL_MODELS = (
+    TicketLineModification,
     StockAlert,
     InventoryMovement,
     PurchaseReceiptLine,

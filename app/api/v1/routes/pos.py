@@ -66,6 +66,13 @@ from app.services.payment_service import (
 )
 from app.services.print_queue_service import list_pending_print_jobs
 from app.services.sales_inventory_service import list_ticket_inventory_movements
+from app.schemas.discount import DiscountCreateRequest, DiscountResponse
+from app.schemas.modification import (
+    TicketLineModificationResponse,
+    TicketLineModifyRequest,
+)
+from app.services.discount_service import apply_discount, list_ticket_discounts
+from app.services.modification_service import modify_ticket_line
 
 router = APIRouter(prefix="/pos", tags=["pos"])
 
@@ -584,4 +591,71 @@ def cancel_ticket_endpoint(
         return response
     except BusinessError as error:
         db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/ticket-lines/{line_id}/modify",
+    response_model=TicketLineModificationResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def modify_ticket_line_endpoint(
+    line_id: int,
+    payload: TicketLineModifyRequest,
+    db: Session = Depends(get_db),
+) -> TicketLineModificationResponse:
+    try:
+        modification = modify_ticket_line(db, line_id, payload.employee_id, payload.note)
+        response = TicketLineModificationResponse.model_validate(modification)
+        db.commit()
+        return response
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.post(
+    "/tickets/{ticket_id}/discounts",
+    response_model=DiscountResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def apply_discount_endpoint(
+    ticket_id: int,
+    payload: DiscountCreateRequest,
+    db: Session = Depends(get_db),
+) -> DiscountResponse:
+    try:
+        discount = apply_discount(
+            db,
+            ticket_id,
+            payload.employee_id,
+            payload.discount_type,
+            payload.amount_cents,
+            payload.percent_bps,
+            payload.reason,
+            payload.is_courtesy,
+        )
+        response = DiscountResponse.model_validate(discount)
+        db.commit()
+        return response
+    except BusinessError as error:
+        db.rollback()
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/tickets/{ticket_id}/discounts",
+    response_model=list[DiscountResponse],
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def list_discounts_endpoint(
+    ticket_id: int, db: Session = Depends(get_db)
+) -> list[DiscountResponse]:
+    try:
+        return [
+            DiscountResponse.model_validate(discount)
+            for discount in list_ticket_discounts(db, ticket_id)
+        ]
+    except BusinessError as error:
         raise _to_http_exception(error) from None

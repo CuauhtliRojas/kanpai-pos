@@ -27,10 +27,25 @@ class TicketLineType:
     PACKAGE_COMPONENT = "Componente de paquete"
 
 
+class TicketLineNoteType:
+    MODIFICATION = "Modificacion"
+
+
+class PermissionKey:
+    DISCOUNT_AUTHORIZE = "DISCOUNT_AUTHORIZE"
+    REPRINT = "REPRINT"
+
+
 class PriceMode:
     NORMAL = "Normal"
     PACKAGE_PRICE = "Precio de paquete"
     INCLUDED_IN_PACKAGE = "Incluido en paquete"
+
+
+class DiscountType:
+    AMOUNT = "Monto"
+    PERCENT = "Porcentaje"
+    COURTESY = "Cortesia"
 
 
 class CommandValue:
@@ -39,11 +54,21 @@ class CommandValue:
     ADD = "Agregar"
 
 
+class ProductionOrderStatus:
+    QUEUED = "En cola"
+    RECEIVED = "Recibida"
+    IN_PREPARATION = "En preparacion"
+    COMPLETED = "Terminada"
+    DELIVERED = "Entregada"
+    CANCELLED = "Cancelada"
+
+
 class PrintJobType:
     COMMAND = "Comanda"
     TICKET = "Ticket"
     CASH_SHIFT = "Corte"
     COMMAND_CANCELLATION = "Cancelacion comanda"
+    MODIFICATION = "Modificacion"
 
 
 class PrintStatus:
@@ -165,6 +190,14 @@ AUDIT_EVENT_VALUES = {
     "PURCHASE_RECEIPT_PROCESSED": "Recepcion procesada",
     "STOCK_ALERT_OPENED": "Alerta de stock abierta",
     "STOCK_ALERT_RESOLVED": "Alerta de stock resuelta",
+    "PRODUCTION_ORDER_RECEIVED": "Orden de produccion recibida",
+    "PRODUCTION_ORDER_STARTED": "Orden de produccion iniciada",
+    "PRODUCTION_ORDER_COMPLETED": "Orden de produccion terminada",
+    "PRODUCTION_ORDER_DELIVERED": "Orden de produccion entregada",
+    "TICKET_LINE_MODIFIED": "Modificacion de linea",
+    "DISCOUNT_APPLIED": "Descuento aplicado",
+    "COURTESY_APPLIED": "Cortesia aplicada",
+    "REPRINT_REQUESTED": "Reimpresion solicitada",
 }
 
 

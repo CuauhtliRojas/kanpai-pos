@@ -1,5 +1,11 @@
 # Cierre del backend local-first
 
+## Extensión Fase 3-M
+
+El cierre funcional incorpora la máquina de estados de producción completa, medición de intervalos, entrega como estado propio, modificaciones trazables, descuentos/cortesías con permiso, cálculo fiscal desde `configuracion_negocio` y reimpresión clonada con auditoría. La migración `b3f4c8d91a20` mantiene atributos ORM en inglés y columnas SQLite en español.
+
+No se agregó PATCH fiscal: la política se expone por GET y su edición queda reservada a configuración administrativa futura con un permiso explícito.
+
 ## Estado final antes de Airtable
 
 El backend FastAPI opera sobre SQLite con SQLAlchemy y Alembic. El ciclo POS
