@@ -9,6 +9,11 @@
   catalog: {
     categories: ["catalog", "categories"] as const,
     products: ["catalog", "products"] as const,
+    stations: ["catalog", "stations"] as const,
+  },
+  commands: {
+    stationOrders: (ticketId: number) =>
+      ["commands", "station-orders", ticketId] as const,
   },
   tables: {
     list: ["tables", "list"] as const,

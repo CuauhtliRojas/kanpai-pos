@@ -44,18 +44,6 @@ export function ActiveTicketLinesPanel({
         </ul>
       )}
 
-      <div className="mt-4 border-t-2 border-zinc-700 pt-4">
-        <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
-          Siguiente paso
-        </p>
-        <button
-          type="button"
-          disabled
-          className="w-full cursor-not-allowed border-4 border-[var(--kp-ink)] bg-zinc-700 px-4 py-3 font-black uppercase text-zinc-400 opacity-70"
-        >
-          Enviar comanda
-        </button>
-      </div>
     </aside>
   );
 }

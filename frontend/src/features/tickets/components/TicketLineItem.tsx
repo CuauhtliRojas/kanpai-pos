@@ -11,9 +11,11 @@ export function TicketLineItem({ line }: { line: TicketLine }) {
       <p className="mt-1 text-sm font-bold text-[var(--kp-muted)]">
         {line.quantity} × {formatCentsToPesos(line.unit_price_cents)}
       </p>
-      <p className="mt-1 text-xs font-black uppercase tracking-wide text-amber-400">
-        Pendiente de enviar
-      </p>
+      {line.status === "Capturado" ? (
+        <p className="mt-1 text-xs font-black uppercase tracking-wide text-amber-400">
+          Pendiente de enviar
+        </p>
+      ) : null}
     </li>
   );
 }

@@ -4,6 +4,8 @@ import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { useAuthSession } from "../../auth/hooks/useAuthSession";
 import { useCurrentCashShiftQuery } from "../../cash/hooks/useCurrentCashShiftQuery";
+import { SendCommandPanel } from "../../commands/components/SendCommandPanel";
+import { StationOrdersPanel } from "../../commands/components/StationOrdersPanel";
 import { CategoryFilterBar } from "../../products/components/CategoryFilterBar";
 import { ProductGrid } from "../../products/components/ProductGrid";
 import { useCategoriesQuery } from "../../products/hooks/useCategoriesQuery";
@@ -44,6 +46,9 @@ export function PosTablesPage() {
   const ticketQuery = useTicketQuery(activeTicket?.id ?? null);
   const displayedTicket = ticketQuery.data ?? activeTicket;
   const linesQuery = useTicketLinesQuery(displayedTicket?.id ?? null);
+  const pendingLineCount = (linesQuery.data ?? []).filter(
+    (line) => line.status === "Capturado",
+  ).length;
 
   const categories = useMemo(
     () => (categoriesQuery.data ?? []).filter((category) => category.active),
@@ -187,6 +192,13 @@ export function PosTablesPage() {
               isLoading={linesQuery.isPending}
               hasError={linesQuery.isError}
             />
+            <SendCommandPanel
+              ticketId={displayedTicket?.id ?? null}
+              employeeId={employee?.id ?? null}
+              pendingLineCount={pendingLineCount}
+              isLoadingLines={linesQuery.isPending}
+            />
+            <StationOrdersPanel ticketId={displayedTicket?.id ?? null} />
           </div>
         </div>
       )}
