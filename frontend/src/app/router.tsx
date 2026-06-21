@@ -3,6 +3,7 @@ import { LoginPage } from "../features/auth/pages/LoginPage";
 import { useAuthSession } from "../features/auth/hooks/useAuthSession";
 import { AccessDeniedPanel } from "../features/auth/components/AccessDeniedPanel";
 import { PermissionGate } from "../features/auth/components/PermissionGate";
+import { CashPage } from "../features/cash/pages/CashPage";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
 import { navigationItems, type NavigationItem } from "../layouts/navigationItems";
@@ -58,13 +59,26 @@ export function AppRouter() {
           <Route element={<AppShell />}>
             <Route index element={<SystemDashboardPage />} />
             <Route path="system" element={<SystemDashboardPage />} />
-            {moduleNavigationItems.map((item) => (
-              <Route
-                key={item.to}
-                path={item.to.slice(1)}
-                element={<ModulePlaceholder item={item} />}
-              />
-            ))}
+            <Route
+              path="cash"
+              element={
+                <PermissionGate
+                  anyOf={["CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE"]}
+                  fallback={<AccessDeniedPanel />}
+                >
+                  <CashPage />
+                </PermissionGate>
+              }
+            />
+            {moduleNavigationItems
+              .filter((item) => item.to !== "/cash")
+              .map((item) => (
+                <Route
+                  key={item.to}
+                  path={item.to.slice(1)}
+                  element={<ModulePlaceholder item={item} />}
+                />
+              ))}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>
