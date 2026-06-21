@@ -7,15 +7,16 @@ La interfaz se alinea con el flujo operativo: mesa → cuenta → captura de pro
 | 1. Login / cajero activo | Soportado |
 | 2. Apertura de caja | Soportado |
 | 3. Apertura de mesa/cuenta | Soportado |
-| 4. Captura de productos | Soportado en Fase 6 |
-| 5. Confirmar pedido / enviar comanda | Soportado en Fase 7 si el envío responde correctamente |
+| 4. Captura de productos | Completo: productos reales y confirmación del servicio |
+| 5. Confirmar pedido / enviar comanda | Completo: envío explícito y comandas reales |
 | 6. Separar Cocina/Barra | Soportado con las estaciones reales devueltas por el servicio |
-| 7. Producción acepta/inicia/termina | Soportado mediante transiciones estrictas y empleado activo |
+| 7. Producción acepta/inicia/termina | Parcial: transiciones estrictas soportadas; entrega pendiente en UI |
 | 8. Modificaciones con ticket nuevo | Parcial: modificación auditada y aviso a estación soportados; el contrato no crea ticket nuevo |
 | 9. Cancelaciones autorizadas | Soportado con motivo, empleado activo y permiso `TICKET_CANCEL` |
-| 10. Impresión de cuenta | Cola pendiente y reimpresión auditada soportadas; impresión física e historial completo pendientes |
+| 10. Impresión de cuenta | Parcial: cola y reimpresión auditada; impresión física e historial completo pendientes |
 | 11. Cobro y cierre | Soportado en Fase 8 cuando el pago confirma el cierre y libera la mesa |
-| 12. Reportes/auditoría | Soportado para `ADMIN` con ventas, operación, impresión y eventos reales; ventas por categoría pendiente |
+| 12. Reportes/auditoría | Parcial: ventas, operación, impresión y eventos reales; categoría y paginación pendientes |
+| 13. Sistema/sincronización | Completo: salud, estado, fechas, error operativo y acción manual confirmada para `ADMIN` |
 
 Agregar productos a la cuenta no confirma el pedido ni genera comandas. El envío requiere una confirmación explícita. Producción permite aceptar, iniciar y terminar con las transiciones reales del servicio.
 

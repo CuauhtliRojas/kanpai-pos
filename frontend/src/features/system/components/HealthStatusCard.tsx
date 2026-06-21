@@ -3,7 +3,6 @@ import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { SurfaceCard } from "../../../shared/components/SurfaceCard";
-import { getErrorMessage } from "../../../shared/lib/errors";
 import { useHealthQuery } from "../hooks/useHealthQuery";
 
 export function HealthStatusCard() {
@@ -11,7 +10,7 @@ export function HealthStatusCard() {
 
   if (healthQuery.isPending) {
     return (
-      <SurfaceCard title="Sistema" eyebrow="Estado">
+      <SurfaceCard title="Datos locales" eyebrow="Sistema">
         <LoadingState />
       </SurfaceCard>
     );
@@ -19,10 +18,10 @@ export function HealthStatusCard() {
 
   if (healthQuery.isError) {
     return (
-      <SurfaceCard title="Sistema" eyebrow="Estado">
+      <SurfaceCard title="Datos locales" eyebrow="Sistema">
         <ErrorState
-          title="Sin conexion"
-          message={getErrorMessage(healthQuery.error)}
+          title="Sin conexión"
+          message="Revisar conexión o pedir ayuda."
         />
       </SurfaceCard>
     );
@@ -30,8 +29,8 @@ export function HealthStatusCard() {
 
   return (
     <SurfaceCard
-      title="Sistema"
-      eyebrow="Estado"
+      title="Datos locales"
+      eyebrow="Sistema"
       action={<StatusBadge label="Conectado" tone="ok" />}
     >
       <div className="grid gap-3 text-sm font-bold text-[var(--kp-text)]">
@@ -39,8 +38,7 @@ export function HealthStatusCard() {
           <Activity className="h-6 w-6 text-[var(--kp-selected)]" />
           <span className="font-black uppercase">Listo para operar</span>
         </div>
-        <p>Modo: local</p>
-        <p>Datos: disponibles en esta computadora</p>
+        <p>Información disponible en esta computadora.</p>
       </div>
     </SurfaceCard>
   );

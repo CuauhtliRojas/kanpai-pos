@@ -52,7 +52,7 @@ export const navigationItems: readonly NavigationItem[] = [
     to: "/inventory",
     label: "Inventario",
     icon: Boxes,
-    status: "available",
+    status: "coming_soon",
     anyPermission: ["INVENTORY_ADJUST"],
   },
   { to: "/reports", label: "Reportes", icon: BarChart3, status: "available", adminOnly: true },

@@ -16,3 +16,16 @@ export type AirtableSyncStatus = {
   last_status: string;
   last_error: string | null;
 };
+
+export type AirtableSyncRunRequest = {
+  dry_run: boolean;
+  confirm: string;
+  force_pull_during_active_shift: boolean;
+};
+
+export type AirtableSyncRunResponse = {
+  accepted: boolean;
+  status: string;
+  mode: string;
+  error?: string | null;
+};

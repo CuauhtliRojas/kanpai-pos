@@ -42,7 +42,7 @@ function MenuItem({ item, access, onNavigate }: MenuItemProps) {
           "flex min-h-[var(--kp-touch-md)] items-center justify-between gap-3 border-4 border-[var(--kp-ink)] px-4 text-sm font-black uppercase tracking-[0.08em] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
           isActive
             ? "bg-[var(--kp-accent)] text-[var(--kp-accent-contrast)]"
-            : "bg-[var(--kp-surface-raised)] text-[var(--kp-ink)]",
+            : "bg-[var(--kp-surface-raised)] text-[var(--kp-text)]",
         ].join(" ")
       }
     >
@@ -62,47 +62,54 @@ function resolveEstadoSignal(
 ): { label: string; className: string } {
   if (isError) {
     return {
-      label: "SIN CONEXION",
+      label: "SIN CONEXIÓN",
       className: "border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)]",
     };
   }
 
   if (running) {
     return {
-      label: "ACTUALIZANDO",
+      label: "ACTUALIZACIÓN PENDIENTE",
       className: "border-[var(--kp-ink)] bg-[var(--kp-info)] text-[var(--kp-info-contrast)]",
     };
   }
 
-  if (!status || status === "not_started") {
+  if (!status || status === "not_started" || status.includes("disabled") || status.includes("no_directions")) {
     return {
-      label: "PENDIENTE",
+      label: "ACTUALIZACIÓN PENDIENTE",
       className: "border-[var(--kp-ink)] bg-[var(--kp-warning)] text-[var(--kp-warning-contrast)]",
     };
   }
 
   if (status.includes("error") || status.includes("missing")) {
     return {
-      label: "SIN CONEXION",
+      label: "REVISAR CONEXIÓN",
       className: "border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)]",
     };
   }
 
+  if (status.includes("success")) {
+    return {
+      label: "DATOS AL DÍA",
+      className: "border-[var(--kp-ink)] bg-[var(--kp-success)] text-[var(--kp-success-contrast)]",
+    };
+  }
+
   return {
-    label: "CONECTADO",
-    className: "border-[var(--kp-ink)] bg-[var(--kp-success)] text-[var(--kp-success-contrast)]",
+    label: "ACTUALIZACIÓN PENDIENTE",
+    className: "border-[var(--kp-ink)] bg-[var(--kp-warning)] text-[var(--kp-warning-contrast)]",
   };
 }
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout, permissions, roles } = useAuthSession();
-  const EstadoQuery = useAirtableSyncStatusQuery();
+  const syncQuery = useAirtableSyncStatusQuery();
 
-  const EstadoSignal = resolveEstadoSignal(
-    EstadoQuery.data?.last_status,
-    EstadoQuery.data?.running,
-    EstadoQuery.isError,
+  const statusSignal = resolveEstadoSignal(
+    syncQuery.data?.last_status,
+    syncQuery.data?.running,
+    syncQuery.isError,
   );
 
   return (
@@ -111,7 +118,7 @@ export function AppShell() {
         <div className="grid h-full grid-cols-[auto_1fr_auto] items-center gap-3 px-3">
           <button
             type="button"
-            aria-label="Abrir Menu"
+            aria-label="Abrir menú"
             onClick={() => setMenuOpen(true)}
             className="flex h-10 w-12 items-center justify-center border-4 border-[var(--kp-ink)] bg-[var(--kp-warning)] text-[var(--kp-ink)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
           >
@@ -128,9 +135,9 @@ export function AppShell() {
           </div>
 
           <div
-            className={`flex min-h-9 items-center border-4 px-3 text-xs font-black uppercase tracking-[0.08em] ${EstadoSignal.className}`}
+            className={`flex min-h-9 items-center border-4 px-3 text-[10px] font-black uppercase tracking-[0.06em] sm:text-xs sm:tracking-[0.08em] ${statusSignal.className}`}
           >
-            {EstadoSignal.label}
+            {statusSignal.label}
           </div>
         </div>
       </header>
@@ -141,13 +148,13 @@ export function AppShell() {
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
-                  Menu
+                  Menú
                 </p>
                 <BrandMark variant="logo" className="mt-1 h-10 w-auto max-w-full" />
               </div>
               <button
                 type="button"
-                aria-label="Cerrar Menu"
+                aria-label="Cerrar menú"
                 onClick={() => setMenuOpen(false)}
                 className="flex h-12 w-12 items-center justify-center border-4 border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
               >
@@ -172,7 +179,7 @@ export function AppShell() {
                 setMenuOpen(false);
                 void logout().catch(() => undefined);
               }}
-              className="mt-5 flex min-h-[var(--kp-touch-md)] w-full items-center gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-4 text-sm font-black uppercase tracking-[0.08em] text-[var(--kp-ink)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+              className="mt-5 flex min-h-[var(--kp-touch-md)] w-full items-center gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-4 text-sm font-black uppercase tracking-[0.08em] text-[var(--kp-text)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
             >
               <LogOut className="h-6 w-6" />
               Cerrar sesión
@@ -186,7 +193,7 @@ export function AppShell() {
       </main>
 
       <footer className="sr-only">
-        Navegacion administrativa oculta. Area principal reservada para operacion POS.
+        Navegación administrativa oculta. Área principal reservada para operación POS.
       </footer>
     </div>
   );
