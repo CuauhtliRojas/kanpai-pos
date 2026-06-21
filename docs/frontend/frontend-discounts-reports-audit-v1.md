@@ -24,10 +24,12 @@ La ruta `/reports` está disponible para el rol `ADMIN` y consulta datos del dí
 
 - `GET /api/v1/reports/operational-summary`
 - `GET /api/v1/reports/sales-by-product`
+- `GET /api/v1/reports/sales-by-payment-method`
+- `GET /api/v1/reports/inventory-consumption`
 - `GET /api/v1/reports/production-times`
 - `GET /api/v1/reports/print-jobs-summary`
 
-La pantalla muestra ventas, número de tickets, cancelaciones, cuentas abiertas, ventas por producto, tiempos por estación y estado resumido de impresión. Los valores nulos de tiempo se muestran como “Sin datos”.
+La pantalla muestra ventas, número de tickets, cancelaciones, cuentas abiertas, ventas por producto, ventas por forma de pago, consumo de inventario, tiempos por estación y estado resumido de impresión. Los valores nulos de tiempo se muestran como “Sin datos”.
 
 No existe reporte de ventas por categoría, por lo que ese apartado permanece “En preparación”.
 

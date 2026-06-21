@@ -73,23 +73,20 @@ frontend/src/features/security/
 
 ### Pendiente
 
-- Roles y permisos por empleado no tienen contrato; los query keys `security.roles` y `security.permissions` están reservados para cuando existan.
+- Roles y permisos por empleado no tienen contrato. No existen query keys reservados para rutas inexistentes.
 - No hay endpoint de edición ni creación de empleados; ninguna acción de escritura está expuesta.
 
 ---
 
-## Query keys agregados
+## Query keys activas
 
 ```typescript
 inventory: {
   items: ["inventory", "items"],
   stockAlerts: ["inventory", "stock-alerts"],
-  movements: ["inventory", "movements"],      // reservado, sin endpoint GET
 }
 security: {
   employees: ["security", "employees"],
-  roles: ["security", "roles"],               // reservado, sin endpoint
-  permissions: ["security", "permissions"],   // reservado, sin endpoint
 }
 ```
 

@@ -14,14 +14,14 @@ La ventana Tauri está configurada en 1180 × 760, con mínimo de 1024 × 680. E
 | Caja | Completo | Apertura, resumen, gastos y cierre |
 | Mesas y cuentas | Completo | Selección, apertura, continuidad y liberación confirmada |
 | Productos y comandas | Completo | Captura y envío por estaciones reales |
-| Producción | Parcial | Aceptar, iniciar y terminar; entrega no expuesta |
+| Producción | Completo | Aceptar, iniciar, terminar y entregar con transiciones contractuales |
 | Impresión | Parcial | Cola pendiente, reintento y reimpresión; impresión física separada |
 | Pagos | Completo | Inicio de cobro, pagos y cierre confirmado |
 | Modificaciones | Parcial | Registro auditado y aviso; no crea ticket nuevo |
 | Cancelaciones | Completo | Motivo y permiso `TICKET_CANCEL` |
 | Descuentos y cortesías | Completo | Permiso `DISCOUNT_AUTHORIZE` y total confirmado |
 | Promociones | Pendiente | Sin contrato de catálogo o aplicación |
-| Reportes | Parcial | Día, producto, producción e impresión; categoría pendiente |
+| Reportes | Parcial | Día, producto, forma de pago, consumo, producción e impresión; categoría sin contrato |
 | Auditoría | Parcial | Últimos 100 eventos, sin paginación |
 | Sistema y Airtable | Completo | Salud, estado, fechas, error operativo y ejecución manual para `ADMIN` |
 | Inventario | Parcial | Stock, alertas de bajo stock y ajuste manual con `INVENTORY_ADJUST`; historial sin endpoint GET |
@@ -39,7 +39,7 @@ Usar una caja, mesa, cuenta, comanda y trabajo de impresión de prueba.
 | 4 | Agregar producto | Producto aparece pendiente de enviar | Sí |
 | 5 | Enviar comanda | Se crean comandas por estación | Sí |
 | 6 | Abrir Producción | Estaciones y comandas reales visibles | No |
-| 7 | Aceptar, iniciar o terminar comanda de prueba | Estado cambia solo tras confirmación | Sí |
+| 7 | Aceptar, iniciar, terminar o entregar comanda de prueba | Estado cambia solo tras confirmación | Sí |
 | 8 | Abrir Impresión | Cola pendiente real visible | No |
 | 9 | Modificar o cancelar producto de prueba | Nota/motivo y autorización respetados | Sí |
 | 10 | Aplicar descuento de prueba | Total cambia solo con respuesta confirmada | Sí |
@@ -98,7 +98,6 @@ Ver `docs/frontend/frontend-local-release-v1.md` para instrucciones completas de
 - Ventas por categoría.
 - Ticket nuevo por modificación.
 - Historial general de trabajos impresos/fallidos e impresión física integrada.
-- Entrega de comanda desde Producción.
 - Paginación/filtros de Auditoría.
 - Historial de movimientos de inventario (sin endpoint GET).
 - Roles y permisos detallados por empleado (sin endpoints actuales).
@@ -109,7 +108,7 @@ Ver `docs/frontend/frontend-local-release-v1.md` para instrucciones completas de
 - [ ] Ejecutar `corepack pnpm tauri dev` desde `frontend/`.
 - [ ] Confirmar ventana inicial 1180 × 760 y mínimo 1024 × 680.
 - [ ] Verificar topbar: cajero, mesa y estado sin recortes.
-- [ ] Recorrer el menú completo; solo Inventario y Permisos deben aparecer como próximos.
+- [ ] Recorrer el menú completo y confirmar que cada ruta activa abre su módulo real.
 - [ ] Ejecutar los pasos E2E con registros de prueba.
 - [ ] Confirmar colores de peligro en cierre y cancelación.
 - [ ] Confirmar estados vacíos y errores legibles.

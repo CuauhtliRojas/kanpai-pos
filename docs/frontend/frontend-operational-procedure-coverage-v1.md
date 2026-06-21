@@ -10,7 +10,7 @@ La interfaz se alinea con el flujo operativo: mesa → cuenta → captura de pro
 | 4. Captura de productos | Completo: productos reales y confirmación del servicio |
 | 5. Confirmar pedido / enviar comanda | Completo: envío explícito y comandas reales |
 | 6. Separar Cocina/Barra | Soportado con las estaciones reales devueltas por el servicio |
-| 7. Producción acepta/inicia/termina | Parcial: transiciones estrictas soportadas; entrega pendiente en UI |
+| 7. Producción acepta/inicia/termina/entrega | Completo: transiciones estrictas soportadas con respuesta confirmada por el servicio |
 | 8. Modificaciones con ticket nuevo | Parcial: modificación auditada y aviso a estación soportados; el contrato no crea ticket nuevo |
 | 9. Cancelaciones autorizadas | Soportado con motivo, empleado activo y permiso `TICKET_CANCEL` |
 | 10. Impresión de cuenta | Parcial: cola y reimpresión auditada; impresión física e historial completo pendientes |
@@ -20,7 +20,7 @@ La interfaz se alinea con el flujo operativo: mesa → cuenta → captura de pro
 | 14. Inventario operativo | Parcial: stock y alertas reales con `GET /inventory/items` y `GET /inventory/stock-alerts/active`; ajuste manual con `POST /inventory/movements` y permiso `INVENTORY_ADJUST`; historial de movimientos sin endpoint GET |
 | 15. Empleados / permisos | Solo lectura: lista activos/inactivos con `GET /operations/employees`; solo `ADMIN`; roles y permisos por empleado sin contrato actual |
 
-Agregar productos a la cuenta no confirma el pedido ni genera comandas. El envío requiere una confirmación explícita. Producción permite aceptar, iniciar y terminar con las transiciones reales del servicio.
+Agregar productos a la cuenta no confirma el pedido ni genera comandas. El envío requiere una confirmación explícita. Producción permite aceptar, iniciar, terminar y entregar con las transiciones reales del servicio.
 
 La pantalla de Impresión consulta trabajos pendientes, reactiva fallidos vencidos y permite reimpresión con permiso y motivo. El historial general de impresos/fallidos y la confirmación física permanecen pendientes. La liberación de mesa se considera soportada únicamente cuando el pago devuelve la cuenta cerrada.
 

@@ -8,6 +8,7 @@ import { useAuthSession } from "../../auth/hooks/useAuthSession";
 import { ProductionOrderCard } from "../components/ProductionOrderCard";
 import { ProductionStationTabs } from "../components/ProductionStationTabs";
 import { useAcceptProductionOrderMutation } from "../hooks/useAcceptProductionOrderMutation";
+import { useDeliverProductionOrderMutation } from "../hooks/useDeliverProductionOrderMutation";
 import { useFinishProductionOrderMutation } from "../hooks/useFinishProductionOrderMutation";
 import { useProductionOrdersQuery } from "../hooks/useProductionOrdersQuery";
 import { useProductionStationsQuery } from "../hooks/useProductionStationsQuery";
@@ -41,13 +42,16 @@ export function ProductionPage() {
   const acceptMutation = useAcceptProductionOrderMutation();
   const startMutation = useStartProductionOrderMutation();
   const finishMutation = useFinishProductionOrderMutation();
+  const deliverMutation = useDeliverProductionOrderMutation();
 
   function getOrderMutationState(status: string) {
     const mutation = status === "En cola"
       ? acceptMutation
       : status === "Recibida"
         ? startMutation
-        : finishMutation;
+        : status === "En preparacion"
+          ? finishMutation
+          : deliverMutation;
     return { isPending: mutation.isPending, error: mutation.error };
   }
 
@@ -98,6 +102,7 @@ export function ProductionPage() {
               acceptMutation.reset();
               startMutation.reset();
               finishMutation.reset();
+              deliverMutation.reset();
             }}
           />
           {stations.length === 0 ? (
@@ -125,6 +130,7 @@ export function ProductionPage() {
                     onAccept={() => void runAction(acceptMutation, order.id, order.station_id)}
                     onStart={() => void runAction(startMutation, order.id, order.station_id)}
                     onFinish={() => void runAction(finishMutation, order.id, order.station_id)}
+                    onDeliver={() => void runAction(deliverMutation, order.id, order.station_id)}
                   />
                 );
               })}

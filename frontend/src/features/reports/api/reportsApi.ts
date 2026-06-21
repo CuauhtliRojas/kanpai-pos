@@ -1,5 +1,12 @@
 import { apiRequest } from "../../../api/http";
-import type { OperationalSummary, PrintJobsSummary, ProductionTimesItem, SalesByProductItem } from "../types/reportTypes";
+import type {
+  InventoryConsumptionItem,
+  OperationalSummary,
+  PrintJobsSummary,
+  ProductionTimesItem,
+  SalesByPaymentMethodItem,
+  SalesByProductItem,
+} from "../types/reportTypes";
 
 function todaySearch(): string {
   const now = new Date();
@@ -13,6 +20,14 @@ export function getDailyOperationalSummary(): Promise<OperationalSummary> {
 
 export function getDailySalesByProduct(): Promise<SalesByProductItem[]> {
   return apiRequest<SalesByProductItem[]>(`/api/v1/reports/sales-by-product${todaySearch()}`);
+}
+
+export function getDailySalesByPaymentMethod(): Promise<SalesByPaymentMethodItem[]> {
+  return apiRequest<SalesByPaymentMethodItem[]>(`/api/v1/reports/sales-by-payment-method${todaySearch()}`);
+}
+
+export function getDailyInventoryConsumption(): Promise<InventoryConsumptionItem[]> {
+  return apiRequest<InventoryConsumptionItem[]>(`/api/v1/reports/inventory-consumption${todaySearch()}`);
 }
 
 export function getDailyProductionTimes(): Promise<ProductionTimesItem[]> {

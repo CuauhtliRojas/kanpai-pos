@@ -19,6 +19,7 @@ type ProductionOrderCardProps = {
   onAccept: () => void;
   onStart: () => void;
   onFinish: () => void;
+  onDeliver: () => void;
 };
 
 export function ProductionOrderCard({
@@ -28,6 +29,7 @@ export function ProductionOrderCard({
   onAccept,
   onStart,
   onFinish,
+  onDeliver,
 }: ProductionOrderCardProps) {
   const presentation = statusPresentation[order.status];
   return (
@@ -48,6 +50,7 @@ export function ProductionOrderCard({
         onAccept={onAccept}
         onStart={onStart}
         onFinish={onFinish}
+        onDeliver={onDeliver}
       />
     </article>
   );

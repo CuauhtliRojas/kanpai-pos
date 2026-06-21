@@ -23,6 +23,24 @@ export type SalesByProductItem = {
   variant_breakdown: Array<{ name: string; sku: string | null; quantity_sold: number }>;
 };
 
+export type SalesByPaymentMethodItem = {
+  payment_method_id: number;
+  method_key: string;
+  method_name: string;
+  total_cents: number;
+  payment_count: number;
+};
+
+export type InventoryConsumptionItem = {
+  inventory_item_id: number;
+  sku: string;
+  name: string;
+  movement_type: string;
+  total_quantity_base: string;
+  base_unit_name: string;
+  movement_count: number;
+};
+
 export type ProductionTimesItem = {
   station_id: number;
   station_name: string;

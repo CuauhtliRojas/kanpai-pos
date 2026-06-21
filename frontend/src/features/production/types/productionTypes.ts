@@ -43,7 +43,7 @@ export type ProductionOrder = {
   lines: ProductionOrderLine[];
 };
 
-export type ProductionAction = "receive" | "start" | "complete";
+export type ProductionAction = "receive" | "start" | "complete" | "deliver";
 
 export type ProductionActionInput = {
   orderId: number;

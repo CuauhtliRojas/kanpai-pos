@@ -9,9 +9,8 @@ La implementación se basó en el OpenAPI vivo consultado el 20 de junio de 2026
 - `/production` consulta las estaciones activas y usa sus nombres reales.
 - Las comandas se consultan por la estación seleccionada.
 - Cada tarjeta muestra folio, productos, cantidades, notas, acciones de línea no ordinarias y estado.
-- Las transiciones siguen el orden estricto: `En cola` → aceptar, `Recibida` → iniciar y `En preparacion` → terminar.
+- Las transiciones siguen el orden estricto: `En cola` → aceptar, `Recibida` → iniciar, `En preparacion` → terminar y `Terminada` → entregar.
 - Las actualizaciones registran al empleado de la sesión y refrescan la estación actual.
-- La transición de entrega existe, pero no se expone en esta fase.
 
 Contratos consumidos:
 
@@ -20,6 +19,7 @@ Contratos consumidos:
 - `POST /api/v1/production/station-orders/{station_order_id}/receive`
 - `POST /api/v1/production/station-orders/{station_order_id}/start`
 - `POST /api/v1/production/station-orders/{station_order_id}/complete`
+- `POST /api/v1/production/station-orders/{station_order_id}/deliver`
 
 ## Impresión
 
@@ -39,5 +39,4 @@ Contratos consumidos:
 
 - No existe un listado general de trabajos impresos o fallidos. Esta versión solo lista pendientes.
 - La confirmación de impresión física corresponde al proceso de impresión, no a esta interfaz.
-- La entrega de comandas queda fuera del alcance aunque exista contrato.
 - No se ejecutaron transiciones, reintentos ni reimpresiones durante la implementación para no modificar datos operativos sin seleccionar registros de prueba.

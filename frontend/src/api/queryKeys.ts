@@ -20,7 +20,6 @@
       ["commands", "station-orders", ticketId] as const,
   },
   discounts: {
-    promotions: ["discounts", "promotions"] as const,
     ticket: (ticketId: number) => ["discounts", "ticket", ticketId] as const,
   },
   payments: {
@@ -36,7 +35,9 @@
   },
   reports: {
     dailySales: ["reports", "daily-sales"] as const,
+    inventoryConsumption: ["reports", "inventory-consumption"] as const,
     salesByProduct: ["reports", "sales-by-product"] as const,
+    salesByPaymentMethod: ["reports", "sales-by-payment-method"] as const,
     productionTimes: ["reports", "production-times"] as const,
     printJobs: ["reports", "print-jobs"] as const,
   },
@@ -53,12 +54,9 @@
   inventory: {
     items: ["inventory", "items"] as const,
     stockAlerts: ["inventory", "stock-alerts"] as const,
-    movements: ["inventory", "movements"] as const,
   },
   security: {
     employees: ["security", "employees"] as const,
-    roles: ["security", "roles"] as const,
-    permissions: ["security", "permissions"] as const,
   },
   system: {
     health: ["system", "health"] as const,
