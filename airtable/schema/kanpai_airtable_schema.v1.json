@@ -1596,6 +1596,10 @@
           "name": "tipo_insumo",
           "type": "singleSelect",
           "options": [
+            "Alimento",
+            "Bebida",
+            "Desechable",
+            "Limpieza",
             "Otro"
           ]
         },

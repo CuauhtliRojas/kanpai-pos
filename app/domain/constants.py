@@ -181,6 +181,10 @@ class UnitFamily:
 
 
 class ItemType:
+    FOOD = "Alimento"
+    BEVERAGE = "Bebida"
+    DISPOSABLE = "Desechable"
+    CLEANING = "Limpieza"
     OTHER = "Otro"
 
 

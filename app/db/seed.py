@@ -552,7 +552,7 @@ def seed_real_catalog(session: Session) -> None:
             {
                 "name": record["nombre"],
                 "base_unit_id": units[unit_key].id,
-                "item_type": ItemType.OTHER,
+                "item_type": record["tipo_insumo"],
                 "minimum_stock_qty": Decimal(str(record["stock_minimo"])),
                 "unit_cost_cents": record["costo_unitario_centavos"],
                 "active": True,
@@ -560,7 +560,7 @@ def seed_real_catalog(session: Session) -> None:
         )
         item.name = record["nombre"]
         item.base_unit_id = units[unit_key].id
-        item.item_type = ItemType.OTHER
+        item.item_type = record["tipo_insumo"]
         item.minimum_stock_qty = Decimal(str(record["stock_minimo"]))
         item.unit_cost_cents = record["costo_unitario_centavos"]
         item.active = True

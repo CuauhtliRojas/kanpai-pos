@@ -274,6 +274,28 @@ def read_excel_rows(
     return result
 
 
+ITEM_TYPE_ALIASES = {
+    "alimento": "Alimento",
+    "alimentos": "Alimento",
+    "bebida": "Bebida",
+    "bebidas": "Bebida",
+    "desechable": "Desechable",
+    "desechables": "Desechable",
+    "limpieza": "Limpieza",
+    "otro": "Otro",
+    "otros": "Otro",
+}
+
+
+def normalize_item_type(raw: Any) -> tuple[str, bool]:
+    item_type = folded(raw)
+    if not item_type:
+        return "Otro", False
+    if item_type in ITEM_TYPE_ALIASES:
+        return ITEM_TYPE_ALIASES[item_type], False
+    return "Otro", True
+
+
 CATEGORY_ALIASES = {
     "comida": "Yakitori",
     "yakitori": "Yakitori",
@@ -422,18 +444,27 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
         if row.get("costo_unitario") not in (None, "") and cost is None:
             issues.append(SeedIssue("warning", "invalid_number", "Costo_Unitario inválido; se usa 0.", "Insumos", row_number))
         raw_type = clean_string(row.get("tipo"))
-        if raw_type and folded(raw_type) != "otro":
-            stats["insumos_type_normalized"] += 1
+        item_type, item_type_warning = normalize_item_type(raw_type)
+        if item_type_warning:
+            stats["insumos_type_unknown"] += 1
             normalized_type = folded(raw_type)
             if normalized_type not in warned_insumo_types:
-                issues.append(SeedIssue("warning", "insumo_type_normalized", f"Tipo {raw_type!r} normalizado a 'Otro' por el schema.", "Insumos", row_number))
+                issues.append(
+                    SeedIssue(
+                        "warning",
+                        "insumo_type_unknown",
+                        f"Tipo {raw_type!r} no reconocido; se usa 'Otro'.",
+                        "Insumos",
+                        row_number,
+                    )
+                )
                 warned_insumo_types.add(normalized_type)
         tables["InsumosInventario"].append(
             {
                 "codigo_insumo": code,
                 "nombre": name,
                 "unidad_base": [unit],
-                "tipo_insumo": "Otro",
+                "tipo_insumo": item_type,
                 "stock_minimo": airtable_number(stock or Decimal(0)),
                 "costo_unitario_centavos": cost or 0,
                 "activo": True,
@@ -685,7 +716,7 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
     for table, key in NATURAL_KEYS.items():
         tables[table] = _dedupe(tables[table], key, table, issues)
     for name in (
-        "insumos_valid", "insumos_incomplete", "insumos_duplicates", "insumos_type_normalized",
+        "insumos_valid", "insumos_incomplete", "insumos_duplicates", "insumos_type_unknown",
         "productos_valid", "productos_incomplete", "productos_duplicates",
         "recetas_valid", "recetas_incomplete", "recetas_duplicates",
         "recetas_orphan", "recetas_text_quantity",

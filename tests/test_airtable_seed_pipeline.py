@@ -295,6 +295,7 @@ def test_real_excel_catalog_counts_and_does_not_invent_links() -> None:
     assert result.errors == []
 
     assert result.stats["insumos_valid"] == 96
+    assert result.stats["insumos_type_unknown"] == 0
     assert result.stats["productos_valid"] == 31
     assert result.stats["productos_incomplete"] == 0
     assert result.stats["recetas_valid"] == 168
@@ -314,6 +315,8 @@ def test_real_excel_catalog_counts_and_does_not_invent_links() -> None:
     assert "duplicate_natural_key" not in issue_codes
     assert "orphan_reference" not in issue_codes
     assert "text_quantity_normalized" not in issue_codes
+    assert "insumo_type_normalized" not in issue_codes
+    assert "insumo_type_unknown" not in issue_codes
 
     products_by_sku = {
         product["sku"]: product for product in result.tables["Productos"]
@@ -330,6 +333,11 @@ def test_real_excel_catalog_counts_and_does_not_invent_links() -> None:
         assert products_by_sku[sku]["multiplicador_receta_inventario"] == 3
 
     assert products_by_sku["YAK-COC-MIX"]["multiplicador_receta_inventario"] == 1
+
+    item_types = {
+        item["tipo_insumo"] for item in result.tables["InsumosInventario"]
+    }
+    assert {"Alimento", "Bebida", "Desechable", "Limpieza", "Otro"} <= item_types
 
     combo_groups = result.tables["GruposVarianteProducto"]
     combo_options = result.tables["OpcionesVarianteProducto"]
