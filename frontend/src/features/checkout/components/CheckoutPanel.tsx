@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DiscountPanel } from "../../discounts/components/DiscountPanel";
 import type { Ticket } from "../../tables/types/tableTypes";
 import { PaymentForm } from "../../payments/components/PaymentForm";
 import { PaymentList } from "../../payments/components/PaymentList";
@@ -15,6 +16,7 @@ type CheckoutPanelProps = {
   employeeId: number | null;
   notice: string | null;
   onClosed: () => void;
+  canAuthorizeDiscount: boolean;
 };
 
 export function CheckoutPanel({
@@ -25,6 +27,7 @@ export function CheckoutPanel({
   employeeId,
   notice,
   onClosed,
+  canAuthorizeDiscount,
 }: CheckoutPanelProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const startMutation = useStartCheckoutMutation();
@@ -74,6 +77,13 @@ export function CheckoutPanel({
       </h2>
 
       {ticket ? <CheckoutSummary ticket={ticket} lineCount={lineCount} /> : null}
+      {ticket ? (
+        <DiscountPanel
+          ticket={ticket}
+          employeeId={employeeId}
+          canAuthorize={canAuthorizeDiscount}
+        />
+      ) : null}
       {notice ? <p className="mt-3 font-black text-emerald-400">{notice}</p> : null}
       {guidance ? <p className="mt-3 font-bold text-[var(--kp-muted)]">{guidance}</p> : null}
       {errorMessage ? <p className="mt-3 font-black">{errorMessage}</p> : null}

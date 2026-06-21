@@ -216,6 +216,7 @@ export function PosTablesPage() {
               lineCount={(linesQuery.data ?? []).length}
               pendingLineCount={pendingLineCount}
               employeeId={employee?.id ?? null}
+              canAuthorizeDiscount={hasPermission(permissions, "DISCOUNT_AUTHORIZE")}
               notice={checkoutMessage}
               onClosed={() => {
                 setProductMessage(null);

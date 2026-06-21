@@ -55,8 +55,8 @@ export const navigationItems: readonly NavigationItem[] = [
     status: "available",
     anyPermission: ["INVENTORY_ADJUST"],
   },
-  { to: "/reports", label: "Reportes", icon: BarChart3, status: "coming_soon" },
-  { to: "/audit", label: "Auditoría", icon: ClipboardList, status: "coming_soon" },
+  { to: "/reports", label: "Reportes", icon: BarChart3, status: "available", adminOnly: true },
+  { to: "/audit", label: "Auditoría", icon: ClipboardList, status: "available", adminOnly: true },
   { to: "/security", label: "Permisos", icon: ShieldCheck, status: "coming_soon" },
 ];
 

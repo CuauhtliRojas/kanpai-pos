@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { HashRouter, Navigate, Outlet, Route, Routes } from "react-router";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { useAuthSession } from "../features/auth/hooks/useAuthSession";
@@ -7,6 +8,9 @@ import { CashPage } from "../features/cash/pages/CashPage";
 import { PosTablesPage } from "../features/tables/pages/PosTablesPage";
 import { ProductionPage } from "../features/production/pages/ProductionPage";
 import { PrintingPage } from "../features/printing/pages/PrintingPage";
+import { ReportsPage } from "../features/reports/pages/ReportsPage";
+import { AuditPage } from "../features/audit/pages/AuditPage";
+import { hasRole } from "../features/auth/lib/permissions";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
 import { navigationItems, type NavigationItem } from "../layouts/navigationItems";
@@ -53,6 +57,11 @@ function LoginRoute() {
   return isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />;
 }
 
+function AdminRoute({ children }: { children: ReactNode }) {
+  const { roles } = useAuthSession();
+  return hasRole(roles, "ADMIN") ? children : <AccessDeniedPanel />;
+}
+
 export function AppRouter() {
   return (
     <HashRouter>
@@ -76,13 +85,17 @@ export function AppRouter() {
             <Route path="pos" element={<PosTablesPage />} />
             <Route path="production" element={<ProductionPage />} />
             <Route path="printing" element={<PrintingPage />} />
+            <Route path="reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
+            <Route path="audit" element={<AdminRoute><AuditPage /></AdminRoute>} />
             {moduleNavigationItems
               .filter(
                 (item) =>
                   item.to !== "/cash" &&
                   item.to !== "/pos" &&
                   item.to !== "/production" &&
-                  item.to !== "/printing",
+                  item.to !== "/printing" &&
+                  item.to !== "/reports" &&
+                  item.to !== "/audit",
               )
               .map((item) => (
                 <Route

@@ -15,10 +15,12 @@ La interfaz se alinea con el flujo operativo: mesa → cuenta → captura de pro
 | 9. Cancelaciones autorizadas | Soportado con motivo, empleado activo y permiso `TICKET_CANCEL` |
 | 10. Impresión de cuenta | Cola pendiente y reimpresión auditada soportadas; impresión física e historial completo pendientes |
 | 11. Cobro y cierre | Soportado en Fase 8 cuando el pago confirma el cierre y libera la mesa |
-| 12. Reportes/auditoría | Pendiente |
+| 12. Reportes/auditoría | Soportado para `ADMIN` con ventas, operación, impresión y eventos reales; ventas por categoría pendiente |
 
 Agregar productos a la cuenta no confirma el pedido ni genera comandas. El envío requiere una confirmación explícita. Producción permite aceptar, iniciar y terminar con las transiciones reales del servicio.
 
 La pantalla de Impresión consulta trabajos pendientes, reactiva fallidos vencidos y permite reimpresión con permiso y motivo. El historial general de impresos/fallidos y la confirmación física permanecen pendientes. La liberación de mesa se considera soportada únicamente cuando el pago devuelve la cuenta cerrada.
 
-Los ajustes de pedido se realizan desde acciones compactas en cada producto. Las modificaciones quedan registradas y generan aviso para productos enviados cuando corresponde, pero el contrato actual no genera un ticket nuevo. Las cancelaciones requieren motivo y autorización mediante `TICKET_CANCEL`. Promociones y descuentos permanecen pendientes.
+Los ajustes de pedido se realizan desde acciones compactas en cada producto. Las modificaciones quedan registradas y generan aviso para productos enviados cuando corresponde, pero el contrato actual no genera un ticket nuevo. Las cancelaciones requieren motivo y autorización mediante `TICKET_CANCEL`.
+
+Descuentos y cortesías están soportados con `DISCOUNT_AUTHORIZE` y total confirmado por la cuenta. Promociones permanecen en preparación porque no existe contrato. Reportes y Auditoría muestran datos reales para `ADMIN`; ventas por categoría permanece pendiente.

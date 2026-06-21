@@ -19,6 +19,10 @@
     stationOrders: (ticketId: number) =>
       ["commands", "station-orders", ticketId] as const,
   },
+  discounts: {
+    promotions: ["discounts", "promotions"] as const,
+    ticket: (ticketId: number) => ["discounts", "ticket", ticketId] as const,
+  },
   payments: {
     list: (ticketId: number) => ["payments", "list", ticketId] as const,
   },
@@ -29,6 +33,15 @@
   },
   printing: {
     jobs: ["printing", "jobs"] as const,
+  },
+  reports: {
+    dailySales: ["reports", "daily-sales"] as const,
+    salesByProduct: ["reports", "sales-by-product"] as const,
+    productionTimes: ["reports", "production-times"] as const,
+    printJobs: ["reports", "print-jobs"] as const,
+  },
+  audit: {
+    events: ["audit", "events"] as const,
   },
   tables: {
     list: ["tables", "list"] as const,
