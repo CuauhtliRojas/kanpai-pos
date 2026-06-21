@@ -8,8 +8,8 @@ type Props = {
 export function EmployeeList({ employees }: Props) {
   if (employees.length === 0) {
     return (
-      <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 font-bold text-[var(--kp-text-muted)]">
-        Sin empleados registrados.
+      <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-6 text-center font-black uppercase text-[var(--kp-muted)] shadow-[var(--kp-shadow-hard)]">
+        Sin datos de empleados
       </p>
     );
   }
@@ -19,7 +19,7 @@ export function EmployeeList({ employees }: Props) {
     <div className="grid gap-4">
       {active.length > 0 && (
         <section>
-          <p className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[var(--kp-text-muted)]">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[var(--kp-muted)]">
             Activos ({active.length})
           </p>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -33,7 +33,7 @@ export function EmployeeList({ employees }: Props) {
       )}
       {inactive.length > 0 && (
         <section>
-          <p className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[var(--kp-text-muted)]">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[var(--kp-muted)]">
             Inactivos ({inactive.length})
           </p>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

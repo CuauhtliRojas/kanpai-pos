@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { useSendTicketRoundMutation } from "../hooks/useSendTicketRoundMutation";
 
 type SendCommandPanelProps = {
@@ -69,35 +70,40 @@ export function SendCommandPanel({
       {isConfirming ? (
         <div className="mt-4 grid gap-2">
           <p className="font-black">¿Confirmar envío?</p>
-          <button
+          <BrutalButton
             type="button"
+            variant="warning"
+            size="lg"
+            fullWidth
             disabled={!canSend}
             onClick={() => void handleConfirm()}
-            className="border-4 border-[var(--kp-ink)] bg-[var(--kp-selected)] px-4 py-3 font-black uppercase text-[var(--kp-selected-contrast)] shadow-[var(--kp-shadow-hard-sm)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {sendMutation.isPending ? "Enviando..." : "Confirmar envío"}
-          </button>
-          <button
+          </BrutalButton>
+          <BrutalButton
             type="button"
+            variant="ghost"
             disabled={sendMutation.isPending}
             onClick={() => setIsConfirming(false)}
-            className="border-2 border-[var(--kp-ink)] px-4 py-2 font-black uppercase disabled:cursor-not-allowed disabled:opacity-60"
           >
             Volver
-          </button>
+          </BrutalButton>
         </div>
       ) : (
-        <button
+        <BrutalButton
           type="button"
+          variant="warning"
+          size="lg"
+          fullWidth
           disabled={!canSend}
           onClick={() => {
             setMessage(null);
             setIsConfirming(true);
           }}
-          className="mt-4 w-full border-4 border-[var(--kp-ink)] bg-[var(--kp-selected)] px-4 py-3 font-black uppercase text-[var(--kp-selected-contrast)] shadow-[var(--kp-shadow-hard-sm)] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:opacity-70"
+          className="mt-4"
         >
           Enviar comanda
-        </button>
+        </BrutalButton>
       )}
     </section>
   );

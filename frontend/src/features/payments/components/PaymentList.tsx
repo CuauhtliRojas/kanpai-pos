@@ -23,7 +23,7 @@ export function PaymentList({ summary, methods }: PaymentListProps) {
       </div>
 
       {summary.payments.length > 0 ? (
-        <ul className="mt-3 grid gap-2 border-t-2 border-zinc-700 pt-3">
+        <ul className="mt-3 grid gap-2 border-t-2 border-[var(--kp-divider)] pt-3">
           {summary.payments.map((payment) => (
             <li key={payment.id} className="text-sm font-bold">
               <div className="flex justify-between gap-3">

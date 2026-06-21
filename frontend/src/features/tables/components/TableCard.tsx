@@ -17,7 +17,7 @@ export function TableCard({ table, selected, compact = false, onSelect }: TableC
       aria-pressed={selected}
       className={[
         "grid content-between border-4 border-[var(--kp-ink)] text-left shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
-        compact ? "min-h-24 gap-2 p-2" : "min-h-32 gap-3 p-3",
+        compact ? "min-h-28 gap-2 p-2" : "min-h-32 gap-3 p-3",
         selected
           ? "bg-[var(--kp-selected)] text-[var(--kp-selected-contrast)]"
           : "bg-[var(--kp-surface-raised)] text-[var(--kp-text)]",

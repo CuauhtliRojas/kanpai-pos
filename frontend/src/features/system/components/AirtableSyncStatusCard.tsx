@@ -59,7 +59,7 @@ export function AirtableSyncStatusCard() {
 
   if (syncQuery.isPending) {
     return (
-      <SurfaceCard title="Sincronización" eyebrow="Airtable">
+      <SurfaceCard title="Actualización de datos" eyebrow="Sistema">
         <LoadingState />
       </SurfaceCard>
     );
@@ -67,7 +67,7 @@ export function AirtableSyncStatusCard() {
 
   if (syncQuery.isError) {
     return (
-      <SurfaceCard title="Sincronización" eyebrow="Airtable">
+      <SurfaceCard title="Actualización de datos" eyebrow="Sistema">
         <ErrorState
           title="Sin conexión"
           message="Revisar conexión o pedir ayuda."
@@ -78,8 +78,8 @@ export function AirtableSyncStatusCard() {
 
   return (
     <SurfaceCard
-      title="Sincronización"
-      eyebrow="Airtable"
+      title="Actualización de datos"
+      eyebrow="Sistema"
       action={
         <StatusBadge
           label={syncLabel(syncQuery.data.last_status, syncQuery.data.running)}

@@ -12,7 +12,7 @@ export function CancelTicketAction({ ticket, employeeId, canCancel, onCancelled 
   const allowedStatus = ticket.status !== "Cobrado" && ticket.status !== "Cancelado";
   if (!canCancel || !allowedStatus) return null;
   return (
-    <div className="border-t-2 border-zinc-700 pt-3">
+    <div className="border-t-2 border-[var(--kp-divider)] pt-3">
       <BrutalButton type="button" variant="danger" size="sm" fullWidth onClick={() => setOpen(true)}>Cancelar cuenta completa</BrutalButton>
       {open && employeeId !== null ? (
         <CancelTicketDialog

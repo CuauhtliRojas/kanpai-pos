@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { DiscountPanel } from "../../discounts/components/DiscountPanel";
 import type { Ticket } from "../../tables/types/tableTypes";
 import { PaymentForm } from "../../payments/components/PaymentForm";
@@ -117,14 +118,17 @@ export function CheckoutPanel({
           </div>
         ) : null
       ) : (
-        <button
+        <BrutalButton
           type="button"
+          variant="primary"
+          size="lg"
+          fullWidth
           disabled={!canStart}
           onClick={() => void handleStart()}
-          className="mt-4 w-full border-4 border-[var(--kp-ink)] bg-[var(--kp-selected)] px-4 py-3 font-black uppercase text-[var(--kp-selected-contrast)] shadow-[var(--kp-shadow-hard-sm)] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:opacity-70"
+          className="mt-4"
         >
           {startMutation.isPending ? "Abriendo cobro..." : "Cobrar"}
-        </button>
+        </BrutalButton>
       )}
     </section>
   );

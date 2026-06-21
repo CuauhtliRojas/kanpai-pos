@@ -14,7 +14,7 @@ import { useRetryPrintJobMutation } from "../hooks/useRetryPrintJobMutation";
 function getPrintingErrorMessage(error: unknown, action: "retry" | "reprint"): string | null {
   if (!error) return null;
   if (error instanceof ApiError && error.status === 403) return "Pide ayuda al encargado.";
-  return action === "retry" ? "No se pudo imprimir." : "No se pudo reimprimir.";
+  return action === "retry" ? "No se pudo preparar el reintento." : "No se pudo solicitar la reimpresión.";
 }
 
 export function PrintingPage() {
@@ -39,7 +39,7 @@ export function PrintingPage() {
               void retryMutation.mutateAsync()
                 .then((result) => setRetryMessage(
                   result.jobs_requeued > 0
-                    ? "Trabajos listos para imprimir."
+                    ? "Trabajos enviados nuevamente a la cola."
                     : "Sin trabajos para reintentar.",
                 ))
                 .catch(() => undefined);
@@ -58,12 +58,12 @@ export function PrintingPage() {
         <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-info)] p-3 font-black text-[var(--kp-info-contrast)] shadow-[var(--kp-shadow-hard-sm)]">{retryMessage}</p>
       ) : null}
       {retryMutation.isError ? (
-        <ErrorState title="No se pudo imprimir" message={getPrintingErrorMessage(retryMutation.error, "retry") ?? "Pide ayuda al encargado."} />
+        <ErrorState title="No se pudo preparar el reintento" message={getPrintingErrorMessage(retryMutation.error, "retry") ?? "Pide ayuda al encargado."} />
       ) : null}
       {jobsQuery.isPending ? (
         <LoadingState />
       ) : jobsQuery.isError ? (
-        <ErrorState title="No se pudo cargar Impresión" message="Pide ayuda al encargado." />
+        <ErrorState title="No se pudo cargar la cola de impresión" message="Pide ayuda al encargado." />
       ) : (
         <PrintJobList
           jobs={jobsQuery.data ?? []}

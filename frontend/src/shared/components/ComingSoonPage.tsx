@@ -8,7 +8,12 @@ export function ComingSoonPage({ title }: ComingSoonPageProps) {
       <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-selected)]">
         {title}
       </p>
-      <h1 className="mt-2 text-3xl font-black uppercase leading-tight">Módulo en preparación</h1>
+      <h1 className="mt-2 text-3xl font-black uppercase leading-tight">
+        No disponible en esta versión
+      </h1>
+      <p className="mt-3 max-w-2xl font-bold text-[var(--kp-muted)]">
+        Esta opción todavía no forma parte de la operación disponible.
+      </p>
     </section>
   );
 }

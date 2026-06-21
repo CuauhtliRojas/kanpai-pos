@@ -50,7 +50,7 @@ function MenuItem({ item, access, onNavigate }: MenuItemProps) {
         <item.icon className="h-6 w-6" />
         {item.label}
       </span>
-      {access === "coming_soon" ? <span className="text-[10px]">Próximo</span> : null}
+      {access === "coming_soon" ? <span className="text-[10px]">No disponible</span> : null}
     </NavLink>
   );
 }
@@ -69,7 +69,7 @@ function resolveEstadoSignal(
 
   if (running) {
     return {
-      label: "ACTUALIZACIÓN PENDIENTE",
+      label: "ACTUALIZANDO DATOS",
       className: "border-[var(--kp-ink)] bg-[var(--kp-info)] text-[var(--kp-info-contrast)]",
     };
   }
@@ -135,7 +135,8 @@ export function AppShell() {
           </div>
 
           <div
-            className={`flex min-h-9 items-center border-4 px-3 text-[10px] font-black uppercase tracking-[0.06em] sm:text-xs sm:tracking-[0.08em] ${statusSignal.className}`}
+            title="Estado de actualización de datos"
+            className={`flex min-h-9 max-w-44 items-center border-4 px-2 text-center text-[9px] font-black uppercase leading-tight tracking-[0.04em] sm:px-3 sm:text-xs sm:tracking-[0.08em] ${statusSignal.className}`}
           >
             {statusSignal.label}
           </div>
@@ -148,7 +149,7 @@ export function AppShell() {
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
-                  Menú
+                  Navegación
                 </p>
                 <BrandMark variant="logo" className="mt-1 h-10 w-auto max-w-full" />
               </div>

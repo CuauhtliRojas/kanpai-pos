@@ -38,6 +38,34 @@ textarea {
 
 button {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+input,
+select,
+textarea {
+  color: var(--kp-text);
+  caret-color: var(--kp-selected);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--kp-muted);
+  opacity: 1;
+}
+
+:focus-visible {
+  outline: 4px solid var(--kp-info);
+  outline-offset: 3px;
+}
+
+* {
+  scrollbar-color: var(--kp-selected) var(--kp-surface);
+  scrollbar-width: thin;
 }
 
 #root {

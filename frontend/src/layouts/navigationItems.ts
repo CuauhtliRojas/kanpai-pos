@@ -32,7 +32,7 @@ export type NavigationItemAccess = "available" | "coming_soon" | "denied";
 
 export const navigationItems: readonly NavigationItem[] = [
   { to: "/", label: "Inicio", icon: Home, status: "available" },
-  { to: "/system", label: "Estado", icon: DatabaseZap, status: "available" },
+  { to: "/system", label: "Sistema", icon: DatabaseZap, status: "available" },
   {
     to: "/cash",
     label: "Caja",
@@ -40,7 +40,7 @@ export const navigationItems: readonly NavigationItem[] = [
     status: "available",
     anyPermission: ["CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE"],
   },
-  { to: "/pos", label: "POS", icon: ReceiptText, status: "available" },
+  { to: "/pos", label: "Venta", icon: ReceiptText, status: "available" },
   { to: "/production", label: "Producción", icon: Utensils, status: "available" },
   {
     to: "/printing",
@@ -56,7 +56,7 @@ export const navigationItems: readonly NavigationItem[] = [
   },
   { to: "/reports", label: "Reportes", icon: BarChart3, status: "available", adminOnly: true },
   { to: "/audit", label: "Auditoría", icon: ClipboardList, status: "available", adminOnly: true },
-  { to: "/security", label: "Permisos", icon: ShieldCheck, status: "available", adminOnly: true },
+  { to: "/security", label: "Empleados", icon: ShieldCheck, status: "available", adminOnly: true },
 ];
 
 export function resolveNavigationItemAccess(

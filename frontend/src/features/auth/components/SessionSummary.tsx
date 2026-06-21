@@ -6,8 +6,8 @@ export function SessionSummary() {
 
   return (
     <div className="flex min-w-0 items-center">
-      <span className="min-w-0 truncate text-xs font-black uppercase tracking-[0.08em] sm:text-sm">
-        Cajero: {cashierName}
+      <span className="min-w-0 truncate text-xs font-black uppercase tracking-[0.06em] sm:text-sm">
+        <span className="hidden text-[var(--kp-muted)] lg:inline">Cajero: </span>{cashierName}
       </span>
     </div>
   );

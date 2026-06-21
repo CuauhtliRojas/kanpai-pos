@@ -107,7 +107,7 @@ export function ProductionPage() {
           />
           {stations.length === 0 ? (
             <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-8 text-center text-xl font-black uppercase shadow-[var(--kp-shadow-hard)]">
-              Sin comandas
+              Sin estaciones disponibles
             </div>
           ) : ordersQuery.isPending ? (
             <LoadingState />
@@ -115,7 +115,7 @@ export function ProductionPage() {
             <ErrorState title="No se pudieron cargar las comandas" message="Intenta de nuevo." />
           ) : (ordersQuery.data ?? []).length === 0 ? (
             <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-8 text-center text-xl font-black uppercase shadow-[var(--kp-shadow-hard)]">
-              Sin comandas
+              Sin comandas pendientes
             </div>
           ) : (
             <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">

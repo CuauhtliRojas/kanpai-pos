@@ -12,8 +12,7 @@ export function SystemDashboardPage() {
           Kanpai POS
         </h1>
         <p className="mt-3 max-w-5xl text-base font-bold leading-7 text-[var(--kp-muted)] md:text-lg">
-          Sistema de venta listo para operar: inicia sesión, abre caja,
-          elige mesa, agrega productos, envía comanda y cobra.
+          Estado general de la operación local y de la actualización de datos.
         </p>
       </section>
 
@@ -24,20 +23,20 @@ export function SystemDashboardPage() {
 
       <section className="grid gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)] md:grid-cols-3">
         <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-selected)] p-4 text-[var(--kp-selected-contrast)] shadow-[var(--kp-shadow-hard-sm)]">
-          <p className="text-xs font-black uppercase tracking-[0.16em]">Primero</p>
-          <p className="mt-2 text-2xl font-black uppercase">Iniciar sesión</p>
-        </div>
-        <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-4 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard-sm)]">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--kp-selected)]">
-            Luego
-          </p>
+          <p className="text-xs font-black uppercase tracking-[0.16em]">Paso 1</p>
           <p className="mt-2 text-2xl font-black uppercase">Abrir caja</p>
         </div>
         <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-4 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard-sm)]">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--kp-selected)]">
-            Después
+            Paso 2
           </p>
-          <p className="mt-2 text-2xl font-black uppercase">Vender</p>
+          <p className="mt-2 text-2xl font-black uppercase">Elegir mesa</p>
+        </div>
+        <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-4 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard-sm)]">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--kp-selected)]">
+            Paso 3
+          </p>
+          <p className="mt-2 text-2xl font-black uppercase">Enviar y cobrar</p>
         </div>
       </section>
     </div>

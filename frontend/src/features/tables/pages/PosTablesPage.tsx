@@ -140,8 +140,9 @@ export function PosTablesPage() {
   return (
     <div className="grid gap-4">
       <header className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--kp-selected)]">POS</p>
-        <h1 className="mt-1 text-3xl font-black uppercase md:text-4xl">Productos</h1>
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--kp-selected)]">Operación diaria</p>
+        <h1 className="mt-1 text-3xl font-black uppercase md:text-4xl">Venta</h1>
+        <p className="mt-2 font-bold text-[var(--kp-muted)]">Elige una mesa, agrega productos y revisa la cuenta activa.</p>
       </header>
 
       {!hasOpenCash ? (
@@ -154,7 +155,7 @@ export function PosTablesPage() {
           message={getPosErrorMessage(tablesQuery.error) ?? "Intenta de nuevo."}
         />
       ) : (
-        <div className="grid items-start gap-4 lg:grid-cols-[230px_minmax(0,1fr)_290px]">
+        <div className="grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
           <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 shadow-[var(--kp-shadow-hard)]">
             <h2 className="mb-3 text-xl font-black uppercase">Mesas</h2>
             <div className="max-h-[520px] overflow-y-auto pr-1">
@@ -171,7 +172,7 @@ export function PosTablesPage() {
             </div>
           </section>
 
-          <main className="min-w-0 border-4 border-[var(--kp-ink)] bg-zinc-900 p-4 shadow-[var(--kp-shadow-hard)]">
+          <main className="min-w-0 border-4 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-4 shadow-[var(--kp-shadow-hard)]">
             <h2 className="text-xl font-black uppercase">Categorías</h2>
             {categoriesQuery.isError ? (
               <p className="mt-3 font-bold">No se pudo cargar productos</p>
@@ -208,7 +209,7 @@ export function PosTablesPage() {
             </div>
           </main>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4 lg:sticky lg:top-[calc(var(--kp-topbar-height)+1rem)]">
             <ActiveTicketPanel
               table={selectedTable}
               ticket={displayedTicket}

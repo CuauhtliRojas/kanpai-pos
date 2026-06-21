@@ -19,16 +19,16 @@ export function ProductionActionBar({
   onDeliver,
 }: ProductionActionBarProps) {
   if (status === "En cola") {
-    return <BrutalButton onClick={onAccept} disabled={isPending} fullWidth>Aceptar</BrutalButton>;
+    return <BrutalButton variant="warning" size="lg" onClick={onAccept} disabled={isPending} fullWidth>{isPending ? "Aceptando..." : "Aceptar"}</BrutalButton>;
   }
   if (status === "Recibida") {
-    return <BrutalButton onClick={onStart} disabled={isPending} fullWidth>Iniciar</BrutalButton>;
+    return <BrutalButton variant="primary" size="lg" onClick={onStart} disabled={isPending} fullWidth>{isPending ? "Iniciando..." : "Iniciar"}</BrutalButton>;
   }
   if (status === "En preparacion") {
-    return <BrutalButton variant="success" onClick={onFinish} disabled={isPending} fullWidth>Terminar</BrutalButton>;
+    return <BrutalButton variant="success" size="lg" onClick={onFinish} disabled={isPending} fullWidth>{isPending ? "Terminando..." : "Terminar"}</BrutalButton>;
   }
   if (status === "Terminada") {
-    return <BrutalButton variant="success" onClick={onDeliver} disabled={isPending} fullWidth>Entregar</BrutalButton>;
+    return <BrutalButton variant="success" size="lg" onClick={onDeliver} disabled={isPending} fullWidth>{isPending ? "Entregando..." : "Entregar"}</BrutalButton>;
   }
   return null;
 }

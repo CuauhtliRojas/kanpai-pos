@@ -25,7 +25,7 @@ export function PrintJobCard({ job, canReprint, isReprinting, errorMessage, onRe
         </div>
         <PrintStatusBadge status={job.status} />
       </header>
-      <p className="text-sm font-bold">Solicitado: {formatNullableDate(job.created_at)}</p>
+      <p className="text-sm font-bold text-[var(--kp-muted)]">Solicitado: {formatNullableDate(job.created_at)}</p>
       {errorMessage ? (
         <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 font-bold text-[var(--kp-danger-text)]">{errorMessage}</p>
       ) : null}
@@ -50,10 +50,10 @@ export function PrintJobCard({ job, canReprint, isReprinting, errorMessage, onRe
               className="min-h-[var(--kp-touch-md)] border-4 border-[var(--kp-ink)] bg-[var(--kp-bg)] px-3 text-base font-bold normal-case tracking-normal text-[var(--kp-text)] outline-none focus:border-[var(--kp-info)]"
             />
           </label>
-          <BrutalButton type="submit" disabled={isReprinting || !reason.trim()} fullWidth>Reimprimir</BrutalButton>
+          <BrutalButton type="submit" variant="warning" disabled={isReprinting || !reason.trim()} fullWidth>{isReprinting ? "Solicitando..." : "Solicitar reimpresión"}</BrutalButton>
         </form>
       ) : canReprint ? (
-        <BrutalButton onClick={() => setShowReason(true)} fullWidth>Reimprimir</BrutalButton>
+        <BrutalButton onClick={() => setShowReason(true)} fullWidth>Solicitar reimpresión</BrutalButton>
       ) : null}
     </article>
   );

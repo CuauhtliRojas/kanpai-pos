@@ -14,7 +14,7 @@ const variantClassName: Record<BrutalButtonVariant, string> = {
   primary:
     "border-[var(--kp-ink)] bg-[var(--kp-accent)] text-[var(--kp-accent-contrast)] shadow-[var(--kp-shadow-hard)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[var(--kp-shadow-hard-sm)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
   secondary:
-    "border-[var(--kp-ink)] bg-[var(--kp-surface)] text-[var(--kp-ink)] shadow-[var(--kp-shadow-hard)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[var(--kp-shadow-hard-sm)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
+    "border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[var(--kp-shadow-hard-sm)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
   danger:
     "border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)] shadow-[var(--kp-shadow-hard)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[var(--kp-shadow-hard-sm)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none",
   success:

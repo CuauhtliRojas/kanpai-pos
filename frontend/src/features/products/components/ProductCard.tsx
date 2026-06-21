@@ -18,9 +18,9 @@ export function ProductCard({ product, disabled, onSelect }: ProductCardProps) {
       disabled={isDisabled}
       onClick={() => onSelect(product)}
       className={[
-        "overflow-hidden border-4 border-[var(--kp-ink)] text-left shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+        "min-h-48 overflow-hidden border-4 border-[var(--kp-ink)] text-left shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
         isDisabled
-          ? "cursor-not-allowed bg-zinc-700 text-zinc-400 opacity-70"
+          ? "cursor-not-allowed bg-[var(--kp-surface-soft)] text-[var(--kp-muted)] opacity-70"
           : "bg-[var(--kp-surface-raised)] text-[var(--kp-text)]",
       ].join(" ")}
     >

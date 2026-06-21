@@ -4,7 +4,7 @@ import type { TicketLine } from "../types/ticketTypes";
 
 export function TicketLineItem({ line, actions }: { line: TicketLine; actions?: ReactNode }) {
   return (
-    <li className="border-b-2 border-zinc-700 py-3 last:border-b-0">
+    <li className="border-b-2 border-[var(--kp-divider)] py-3 last:border-b-0">
       <div className="flex justify-between gap-3">
         <p className="font-black leading-tight">{line.product_name_snapshot}</p>
         <p className="shrink-0 font-black">{formatCentsToPesos(line.line_total_cents)}</p>
@@ -13,7 +13,7 @@ export function TicketLineItem({ line, actions }: { line: TicketLine; actions?: 
         {line.quantity} × {formatCentsToPesos(line.unit_price_cents)}
       </p>
       {line.status === "Capturado" ? (
-        <p className="mt-1 text-xs font-black uppercase tracking-wide text-amber-400">
+        <p className="mt-1 inline-flex border-2 border-[var(--kp-ink)] bg-[var(--kp-warning)] px-2 py-1 text-xs font-black uppercase tracking-wide text-[var(--kp-warning-contrast)]">
           Pendiente de enviar
         </p>
       ) : null}

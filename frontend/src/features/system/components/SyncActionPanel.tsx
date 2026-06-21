@@ -15,7 +15,7 @@ export function SyncActionPanel({ canRun, disabled }: SyncActionPanelProps) {
   if (!canRun) return null;
 
   return (
-    <div className="border-t-2 border-zinc-700 pt-4">
+    <div className="border-t-2 border-[var(--kp-divider)] pt-4">
       {confirming ? (
         <div className="grid gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-warning-bg)] p-3">
           <p className="font-bold text-[var(--kp-warning-text)]">

@@ -33,7 +33,7 @@ export function ProductionOrderCard({
 }: ProductionOrderCardProps) {
   const presentation = statusPresentation[order.status];
   return (
-    <article className="grid gap-4 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
+    <article className="grid min-h-72 gap-4 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
       <header className="flex items-start justify-between gap-3">
         <h2 className="text-2xl font-black uppercase">{order.folio}</h2>
         <StatusBadge label={presentation.label} tone={presentation.tone} />

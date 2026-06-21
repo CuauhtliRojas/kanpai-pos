@@ -12,7 +12,7 @@ export function TableGrid({ tables, selectedTableId, compact = false, onSelect }
   if (tables.length === 0) {
     return (
       <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-6 text-center text-2xl font-black uppercase shadow-[var(--kp-shadow-hard)]">
-        Sin mesas
+        Sin mesas disponibles
       </div>
     );
   }

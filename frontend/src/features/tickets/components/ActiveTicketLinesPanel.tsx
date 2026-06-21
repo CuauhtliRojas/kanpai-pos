@@ -36,13 +36,13 @@ export function ActiveTicketLinesPanel({
       </div>
 
       {isLoading ? (
-        <p className="mt-4 font-bold">Consultando cuenta...</p>
+        <p className="mt-4 font-bold text-[var(--kp-muted)]">Cargando cuenta...</p>
       ) : hasError ? (
-        <p className="mt-4 font-bold">No se pudo cargar la cuenta.</p>
+        <p className="mt-4 border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 font-bold text-[var(--kp-danger-text)]">No se pudo cargar la cuenta.</p>
       ) : lines.length === 0 ? (
-        <p className="mt-4 font-bold text-[var(--kp-muted)]">Sin productos</p>
+        <p className="mt-4 border-2 border-dashed border-[var(--kp-divider)] p-4 text-center font-bold text-[var(--kp-muted)]">Agrega el primer producto.</p>
       ) : (
-        <ul className="mt-3 max-h-64 overflow-y-auto pr-1">
+        <ul className="mt-3 max-h-72 overflow-y-auto pr-1">
           {lines.map((line) => (
             <TicketLineItem
               key={line.id}

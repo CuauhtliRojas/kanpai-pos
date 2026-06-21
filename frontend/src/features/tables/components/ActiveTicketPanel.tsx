@@ -24,8 +24,9 @@ export function ActiveTicketPanel({
   if (!table) {
     return (
       <aside className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-5 shadow-[var(--kp-shadow-hard)]">
-        <h2 className="text-2xl font-black uppercase">Mesa seleccionada</h2>
-        <p className="mt-3 font-bold text-[var(--kp-muted)]">Selecciona una mesa para continuar.</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-selected)]">Mesa actual</p>
+        <h2 className="mt-1 text-2xl font-black uppercase">Sin mesa</h2>
+        <p className="mt-3 font-bold text-[var(--kp-muted)]">Elige una mesa para comenzar.</p>
       </aside>
     );
   }
@@ -35,7 +36,7 @@ export function ActiveTicketPanel({
 
   return (
     <aside className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-5 shadow-[var(--kp-shadow-hard)]">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-selected)]">Mesa seleccionada</p>
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-selected)]">Mesa actual</p>
       <h2 className="mt-2 text-3xl font-black uppercase">{table.display_name}</h2>
 
       {isLoadingTicket ? (
@@ -62,7 +63,7 @@ export function ActiveTicketPanel({
             fullWidth
             onClick={() => onContinue(table, ticket)}
           >
-            Continuar
+            Abrir cuenta activa
           </BrutalButton>
         </div>
       ) : isFree ? (

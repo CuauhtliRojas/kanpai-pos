@@ -10,8 +10,8 @@ type Props = {
 export function InventoryList({ items, canAdjust, onAdjust }: Props) {
   if (items.length === 0) {
     return (
-      <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 font-bold text-[var(--kp-text-muted)]">
-        Sin productos registrados en inventario.
+      <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-6 text-center font-black uppercase text-[var(--kp-muted)] shadow-[var(--kp-shadow-hard)]">
+        Sin datos de inventario
       </p>
     );
   }

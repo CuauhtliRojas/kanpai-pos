@@ -52,7 +52,9 @@ export function ReportsPage() {
             <SalesByPaymentMethodPanel items={paymentMethodsQuery.data ?? []} />
             <InventoryConsumptionPanel items={inventoryConsumptionQuery.data ?? []} />
           </div>
-          <ReportCard title="Ventas por categoría"><p className="font-black uppercase text-[var(--kp-muted)]">En preparación</p></ReportCard>
+          <ReportCard title="Ventas por categoría">
+            <p className="font-black uppercase text-[var(--kp-muted)]">No disponible en esta versión</p>
+          </ReportCard>
           <OperationsPanel times={timesQuery.data} printing={printingQuery.data} />
         </>
       ) : null}

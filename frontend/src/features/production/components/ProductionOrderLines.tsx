@@ -4,7 +4,7 @@ export function ProductionOrderLines({ lines }: { lines: ProductionOrderLine[] }
   return (
     <ul className="grid gap-2">
       {lines.map((line) => (
-        <li key={line.id} className="border-t-2 border-zinc-700 pt-2 first:border-t-0 first:pt-0">
+        <li key={line.id} className="border-t-2 border-[var(--kp-divider)] pt-2 first:border-t-0 first:pt-0">
           <div className="flex items-start justify-between gap-4 font-black">
             <span>{line.product_name_snapshot}</span>
             <span className="shrink-0 text-lg">{line.quantity}</span>

@@ -10,5 +10,6 @@ const statusTone = {
 } as const;
 
 export function PrintStatusBadge({ status }: { status: PrintJobStatus }) {
-  return <StatusBadge label={status === "Fallido" ? "Falló" : status} tone={statusTone[status]} />;
+  const label = status === "Pendiente" ? "Impresión pendiente" : status === "Fallido" ? "Falló" : status;
+  return <StatusBadge label={label} tone={statusTone[status]} />;
 }

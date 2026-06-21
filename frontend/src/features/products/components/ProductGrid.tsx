@@ -11,7 +11,7 @@ export function ProductGrid({ products, disabled, onSelect }: ProductGridProps) 
   if (products.length === 0) {
     return (
       <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-6 text-center text-xl font-black uppercase">
-        Sin productos
+        Sin productos disponibles
       </div>
     );
   }

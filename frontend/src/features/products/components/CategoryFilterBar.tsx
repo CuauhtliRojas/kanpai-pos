@@ -24,7 +24,7 @@ export function CategoryFilterBar({
             aria-pressed={selected}
             onClick={() => onSelect(category.id)}
             className={[
-              "min-h-11 shrink-0 border-4 border-[var(--kp-ink)] px-4 text-sm font-black uppercase shadow-[var(--kp-shadow-hard-sm)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+              "min-h-[var(--kp-touch-md)] shrink-0 border-4 border-[var(--kp-ink)] px-4 text-sm font-black uppercase shadow-[var(--kp-shadow-hard-sm)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
               selected
                 ? "bg-[var(--kp-selected)] text-[var(--kp-selected-contrast)]"
                 : "bg-[var(--kp-surface-raised)] text-[var(--kp-text)]",

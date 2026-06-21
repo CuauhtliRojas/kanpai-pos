@@ -7,7 +7,6 @@ import { useApplyDiscountMutation } from "../hooks/useApplyDiscountMutation";
 import { useTicketDiscountsQuery } from "../hooks/useTicketDiscountsQuery";
 import type { DiscountCreateRequest } from "../types/discountTypes";
 import { DiscountDialog } from "./DiscountDialog";
-import { PromotionPanel } from "./PromotionPanel";
 
 type DiscountPanelProps = {
   ticket: Ticket;
@@ -37,7 +36,7 @@ export function DiscountPanel({ ticket, employeeId, canAuthorize }: DiscountPane
   }
 
   return (
-    <div className="mt-4 grid gap-3 border-t-2 border-zinc-700 pt-4">
+    <div className="mt-4 grid gap-3 border-t-2 border-[var(--kp-divider)] pt-4">
       <div className="flex items-center justify-between gap-3">
         <p className="font-black uppercase">Descuento</p>
         {canApply ? (
@@ -48,14 +47,12 @@ export function DiscountPanel({ ticket, employeeId, canAuthorize }: DiscountPane
       </div>
 
       {discountsQuery.data?.map((discount) => (
-        <div key={discount.id} className="flex items-start justify-between gap-3 bg-zinc-900 p-2 text-sm font-bold">
+        <div key={discount.id} className="flex items-start justify-between gap-3 bg-[var(--kp-bg-alt)] p-2 text-sm font-bold">
           <span>{discount.is_courtesy ? "Cortesía" : "Descuento"}{discount.reason ? ` · ${discount.reason}` : ""}</span>
           <span className="shrink-0">-{formatCentsToPesos(discount.amount_cents)}</span>
         </div>
       ))}
       {notice ? <p className="font-black text-[var(--kp-success-text)]">{notice}</p> : null}
-      <PromotionPanel />
-
       {dialogOpen && employeeId !== null ? (
         <DiscountDialog
           employeeId={employeeId}
