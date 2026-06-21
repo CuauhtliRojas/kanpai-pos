@@ -5,6 +5,8 @@ import { AccessDeniedPanel } from "../features/auth/components/AccessDeniedPanel
 import { PermissionGate } from "../features/auth/components/PermissionGate";
 import { CashPage } from "../features/cash/pages/CashPage";
 import { PosTablesPage } from "../features/tables/pages/PosTablesPage";
+import { ProductionPage } from "../features/production/pages/ProductionPage";
+import { PrintingPage } from "../features/printing/pages/PrintingPage";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
 import { navigationItems, type NavigationItem } from "../layouts/navigationItems";
@@ -72,8 +74,16 @@ export function AppRouter() {
               }
             />
             <Route path="pos" element={<PosTablesPage />} />
+            <Route path="production" element={<ProductionPage />} />
+            <Route path="printing" element={<PrintingPage />} />
             {moduleNavigationItems
-              .filter((item) => item.to !== "/cash" && item.to !== "/pos")
+              .filter(
+                (item) =>
+                  item.to !== "/cash" &&
+                  item.to !== "/pos" &&
+                  item.to !== "/production" &&
+                  item.to !== "/printing",
+              )
               .map((item) => (
                 <Route
                   key={item.to}

@@ -41,13 +41,12 @@ export const navigationItems: readonly NavigationItem[] = [
     anyPermission: ["CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE"],
   },
   { to: "/pos", label: "POS", icon: ReceiptText, status: "available" },
-  { to: "/production", label: "Producción", icon: Utensils, status: "coming_soon" },
+  { to: "/production", label: "Producción", icon: Utensils, status: "available" },
   {
     to: "/printing",
     label: "Impresión",
     icon: Printer,
     status: "available",
-    anyPermission: ["REPRINT"],
   },
   {
     to: "/inventory",

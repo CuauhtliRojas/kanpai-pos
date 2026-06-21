@@ -22,6 +22,14 @@
   payments: {
     list: (ticketId: number) => ["payments", "list", ticketId] as const,
   },
+  production: {
+    stations: ["production", "stations"] as const,
+    orders: (stationId?: number) =>
+      ["production", "orders", stationId ?? "all"] as const,
+  },
+  printing: {
+    jobs: ["printing", "jobs"] as const,
+  },
   tables: {
     list: ["tables", "list"] as const,
   },
