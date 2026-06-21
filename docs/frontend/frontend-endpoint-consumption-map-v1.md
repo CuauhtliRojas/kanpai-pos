@@ -62,6 +62,7 @@ Reglas:
 - Las acciones operativas usan `employee.id`.
 - Si la sesión expira, bloquear operación y volver a login.
 - No inventar roles si el backend no los devuelve en `me`.
+- Implementado en sesión V1: `me` usa el header `X-Kanpai-Session`; el PIN no se persiste y los permisos devueltos quedan reservados para fase 3.
 
 ## 5. Operaciones base
 

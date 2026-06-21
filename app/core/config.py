@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     )
     kanpai_admin_pin: str = Field(default="1234", alias="KANPAI_ADMIN_PIN")
     auth_session_hours: int = Field(default=12, alias="KANPAI_SESSION_HOURS")
+    cors_origins: str = Field(default="", alias="KANPAI_CORS_ORIGINS")
     labsmobile_user: str | None = Field(default=None, alias="LABSMOBILE_USER")
     labsmobile_token: str | None = Field(default=None, alias="LABSMOBILE_TOKEN")
     labsmobile_test_mode: bool = Field(default=True, alias="LABSMOBILE_TEST_MODE")
@@ -56,6 +57,15 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
 
 
 @lru_cache

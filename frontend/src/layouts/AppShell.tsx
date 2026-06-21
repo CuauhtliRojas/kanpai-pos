@@ -6,6 +6,7 @@ import {
   ClipboardList,
   DatabaseZap,
   Home,
+  LogOut,
   Menu,
   Printer,
   ReceiptText,
@@ -16,6 +17,8 @@ import {
 import { NavLink, Outlet } from "react-router";
 import { useAirtableSyncStatusQuery } from "../features/system/hooks/useAirtableSyncStatusQuery";
 import { BrandMark } from "../shared/components/BrandMark";
+import { SessionSummary } from "../features/auth/components/SessionSummary";
+import { useAuthSession } from "../features/auth/hooks/useAuthSession";
 
 const menuItems = [
   { to: "/", label: "Inicio", icon: Home, enabled: true },
@@ -71,6 +74,7 @@ function resolveEstadoSignal(
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { logout } = useAuthSession();
   const EstadoQuery = useAirtableSyncStatusQuery();
 
   const EstadoSignal = resolveEstadoSignal(
@@ -97,12 +101,7 @@ export function AppShell() {
               <BrandMark variant="icon" className="h-6 w-6 sm:hidden" />
               <BrandMark variant="logo" className="hidden h-6 w-auto sm:block" />
             </div>
-            <div className="min-w-0 truncate text-xs font-black uppercase tracking-[0.08em] sm:text-sm">
-              CAJERO: SIN SESION
-            </div>
-            <div className="hidden text-xs font-black uppercase tracking-[0.08em] md:block">
-              MESA: SIN MESA
-            </div>
+            <SessionSummary />
           </div>
 
           <div
@@ -115,7 +114,7 @@ export function AppShell() {
 
       {menuOpen ? (
         <div className="fixed inset-0 z-40 bg-[rgba(0,0,0,0.72)]">
-          <aside className="h-full w-full max-w-md border-r-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
+          <aside className="h-full w-full max-w-md overflow-y-auto border-r-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
@@ -167,6 +166,18 @@ export function AppShell() {
                 ),
               )}
             </nav>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                void logout().catch(() => undefined);
+              }}
+              className="mt-5 flex min-h-[var(--kp-touch-md)] w-full items-center gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-4 text-sm font-black uppercase tracking-[0.08em] text-[var(--kp-ink)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+            >
+              <LogOut className="h-6 w-6" />
+              Cerrar sesión
+            </button>
           </aside>
         </div>
       ) : null}

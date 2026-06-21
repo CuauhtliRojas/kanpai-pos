@@ -45,6 +45,8 @@ POST /api/v1/auth/logout
 
 La sesión frontend debe ser simple. Foundation V1 puede usar almacenamiento local, pero en fases posteriores debe evaluarse si Tauri debe guardar token con mecanismo más seguro.
 
+Estado de implementación: sesión V1 incluye acceso por PIN, recuperación al abrir, cajero real en topbar y cierre desde el menú. Permisos y navegación condicionada quedan pendientes para fase 3.
+
 ### 3.2 Topbar operativo
 
 Objetivo: mostrar solo información crítica.
