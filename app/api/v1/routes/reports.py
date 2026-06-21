@@ -8,6 +8,7 @@ from app.schemas.reporting import (
     OperationalSummaryResponse,
     PrintJobsSummaryResponse,
     ProductionTimesItem,
+    SalesByCategoryItem,
     SalesByPaymentMethodItem,
     SalesByProductItem,
 )
@@ -17,6 +18,7 @@ from app.services.reporting_service import (
     get_operational_summary,
     get_print_jobs_summary,
     get_production_times,
+    get_sales_by_category,
     get_sales_by_payment_method,
     get_sales_by_product,
 )
@@ -68,6 +70,25 @@ def sales_by_product_endpoint(
         return [
             SalesByProductItem.model_validate(item)
             for item in get_sales_by_product(db, date_from, date_to)
+        ]
+    except InvalidBusinessDataError as error:
+        raise _bad_request(error) from None
+
+
+@router.get("/sales-by-category", response_model=list[SalesByCategoryItem])
+def sales_by_category_endpoint(
+    date_from: str | None = None,
+    date_to: str | None = None,
+    cash_shift_id: int | None = None,
+    category_id: int | None = None,
+    db: Session = Depends(get_db),
+) -> list[SalesByCategoryItem]:
+    try:
+        return [
+            SalesByCategoryItem.model_validate(item)
+            for item in get_sales_by_category(
+                db, date_from, date_to, cash_shift_id, category_id
+            )
         ]
     except InvalidBusinessDataError as error:
         raise _bad_request(error) from None

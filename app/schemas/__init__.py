@@ -16,6 +16,7 @@ from app.schemas.expense import CashExpenseCreateRequest, CashExpenseResponse
 from app.schemas.inventory import (
     InventoryItemResponse,
     InventoryMovementCreateRequest,
+    InventoryMovementHistoryItem,
     InventoryMovementResponse,
     InventoryStockResponse,
     PurchaseReceiptCreateRequest,
@@ -43,10 +44,12 @@ from app.schemas.print_job import (
     PrintJobClaimRequest,
     PrintJobClaimResponse,
     PrintJobFailedRequest,
+    PrintJobHistoryItem,
     PrintJobResponse,
     PrintJobRetryRequest,
     PrintJobRetryResponse,
     PrintJobWorkerRequest,
+    PrinterResponse,
 )
 from app.schemas.table import TableResponse
 from app.schemas.ticket import (
@@ -69,6 +72,7 @@ __all__ = [
     "CashExpenseResponse",
     "InventoryItemResponse",
     "InventoryMovementCreateRequest",
+    "InventoryMovementHistoryItem",
     "InventoryMovementResponse",
     "InventoryStockResponse",
     "PurchaseReceiptCreateRequest",
@@ -87,6 +91,8 @@ __all__ = [
     "PaymentResponse",
     "PaymentSummaryResponse",
     "PrintJobResponse",
+    "PrintJobHistoryItem",
+    "PrinterResponse",
     "PrintJobClaimRequest",
     "PrintJobClaimResponse",
     "PrintJobFailedRequest",

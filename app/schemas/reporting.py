@@ -36,6 +36,17 @@ class SalesByProductItem(BaseModel):
     variant_breakdown: list["SalesVariantItem"] = []
 
 
+class SalesByCategoryItem(BaseModel):
+    category_id: int | None
+    category_name: str
+    gross_sales_cents: int
+    net_sales_cents: int
+    discount_cents: int
+    quantity_sold: Decimal
+    ticket_count: int
+    share_bps: int | None
+
+
 class SalesVariantItem(BaseModel):
     name: str
     sku: str | None

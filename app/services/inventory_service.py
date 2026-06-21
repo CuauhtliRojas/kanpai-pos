@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -14,6 +14,7 @@ from app.domain.constants import (
 )
 from app.models import (
     AuditEvent,
+    Employee,
     InventoryItem,
     InventoryMovement,
     PaymentMethod,
@@ -43,6 +44,110 @@ MOVEMENT_SIGNS = {
     InventoryMovementType.WASTE: -1,
     InventoryMovementType.SALE_CONSUMPTION: -1,
 }
+
+
+def _history_date_range(
+    created_from: str | None, created_to: str | None
+) -> tuple[datetime | None, datetime | None, bool]:
+    def parse(value: str, field: str) -> tuple[datetime, bool]:
+        try:
+            parsed_date = date.fromisoformat(value)
+            return datetime.combine(parsed_date, time.min), True
+        except ValueError:
+            try:
+                parsed = datetime.fromisoformat(value)
+                if parsed.tzinfo is not None:
+                    raise ValueError
+                return parsed, False
+            except ValueError as error:
+                raise InvalidBusinessDataError(
+                    f"{field} debe ser una fecha o datetime ISO local valido."
+                ) from error
+
+    start = parse(created_from, "created_from")[0] if created_from else None
+    end = None
+    end_exclusive = False
+    if created_to:
+        end, date_only = parse(created_to, "created_to")
+        if date_only:
+            end += timedelta(days=1)
+            end_exclusive = True
+    if start is not None and end is not None:
+        if start >= end if end_exclusive else start > end:
+            raise InvalidBusinessDataError(
+                "created_from no puede ser posterior a created_to."
+            )
+    return start, end, end_exclusive
+
+
+def list_inventory_movements(
+    db: Session,
+    inventory_item_id: int | None = None,
+    movement_type: str | None = None,
+    source_type: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict]:
+    """Lista el ledger y calcula saldos acumulados sin alterar inventario."""
+    stock_after = func.sum(InventoryMovement.signed_quantity_base).over(
+        partition_by=InventoryMovement.inventory_item_id,
+        order_by=(InventoryMovement.created_at, InventoryMovement.id),
+        rows=(None, 0),
+    )
+    ledger = (
+        select(
+            InventoryMovement.id,
+            InventoryMovement.folio,
+            InventoryMovement.inventory_item_id,
+            InventoryItem.name.label("item_name"),
+            InventoryMovement.movement_type,
+            InventoryMovement.quantity_base,
+            InventoryMovement.signed_quantity_base,
+            stock_after.label("stock_after_base"),
+            InventoryMovement.source_type,
+            InventoryMovement.source_id,
+            InventoryMovement.ticket_line_id,
+            InventoryMovement.purchase_receipt_line_id,
+            InventoryMovement.cash_expense_id,
+            InventoryMovement.registered_by_employee_id,
+            Employee.full_name.label("employee_name"),
+            InventoryMovement.reason,
+            InventoryMovement.created_at,
+        )
+        .join(InventoryItem, InventoryItem.id == InventoryMovement.inventory_item_id)
+        .join(Employee, Employee.id == InventoryMovement.registered_by_employee_id)
+        .subquery()
+    )
+    query = select(ledger)
+    if inventory_item_id is not None:
+        query = query.where(ledger.c.inventory_item_id == inventory_item_id)
+    if movement_type is not None:
+        query = query.where(ledger.c.movement_type == movement_type)
+    if source_type is not None:
+        query = query.where(ledger.c.source_type == source_type)
+    start, end, end_exclusive = _history_date_range(created_from, created_to)
+    if start is not None:
+        query = query.where(ledger.c.created_at >= start)
+    if end is not None:
+        query = query.where(
+            ledger.c.created_at < end if end_exclusive else ledger.c.created_at <= end
+        )
+    rows = db.execute(
+        query.order_by(ledger.c.created_at.desc(), ledger.c.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).mappings()
+    return [
+        {
+            **dict(row),
+            "stock_before_base": Decimal(row["stock_after_base"] or 0)
+            - Decimal(row["signed_quantity_base"]),
+            "stock_after_base": Decimal(row["stock_after_base"] or 0),
+        }
+        for row in rows
+    ]
 
 
 def _decimal_quantity(value: Decimal | float | int) -> Decimal:

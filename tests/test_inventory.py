@@ -349,6 +349,39 @@ def test_create_inventory_movement_endpoint() -> None:
     assert Decimal(str(response.json()["signed_quantity_base"])) == 500
 
 
+def test_inventory_movement_history_filters_and_calculates_stock() -> None:
+    with SessionLocal() as db:
+        item, admin = _item(db), _admin(db)
+        create_inventory_movement(
+            db, item.id, "Ajuste entrada", 5, admin.id, "QA entrada", source_type="Manual"
+        )
+        create_inventory_movement(
+            db, item.id, "Ajuste salida", 2, admin.id, "QA salida", source_type="Manual"
+        )
+        item_id = item.id
+        db.commit()
+
+    response = TestClient(app).get(
+        "/api/v1/inventory/movements",
+        params={"inventory_item_id": item_id, "source_type": "Manual", "limit": 1},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["movement_type"] == "Ajuste salida"
+    assert Decimal(str(payload[0]["stock_before_base"])) == Decimal("5")
+    assert Decimal(str(payload[0]["stock_after_base"])) == Decimal("3")
+    assert payload[0]["item_name"]
+    assert payload[0]["employee_name"]
+
+    second_page = TestClient(app).get(
+        "/api/v1/inventory/movements",
+        params={"inventory_item_id": item_id, "limit": 1, "offset": 1},
+    )
+    assert second_page.status_code == 200
+    assert second_page.json()[0]["movement_type"] == "Ajuste entrada"
+
+
 def test_decimal_stock_minimum_drives_low_stock_alert_without_truncation() -> None:
     with SessionLocal() as db:
         item = _item(db)

@@ -328,6 +328,37 @@ def test_pending_alias_remains_available() -> None:
     assert len(response.json()) == 1
 
 
+def test_print_job_history_filters_and_omits_content_snapshot() -> None:
+    with SessionLocal() as db:
+        expected = _job(db, "BARRA_FRIA", status="Fallido")
+        _job(db, "CAJA", status="Pendiente")
+        expected_id = expected.id
+        db.commit()
+    response = TestClient(app).get(
+        "/api/v1/printing/jobs",
+        params={"status": "Fallido", "printer_key": "BARRA_FRIA", "limit": 10},
+    )
+    assert response.status_code == 200
+    assert [job["id"] for job in response.json()] == [expected_id]
+    assert "content_snapshot" not in response.json()[0]
+    assert "claimed_by" not in response.json()[0]
+
+
+def test_printers_contract_includes_logical_queue_counts() -> None:
+    with SessionLocal() as db:
+        _job(db, "BARRA_FRIA", status="Pendiente")
+        _job(db, "BARRA_FRIA", status="Fallido")
+        db.commit()
+    response = TestClient(app).get("/api/v1/printing/printers")
+    assert response.status_code == 200
+    printer = next(item for item in response.json() if item["key"] == "BARRA_FRIA")
+    assert printer["pending_count"] == 1
+    assert printer["failed_count"] == 1
+    assert printer["status"] == "has_failed_jobs"
+    assert printer["display_name"]
+    assert "physical_name_hint" in printer
+
+
 @pytest.mark.parametrize(
     ("payload", "expected_status"),
     [

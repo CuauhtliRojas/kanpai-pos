@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.domain.constants import PrintStatus
-from app.models import PrintJob
+from app.models import Printer, PrintJob, ProductionStation
 from app.services.exceptions import (
     BusinessConflictError,
     EntityNotFoundError,
@@ -13,6 +13,158 @@ from app.services.exceptions import (
 from app.services.print_service import get_active_printer
 
 PRINT_RETRY_DELAY_SECONDS = 60
+
+
+def _print_history_date_range(
+    created_from: str | None, created_to: str | None
+) -> tuple[datetime | None, datetime | None, bool]:
+    def parse(value: str, field: str) -> tuple[datetime, bool]:
+        try:
+            parsed_date = date.fromisoformat(value)
+            return datetime.combine(parsed_date, time.min), True
+        except ValueError:
+            try:
+                parsed = datetime.fromisoformat(value)
+                if parsed.tzinfo is not None:
+                    raise ValueError
+                return parsed, False
+            except ValueError as error:
+                raise InvalidBusinessDataError(
+                    f"{field} debe ser una fecha o datetime ISO local valido."
+                ) from error
+
+    start = parse(created_from, "created_from")[0] if created_from else None
+    end = None
+    end_exclusive = False
+    if created_to:
+        end, date_only = parse(created_to, "created_to")
+        if date_only:
+            end += timedelta(days=1)
+            end_exclusive = True
+    if start is not None and end is not None:
+        if start >= end if end_exclusive else start > end:
+            raise InvalidBusinessDataError(
+                "created_from no puede ser posterior a created_to."
+            )
+    return start, end, end_exclusive
+
+
+def list_print_jobs(
+    db: Session,
+    status: str | None = None,
+    printer_key: str | None = None,
+    job_type: str | None = None,
+    ticket_id: int | None = None,
+    cash_shift_id: int | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict]:
+    """Lista metadatos de cola sin exponer el snapshot imprimible."""
+    query = select(
+        PrintJob.id,
+        PrintJob.folio,
+        PrintJob.job_type,
+        PrintJob.printer_id,
+        PrintJob.printer_key_snapshot.label("printer_key"),
+        PrintJob.ticket_id,
+        PrintJob.cash_shift_id,
+        PrintJob.station_order_id,
+        PrintJob.command_batch_id,
+        PrintJob.status,
+        PrintJob.attempts,
+        PrintJob.claimed_at,
+        PrintJob.printed_at,
+        PrintJob.failed_at,
+        PrintJob.last_error,
+        PrintJob.next_retry_at,
+        PrintJob.created_at,
+    )
+    if status is not None:
+        query = query.where(PrintJob.status == status)
+    if printer_key is not None:
+        query = query.where(PrintJob.printer_key_snapshot == printer_key)
+    if job_type is not None:
+        query = query.where(PrintJob.job_type == job_type)
+    if ticket_id is not None:
+        query = query.where(PrintJob.ticket_id == ticket_id)
+    if cash_shift_id is not None:
+        query = query.where(PrintJob.cash_shift_id == cash_shift_id)
+    start, end, end_exclusive = _print_history_date_range(created_from, created_to)
+    if start is not None:
+        query = query.where(PrintJob.created_at >= start)
+    if end is not None:
+        query = query.where(
+            PrintJob.created_at < end if end_exclusive else PrintJob.created_at <= end
+        )
+    rows = db.execute(
+        query.order_by(PrintJob.created_at.desc(), PrintJob.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).mappings()
+    return [dict(row) for row in rows]
+
+
+def list_printers(db: Session) -> list[dict]:
+    """Proyecta configuracion logica y salud derivada de la cola local."""
+    job_stats = (
+        select(
+            PrintJob.printer_id,
+            func.max(PrintJob.created_at).label("last_job_at"),
+            func.sum(case((PrintJob.status == PrintStatus.PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((PrintJob.status == PrintStatus.FAILED, 1), else_=0)).label(
+                "failed_count"
+            ),
+        )
+        .group_by(PrintJob.printer_id)
+        .subquery()
+    )
+    rows = db.execute(
+        select(
+            Printer,
+            ProductionStation.name.label("station_name"),
+            job_stats.c.last_job_at,
+            func.coalesce(job_stats.c.pending_count, 0),
+            func.coalesce(job_stats.c.failed_count, 0),
+        )
+        .outerjoin(ProductionStation, ProductionStation.id == Printer.station_id)
+        .outerjoin(job_stats, job_stats.c.printer_id == Printer.id)
+        .order_by(Printer.printer_key)
+    ).all()
+    result = []
+    for printer, station_name, last_job_at, pending_count, failed_count in rows:
+        is_cash = printer.printer_key.upper() == "CAJA"
+        if not printer.active:
+            logical_status = "disabled"
+        elif failed_count:
+            logical_status = "has_failed_jobs"
+        elif pending_count:
+            logical_status = "has_pending_jobs"
+        else:
+            logical_status = "enabled"
+        result.append(
+            {
+                "id": printer.id,
+                "key": printer.printer_key,
+                "display_name": printer.name,
+                "role": "cash_register" if is_cash else "station" if printer.station_id else "logical",
+                "station_id": printer.station_id,
+                "station_name": station_name,
+                "enabled": printer.active,
+                "physical_name_hint": printer.connection_ref,
+                "paper_width_mm": printer.paper_width_mm,
+                "supports_cut": printer.autocut_enabled,
+                "is_cash_register_printer": is_cash,
+                "last_job_at": last_job_at,
+                "pending_count": int(pending_count),
+                "failed_count": int(failed_count),
+                "status": logical_status,
+            }
+        )
+    return result
 
 
 def _required_text(value: str, field_name: str) -> str:

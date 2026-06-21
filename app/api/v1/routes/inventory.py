@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -8,6 +8,7 @@ from app.schemas import (
     BusinessErrorResponse,
     InventoryItemResponse,
     InventoryMovementCreateRequest,
+    InventoryMovementHistoryItem,
     InventoryMovementResponse,
     InventoryStockResponse,
     PurchaseReceiptCreateRequest,
@@ -27,6 +28,7 @@ from app.services.inventory_service import (
     create_inventory_movement,
     get_current_stock,
     list_inventory_items_with_stock,
+    list_inventory_movements,
     process_purchase_receipt,
 )
 from app.services.stock_alert_service import list_active_stock_alerts
@@ -127,6 +129,39 @@ def get_inventory_stock_endpoint(
         return InventoryStockResponse.model_validate(
             get_current_stock(db, inventory_item_id)
         )
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/movements",
+    response_model=list[InventoryMovementHistoryItem],
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def list_inventory_movements_endpoint(
+    inventory_item_id: int | None = None,
+    movement_type: str | None = None,
+    source_type: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[InventoryMovementHistoryItem]:
+    try:
+        return [
+            InventoryMovementHistoryItem.model_validate(item)
+            for item in list_inventory_movements(
+                db,
+                inventory_item_id,
+                movement_type,
+                source_type,
+                created_from,
+                created_to,
+                limit,
+                offset,
+            )
+        ]
     except BusinessError as error:
         raise _to_http_exception(error) from None
 

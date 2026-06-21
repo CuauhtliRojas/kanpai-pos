@@ -61,6 +61,27 @@ class InventoryMovementResponse(BaseModel):
     created_at: datetime
 
 
+class InventoryMovementHistoryItem(BaseModel):
+    id: int
+    folio: str
+    inventory_item_id: int
+    item_name: str
+    movement_type: str
+    quantity_base: Decimal
+    signed_quantity_base: Decimal
+    stock_before_base: Decimal
+    stock_after_base: Decimal
+    source_type: str | None
+    source_id: int | None
+    ticket_line_id: int | None
+    purchase_receipt_line_id: int | None
+    cash_expense_id: int | None
+    registered_by_employee_id: int
+    employee_name: str
+    reason: str | None
+    created_at: datetime
+
+
 class PurchaseReceiptLineRequest(BaseModel):
     inventory_item_id: int
     quantity: Decimal

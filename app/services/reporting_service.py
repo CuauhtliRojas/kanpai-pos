@@ -19,6 +19,7 @@ from app.models import (
     CashShift,
     InventoryItem,
     InventoryMovement,
+    MenuCategory,
     Payment,
     PaymentMethod,
     PrintJob,
@@ -279,6 +280,107 @@ def get_sales_by_product(
             ],
         })
     return result
+
+
+def get_sales_by_category(
+    db: Session,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    cash_shift_id: int | None = None,
+    category_id: int | None = None,
+) -> list[dict]:
+    """Agrupa lineas cobradas por la categoria capturada al vender.
+
+    El descuento del ticket se prorratea en centavos entre sus categorias para
+    conservar exactamente el total descontado. Los componentes informativos de
+    paquetes siguen la misma exclusion que el reporte por producto.
+    """
+    dates = _date_conditions(
+        func.coalesce(Ticket.paid_at, Ticket.created_at),
+        parse_date_range(date_from, date_to),
+    )
+    conditions = [
+        Ticket.status == TicketStatus.PAID,
+        TicketLine.status != TicketLineStatus.CANCELLED,
+        TicketLine.line_type.in_(
+            (TicketLineType.SIMPLE, TicketLineType.PACKAGE_PARENT)
+        ),
+        *dates,
+    ]
+    if cash_shift_id is not None:
+        conditions.append(Ticket.cash_shift_id == cash_shift_id)
+
+    rows = db.execute(
+        select(
+            Ticket.id,
+            TicketLine.category_id_snapshot,
+            func.coalesce(MenuCategory.name, "Sin categoria"),
+            func.sum(TicketLine.quantity),
+            func.sum(TicketLine.line_total_cents),
+            Ticket.discount_cents,
+        )
+        .join(TicketLine, TicketLine.ticket_id == Ticket.id)
+        .outerjoin(MenuCategory, MenuCategory.id == TicketLine.category_id_snapshot)
+        .where(*conditions)
+        .group_by(
+            Ticket.id,
+            TicketLine.category_id_snapshot,
+            MenuCategory.name,
+            Ticket.discount_cents,
+        )
+        .order_by(Ticket.id, TicketLine.category_id_snapshot)
+    ).all()
+
+    by_ticket: dict[int, list] = {}
+    for row in rows:
+        by_ticket.setdefault(row[0], []).append(row)
+
+    totals: dict[tuple[int | None, str], dict] = {}
+    for ticket_id, ticket_rows in by_ticket.items():
+        ticket_gross = sum(int(row[4] or 0) for row in ticket_rows)
+        ticket_discount = min(int(ticket_rows[0][5] or 0), ticket_gross)
+        allocated = 0
+        for index, row in enumerate(ticket_rows):
+            gross = int(row[4] or 0)
+            if ticket_gross <= 0:
+                discount = 0
+            elif index == len(ticket_rows) - 1:
+                discount = ticket_discount - allocated
+            else:
+                discount = ticket_discount * gross // ticket_gross
+                allocated += discount
+            key = (row[1], str(row[2]))
+            item = totals.setdefault(
+                key,
+                {
+                    "category_id": row[1],
+                    "category_name": str(row[2]),
+                    "gross_sales_cents": 0,
+                    "net_sales_cents": 0,
+                    "discount_cents": 0,
+                    "quantity_sold": Decimal("0"),
+                    "ticket_ids": set(),
+                },
+            )
+            item["gross_sales_cents"] += gross
+            item["discount_cents"] += discount
+            item["net_sales_cents"] += gross - discount
+            item["quantity_sold"] += Decimal(row[3] or 0)
+            item["ticket_ids"].add(ticket_id)
+
+    total_net = sum(item["net_sales_cents"] for item in totals.values())
+    result = []
+    for item in totals.values():
+        ticket_ids = item.pop("ticket_ids")
+        item["ticket_count"] = len(ticket_ids)
+        item["share_bps"] = (
+            round(item["net_sales_cents"] * 10_000 / total_net)
+            if total_net > 0
+            else None
+        )
+        if category_id is None or item["category_id"] == category_id:
+            result.append(item)
+    return sorted(result, key=lambda item: (-item["net_sales_cents"], item["category_name"]))
 
 
 def get_inventory_consumption(

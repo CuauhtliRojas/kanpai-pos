@@ -7,10 +7,12 @@ from app.schemas import (
     PrintJobClaimRequest,
     PrintJobClaimResponse,
     PrintJobFailedRequest,
+    PrintJobHistoryItem,
     PrintJobResponse,
     PrintJobRetryRequest,
     PrintJobRetryResponse,
     PrintJobWorkerRequest,
+    PrinterResponse,
 )
 from app.services.exceptions import (
     BusinessConflictError,
@@ -23,31 +25,20 @@ from app.schemas.reprint import ReprintRequest
 from app.services.reprint_service import get_print_job, request_reprint
 from app.services.print_queue_service import (
     claim_next_print_job,
+    list_print_jobs,
     list_pending_print_jobs,
+    list_printers,
     mark_print_job_failed,
     mark_print_job_printed,
     retry_failed_print_jobs,
 )
-from app.models import Printer
-from sqlalchemy import select
-
 router = APIRouter(prefix="/printing", tags=["printing"])
 
 
-@router.get("/printers")
-def list_printers_endpoint(db: Session = Depends(get_db)) -> list[dict]:
-    """Lista impresoras lógicas; el daemon resuelve cada clave a Windows."""
-    printers = db.scalars(select(Printer).order_by(Printer.printer_key)).all()
-    return [
-        {
-            "id": printer.id,
-            "printer_key": printer.printer_key,
-            "name": printer.name,
-            "station_id": printer.station_id,
-            "active": printer.active,
-        }
-        for printer in printers
-    ]
+@router.get("/printers", response_model=list[PrinterResponse])
+def list_printers_endpoint(db: Session = Depends(get_db)) -> list[PrinterResponse]:
+    """Lista configuracion logica; no afirma conectividad fisica."""
+    return [PrinterResponse.model_validate(item) for item in list_printers(db)]
 
 BUSINESS_ERROR_RESPONSES = {
     400: {"model": BusinessErrorResponse},
@@ -87,6 +78,43 @@ def list_pending_print_jobs_endpoint(
         return [
             PrintJobResponse.model_validate(job)
             for job in list_pending_print_jobs(db, printer_key, limit)
+        ]
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/jobs",
+    response_model=list[PrintJobHistoryItem],
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def list_print_jobs_endpoint(
+    status: str | None = None,
+    printer_key: str | None = None,
+    job_type: str | None = None,
+    ticket_id: int | None = None,
+    cash_shift_id: int | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[PrintJobHistoryItem]:
+    try:
+        return [
+            PrintJobHistoryItem.model_validate(item)
+            for item in list_print_jobs(
+                db,
+                status,
+                printer_key,
+                job_type,
+                ticket_id,
+                cash_shift_id,
+                created_from,
+                created_to,
+                limit,
+                offset,
+            )
         ]
     except BusinessError as error:
         raise _to_http_exception(error) from None

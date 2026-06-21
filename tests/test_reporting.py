@@ -19,6 +19,7 @@ from app.models import (
     Employee,
     InventoryItem,
     InventoryMovement,
+    MenuCategory,
     Payment,
     PaymentMethod,
     PrintJob,
@@ -256,6 +257,29 @@ def test_sales_by_product_sums_simple_and_ignores_package_components() -> None:
     assert payload[0]["total_cents"] == 2000
 
 
+def test_sales_by_category_groups_category_snapshot_and_allocates_discount() -> None:
+    with SessionLocal() as db:
+        categories = db.scalars(select(MenuCategory).order_by(MenuCategory.id).limit(2)).all()
+        assert len(categories) == 2
+        shift = _shift(db)
+        ticket = _ticket(db, shift, "Cobrado", 2700)
+        ticket.discount_cents = 300
+        first = _line(db, ticket, quantity=2, total=2000)
+        second = _line(db, ticket, total=1000)
+        first.category_id_snapshot = categories[0].id
+        second.category_id_snapshot = categories[1].id
+        category_ids = [category.id for category in categories]
+        db.commit()
+
+    payload = client.get("/api/v1/reports/sales-by-category").json()
+    by_category = {item["category_id"]: item for item in payload}
+    assert by_category[category_ids[0]]["gross_sales_cents"] == 2000
+    assert by_category[category_ids[0]]["discount_cents"] == 200
+    assert by_category[category_ids[1]]["discount_cents"] == 100
+    assert sum(item["net_sales_cents"] for item in payload) == 2700
+    assert all(item["ticket_count"] == 1 for item in payload)
+
+
 def test_inventory_consumption_defaults_to_sale_consumption() -> None:
     with SessionLocal() as db:
         employee, _, _ = _catalog(db)
@@ -293,3 +317,4 @@ def test_report_routes_are_registered_in_openapi() -> None:
     paths = client.get("/openapi.json").json()["paths"]
     assert "/api/v1/reports/operational-summary" in paths
     assert "/api/v1/reports/print-jobs-summary" in paths
+    assert "/api/v1/reports/sales-by-category" in paths
