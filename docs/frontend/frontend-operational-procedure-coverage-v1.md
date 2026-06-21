@@ -14,7 +14,9 @@ La interfaz se alinea con el flujo operativo: mesa → cuenta → captura de pro
 | 8. Modificaciones con ticket nuevo | Pendiente |
 | 9. Cancelaciones autorizadas | Pendiente |
 | 10. Impresión de cuenta | Pendiente |
-| 11. Cobro y cierre | Pendiente |
+| 11. Cobro y cierre | Soportado en Fase 8 cuando el pago confirma el cierre y libera la mesa |
 | 12. Reportes/auditoría | Pendiente |
 
 Agregar productos a la cuenta no confirma el pedido ni genera comandas. En Fase 7 esa transición requiere una confirmación explícita. Producción acepta/inicia/termina permanece pendiente.
+
+La impresión física de cuenta permanece pendiente. La liberación de mesa se considera soportada únicamente cuando el pago devuelve la cuenta cerrada.

@@ -4,6 +4,7 @@ import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { useAuthSession } from "../../auth/hooks/useAuthSession";
 import { useCurrentCashShiftQuery } from "../../cash/hooks/useCurrentCashShiftQuery";
+import { CheckoutPanel } from "../../checkout/components/CheckoutPanel";
 import { SendCommandPanel } from "../../commands/components/SendCommandPanel";
 import { StationOrdersPanel } from "../../commands/components/StationOrdersPanel";
 import { CategoryFilterBar } from "../../products/components/CategoryFilterBar";
@@ -33,6 +34,7 @@ function getPosErrorMessage(error: unknown): string | null {
 export function PosTablesPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [productMessage, setProductMessage] = useState<string | null>(null);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const { employee } = useAuthSession();
   const cashQuery = useCurrentCashShiftQuery();
   const hasOpenCash = cashQuery.data !== null && cashQuery.data !== undefined;
@@ -41,8 +43,13 @@ export function PosTablesPage() {
   const productsQuery = useProductsQuery(hasOpenCash);
   const openTicketMutation = useOpenTableTicketMutation();
   const addLineMutation = useAddTicketLineMutation();
-  const { selectedTable, activeTicket, selectTable, setCurrentOperation } =
-    useCurrentOperation();
+  const {
+    selectedTable,
+    activeTicket,
+    selectTable,
+    setCurrentOperation,
+    clearCurrentOperation,
+  } = useCurrentOperation();
   const ticketQuery = useTicketQuery(activeTicket?.id ?? null);
   const displayedTicket = ticketQuery.data ?? activeTicket;
   const linesQuery = useTicketLinesQuery(displayedTicket?.id ?? null);
@@ -124,6 +131,7 @@ export function PosTablesPage() {
                 onSelect={(table) => {
                   selectTable(table);
                   setProductMessage(null);
+                  setCheckoutMessage(null);
                 }}
               />
             </div>
@@ -159,7 +167,7 @@ export function PosTablesPage() {
               ) : (
                 <ProductGrid
                   products={products}
-                  disabled={addLineMutation.isPending}
+                  disabled={addLineMutation.isPending || displayedTicket?.status === "En cobro"}
                   onSelect={(product) => void handleProductSelect(product)}
                 />
               )}
@@ -199,6 +207,19 @@ export function PosTablesPage() {
               isLoadingLines={linesQuery.isPending}
             />
             <StationOrdersPanel ticketId={displayedTicket?.id ?? null} />
+            <CheckoutPanel
+              hasSelectedTable={selectedTable !== null}
+              ticket={displayedTicket}
+              lineCount={(linesQuery.data ?? []).length}
+              pendingLineCount={pendingLineCount}
+              employeeId={employee?.id ?? null}
+              notice={checkoutMessage}
+              onClosed={() => {
+                setProductMessage(null);
+                setCheckoutMessage("Cuenta cerrada. Mesa liberada.");
+                clearCurrentOperation();
+              }}
+            />
           </div>
         </div>
       )}
