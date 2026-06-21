@@ -27,3 +27,5 @@ La pantalla de Impresión consulta trabajos pendientes, reactiva fallidos vencid
 Los ajustes de pedido se realizan desde acciones compactas en cada producto. Las modificaciones quedan registradas y generan aviso para productos enviados cuando corresponde, pero el contrato actual no genera un ticket nuevo. Las cancelaciones requieren motivo y autorización mediante `TICKET_CANCEL`.
 
 Descuentos y cortesías están soportados con `DISCOUNT_AUTHORIZE` y total confirmado por la cuenta. Promociones permanecen en preparación porque no existe contrato. Reportes y Auditoría muestran datos reales para `ADMIN`; ventas por categoría permanece pendiente.
+
+Build Tauri verificado en Fase 14: `corepack pnpm tauri build` produce MSI e instalador NSIS en `frontend/src-tauri/target/release/bundle/`. Ver `docs/frontend/frontend-local-release-v1.md` para instrucciones completas.

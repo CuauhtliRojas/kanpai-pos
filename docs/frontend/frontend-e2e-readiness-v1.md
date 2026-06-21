@@ -78,6 +78,20 @@ El estado devuelve habilitación, intervalo, direcciones, ejecución, fechas y �
 
 La acción manual real no se ejecutó durante esta fase para evitar cambios locales/remotos. El frontend envía la confirmación exigida por el contrato, no fuerza entrada durante una operación activa y vuelve a consultar el estado al terminar.
 
+## Release Tauri local — Fase 14
+
+Build verificado en Windows 11 x64 con Rust 1.96.0 y Tauri 2.x:
+
+- `corepack pnpm build` ✓ (2037 módulos, sin errores TypeScript)
+- `corepack pnpm tauri build` ✓ (3m 24s compilación Rust)
+- MSI: `frontend/src-tauri/target/release/bundle/msi/Kanpai POS_0.1.0_x64_en-US.msi` (~2.9 MB)
+- NSIS: `frontend/src-tauri/target/release/bundle/nsis/Kanpai POS_0.1.0_x64-setup.exe` (~1.9 MB)
+- EXE: `frontend/src-tauri/target/release/frontend.exe` (~8.6 MB)
+
+Corrección aplicada: `tauri.conf.json` usa `corepack pnpm build/dev` en `beforeBuildCommand/beforeDevCommand` para compatibilidad con entornos donde pnpm está gestionado por corepack.
+
+Ver `docs/frontend/frontend-local-release-v1.md` para instrucciones completas de instalación.
+
 ## Pendientes reales por contrato o alcance
 
 - Catálogo y aplicación automática de promociones.
@@ -86,7 +100,8 @@ La acción manual real no se ejecutó durante esta fase para evitar cambios loca
 - Historial general de trabajos impresos/fallidos e impresión física integrada.
 - Entrega de comanda desde Producción.
 - Paginación/filtros de Auditoría.
-- Pantallas operativas de Inventario y Permisos.
+- Historial de movimientos de inventario (sin endpoint GET).
+- Roles y permisos detallados por empleado (sin endpoints actuales).
 
 ## Checklist Tauri
 
