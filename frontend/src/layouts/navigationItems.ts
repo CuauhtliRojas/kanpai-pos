@@ -52,12 +52,11 @@ export const navigationItems: readonly NavigationItem[] = [
     to: "/inventory",
     label: "Inventario",
     icon: Boxes,
-    status: "coming_soon",
-    anyPermission: ["INVENTORY_ADJUST"],
+    status: "available",
   },
   { to: "/reports", label: "Reportes", icon: BarChart3, status: "available", adminOnly: true },
   { to: "/audit", label: "Auditoría", icon: ClipboardList, status: "available", adminOnly: true },
-  { to: "/security", label: "Permisos", icon: ShieldCheck, status: "coming_soon" },
+  { to: "/security", label: "Permisos", icon: ShieldCheck, status: "available", adminOnly: true },
 ];
 
 export function resolveNavigationItemAccess(

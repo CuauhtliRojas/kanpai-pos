@@ -10,6 +10,8 @@ import { ProductionPage } from "../features/production/pages/ProductionPage";
 import { PrintingPage } from "../features/printing/pages/PrintingPage";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
 import { AuditPage } from "../features/audit/pages/AuditPage";
+import { InventoryPage } from "../features/inventory/pages/InventoryPage";
+import { SecurityPage } from "../features/security/pages/SecurityPage";
 import { hasRole } from "../features/auth/lib/permissions";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
@@ -87,6 +89,8 @@ export function AppRouter() {
             <Route path="printing" element={<PrintingPage />} />
             <Route path="reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
             <Route path="audit" element={<AdminRoute><AuditPage /></AdminRoute>} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="security" element={<AdminRoute><SecurityPage /></AdminRoute>} />
             {moduleNavigationItems
               .filter(
                 (item) =>
@@ -95,7 +99,9 @@ export function AppRouter() {
                   item.to !== "/production" &&
                   item.to !== "/printing" &&
                   item.to !== "/reports" &&
-                  item.to !== "/audit",
+                  item.to !== "/audit" &&
+                  item.to !== "/inventory" &&
+                  item.to !== "/security",
               )
               .map((item) => (
                 <Route

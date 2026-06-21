@@ -24,7 +24,8 @@ La ventana Tauri está configurada en 1180 × 760, con mínimo de 1024 × 680. E
 | Reportes | Parcial | Día, producto, producción e impresión; categoría pendiente |
 | Auditoría | Parcial | Últimos 100 eventos, sin paginación |
 | Sistema y Airtable | Completo | Salud, estado, fechas, error operativo y ejecución manual para `ADMIN` |
-| Inventario y permisos | Pendiente | Navegación identificada como próxima |
+| Inventario | Parcial | Stock, alertas de bajo stock y ajuste manual con `INVENTORY_ADJUST`; historial sin endpoint GET |
+| Empleados / Permisos | Parcial — solo lectura | Lista activos/inactivos para `ADMIN`; roles y permisos por empleado sin contrato |
 
 ## Flujo E2E manual
 
@@ -46,6 +47,9 @@ Usar una caja, mesa, cuenta, comanda y trabajo de impresión de prueba.
 | 12 | Abrir Reportes y Auditoría | Datos reales de solo lectura | No |
 | 13 | Abrir Estado | Salud, sincronización y última actualización visibles | No |
 | 14 | Ejecutar Actualizar ahora como `ADMIN` | Pide confirmación y no fuerza entrada durante operación activa | Sí, local/remoto |
+| 15 | Abrir Inventario | Stock real y alertas de bajo stock visibles | No |
+| 16 | Ajustar stock con insumo de prueba (solo con `INVENTORY_ADJUST`) | Cambio reflejado tras confirmación del servicio | Sí |
+| 17 | Abrir Permisos como `ADMIN` | Lista de empleados activos/inactivos sin datos sensibles | No |
 
 ## Pruebas sin modificar datos
 

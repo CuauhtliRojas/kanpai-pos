@@ -50,6 +50,16 @@
     detail: (ticketId: number) => ["tickets", "detail", ticketId] as const,
     lines: (ticketId: number) => ["tickets", "lines", ticketId] as const,
   },
+  inventory: {
+    items: ["inventory", "items"] as const,
+    stockAlerts: ["inventory", "stock-alerts"] as const,
+    movements: ["inventory", "movements"] as const,
+  },
+  security: {
+    employees: ["security", "employees"] as const,
+    roles: ["security", "roles"] as const,
+    permissions: ["security", "permissions"] as const,
+  },
   system: {
     health: ["system", "health"] as const,
     airtableSyncStatus: ["system", "airtable-sync-status"] as const,

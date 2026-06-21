@@ -17,6 +17,8 @@ La interfaz se alinea con el flujo operativo: mesa → cuenta → captura de pro
 | 11. Cobro y cierre | Soportado en Fase 8 cuando el pago confirma el cierre y libera la mesa |
 | 12. Reportes/auditoría | Parcial: ventas, operación, impresión y eventos reales; categoría y paginación pendientes |
 | 13. Sistema/sincronización | Completo: salud, estado, fechas, error operativo y acción manual confirmada para `ADMIN` |
+| 14. Inventario operativo | Parcial: stock y alertas reales con `GET /inventory/items` y `GET /inventory/stock-alerts/active`; ajuste manual con `POST /inventory/movements` y permiso `INVENTORY_ADJUST`; historial de movimientos sin endpoint GET |
+| 15. Empleados / permisos | Solo lectura: lista activos/inactivos con `GET /operations/employees`; solo `ADMIN`; roles y permisos por empleado sin contrato actual |
 
 Agregar productos a la cuenta no confirma el pedido ni genera comandas. El envío requiere una confirmación explícita. Producción permite aceptar, iniciar y terminar con las transiciones reales del servicio.
 
