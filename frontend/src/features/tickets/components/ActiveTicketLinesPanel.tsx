@@ -1,4 +1,5 @@
 import { formatCentsToPesos } from "../../../shared/lib/money";
+import { TicketLineActions } from "../../ticket-adjustments/components/TicketLineActions";
 import type { Ticket } from "../../tables/types/tableTypes";
 import type { TicketLine } from "../types/ticketTypes";
 import { TicketLineItem } from "./TicketLineItem";
@@ -8,6 +9,8 @@ type ActiveTicketLinesPanelProps = {
   lines: TicketLine[];
   isLoading: boolean;
   hasError: boolean;
+  employeeId: number | null;
+  canCancel: boolean;
 };
 
 export function ActiveTicketLinesPanel({
@@ -15,6 +18,8 @@ export function ActiveTicketLinesPanel({
   lines,
   isLoading,
   hasError,
+  employeeId,
+  canCancel,
 }: ActiveTicketLinesPanelProps) {
   if (!ticket) return null;
 
@@ -39,7 +44,19 @@ export function ActiveTicketLinesPanel({
       ) : (
         <ul className="mt-3 max-h-64 overflow-y-auto pr-1">
           {lines.map((line) => (
-            <TicketLineItem key={line.id} line={line} />
+            <TicketLineItem
+              key={line.id}
+              line={line}
+              actions={employeeId !== null ? (
+                <TicketLineActions
+                  ticketId={ticket.id}
+                  ticketStatus={ticket.status}
+                  line={line}
+                  employeeId={employeeId}
+                  canCancel={canCancel}
+                />
+              ) : undefined}
+            />
           ))}
         </ul>
       )}

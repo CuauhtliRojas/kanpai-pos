@@ -3,6 +3,7 @@ import { ApiError } from "../../../api/http";
 import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { useAuthSession } from "../../auth/hooks/useAuthSession";
+import { hasPermission } from "../../auth/lib/permissions";
 import { useCurrentCashShiftQuery } from "../../cash/hooks/useCurrentCashShiftQuery";
 import { CheckoutPanel } from "../../checkout/components/CheckoutPanel";
 import { SendCommandPanel } from "../../commands/components/SendCommandPanel";
@@ -35,7 +36,7 @@ export function PosTablesPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [productMessage, setProductMessage] = useState<string | null>(null);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
-  const { employee } = useAuthSession();
+  const { employee, permissions } = useAuthSession();
   const cashQuery = useCurrentCashShiftQuery();
   const hasOpenCash = cashQuery.data !== null && cashQuery.data !== undefined;
   const tablesQuery = useTablesQuery(hasOpenCash);
@@ -199,6 +200,8 @@ export function PosTablesPage() {
               lines={linesQuery.data ?? []}
               isLoading={linesQuery.isPending}
               hasError={linesQuery.isError}
+              employeeId={employee?.id ?? null}
+              canCancel={hasPermission(permissions, "TICKET_CANCEL")}
             />
             <SendCommandPanel
               ticketId={displayedTicket?.id ?? null}
