@@ -5,6 +5,8 @@ export type AuthSessionContextValue = {
   employee: EmployeeAuthResponse | null;
   sessionToken: string | null;
   expiresAt: string | null;
+  roles: string[];
+  permissions: string[];
   isAuthenticated: boolean;
   isBootstrapping: boolean;
   login: (payload: PinLoginRequest) => Promise<void>;

@@ -1,37 +1,58 @@
 ﻿import { useState } from "react";
-import {
-  BarChart3,
-  Boxes,
-  CircleDollarSign,
-  ClipboardList,
-  DatabaseZap,
-  Home,
-  LogOut,
-  Menu,
-  Printer,
-  ReceiptText,
-  ShieldCheck,
-  Utensils,
-  X,
-} from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
 import { useAirtableSyncStatusQuery } from "../features/system/hooks/useAirtableSyncStatusQuery";
 import { BrandMark } from "../shared/components/BrandMark";
 import { SessionSummary } from "../features/auth/components/SessionSummary";
 import { useAuthSession } from "../features/auth/hooks/useAuthSession";
+import {
+  navigationItems,
+  resolveNavigationItemAccess,
+  type NavigationItem,
+  type NavigationItemAccess,
+} from "./navigationItems";
 
-const menuItems = [
-  { to: "/", label: "Inicio", icon: Home, enabled: true },
-  { to: "/system", label: "Estado", icon: DatabaseZap, enabled: true },
-  { to: "/cash", label: "Caja", icon: CircleDollarSign, enabled: false },
-  { to: "/pos", label: "POS", icon: ReceiptText, enabled: false },
-  { to: "/production", label: "Produccion", icon: Utensils, enabled: false },
-  { to: "/printing", label: "Impresion", icon: Printer, enabled: false },
-  { to: "/inventory", label: "Inventario", icon: Boxes, enabled: false },
-  { to: "/reports", label: "Reportes", icon: BarChart3, enabled: false },
-  { to: "/audit", label: "Auditoria", icon: ClipboardList, enabled: false },
-  { to: "/security", label: "Permisos", icon: ShieldCheck, enabled: false },
-];
+type MenuItemProps = {
+  item: NavigationItem;
+  access: NavigationItemAccess;
+  onNavigate: () => void;
+};
+
+function MenuItem({ item, access, onNavigate }: MenuItemProps) {
+  if (access === "denied") {
+    return (
+      <div className="flex min-h-[var(--kp-touch-md)] items-center justify-between gap-3 border-4 border-dashed border-[var(--kp-ink)] bg-[var(--kp-surface-soft)] px-4 text-sm font-black uppercase tracking-[0.08em] text-[var(--kp-muted)]">
+        <span className="flex items-center gap-3">
+          <item.icon className="h-6 w-6" />
+          {item.label}
+        </span>
+        <span className="text-[10px]">Sin permiso</span>
+      </div>
+    );
+  }
+
+  return (
+    <NavLink
+      to={item.to}
+      end={item.to === "/"}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        [
+          "flex min-h-[var(--kp-touch-md)] items-center justify-between gap-3 border-4 border-[var(--kp-ink)] px-4 text-sm font-black uppercase tracking-[0.08em] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+          isActive
+            ? "bg-[var(--kp-accent)] text-[var(--kp-accent-contrast)]"
+            : "bg-[var(--kp-surface-raised)] text-[var(--kp-ink)]",
+        ].join(" ")
+      }
+    >
+      <span className="flex items-center gap-3">
+        <item.icon className="h-6 w-6" />
+        {item.label}
+      </span>
+      {access === "coming_soon" ? <span className="text-[10px]">Próximo</span> : null}
+    </NavLink>
+  );
+}
 
 function resolveEstadoSignal(
   status: string | undefined,
@@ -74,7 +95,7 @@ function resolveEstadoSignal(
 
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { logout } = useAuthSession();
+  const { logout, permissions, roles } = useAuthSession();
   const EstadoQuery = useAirtableSyncStatusQuery();
 
   const EstadoSignal = resolveEstadoSignal(
@@ -133,38 +154,14 @@ export function AppShell() {
             </div>
 
             <nav className="grid gap-3">
-              {menuItems.map((item) =>
-                item.enabled ? (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === "/"}
-                    onClick={() => setMenuOpen(false)}
-                    className={({ isActive }) =>
-                      [
-                        "flex min-h-[var(--kp-touch-md)] items-center gap-3 border-4 border-[var(--kp-ink)] px-4 text-sm font-black uppercase tracking-[0.08em] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
-                        isActive
-                          ? "bg-[var(--kp-accent)] text-[var(--kp-accent-contrast)]"
-                          : "bg-[var(--kp-surface-raised)] text-[var(--kp-ink)]",
-                      ].join(" ")
-                    }
-                  >
-                    <item.icon className="h-6 w-6" />
-                    {item.label}
-                  </NavLink>
-                ) : (
-                  <div
-                    key={item.to}
-                    className="flex min-h-[var(--kp-touch-md)] items-center justify-between gap-3 border-4 border-dashed border-[var(--kp-ink)] bg-[var(--kp-surface-soft)] px-4 text-sm font-black uppercase tracking-[0.08em] text-[var(--kp-muted)]"
-                  >
-                    <span className="flex items-center gap-3">
-                      <item.icon className="h-6 w-6" />
-                      {item.label}
-                    </span>
-                    <span className="text-[10px]">FUTURO</span>
-                  </div>
-                ),
-              )}
+              {navigationItems.map((item) => (
+                <MenuItem
+                  key={item.to}
+                  item={item}
+                  access={resolveNavigationItemAccess(item, roles, permissions)}
+                  onNavigate={() => setMenuOpen(false)}
+                />
+              ))}
             </nav>
 
             <button

@@ -49,7 +49,12 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
       })
       .then((profile) => {
         if (!active) return;
-        const refreshedSession = { ...storedSession, employee: profile.employee };
+        const refreshedSession = {
+          ...storedSession,
+          employee: profile.employee,
+          roles: profile.roles,
+          permissions: profile.permissions,
+        };
         saveSession(refreshedSession);
         setSession(refreshedSession);
       })
@@ -81,10 +86,18 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
   const login = useCallback(
     async (payload: PinLoginRequest) => {
       const response = await loginMutation.mutateAsync(payload);
+      const profile = await queryClient.fetchQuery({
+        queryKey: queryKeys.auth.me,
+        queryFn: () => getMe(response.session_token),
+        staleTime: 0,
+        retry: false,
+      });
       const authenticatedSession: StoredAuthSession = {
-        employee: response.employee,
+        employee: profile.employee,
         sessionToken: response.session_token,
         expiresAt: response.expires_at,
+        roles: profile.roles,
+        permissions: profile.permissions,
       };
       saveSession(authenticatedSession);
       queryClient.removeQueries({ queryKey: queryKeys.auth.me });
@@ -116,7 +129,12 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
         staleTime: 0,
         retry: false,
       });
-      const refreshedSession = { ...session, employee: profile.employee };
+      const refreshedSession = {
+        ...session,
+        employee: profile.employee,
+        roles: profile.roles,
+        permissions: profile.permissions,
+      };
       saveSession(refreshedSession);
       setSession(refreshedSession);
     } catch (error) {
@@ -130,6 +148,8 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
       employee: session?.employee ?? null,
       sessionToken: session?.sessionToken ?? null,
       expiresAt: session?.expiresAt ?? null,
+      roles: session?.roles ?? [],
+      permissions: session?.permissions ?? [],
       isAuthenticated: session !== null && !isSessionExpired(session.expiresAt),
       isBootstrapping,
       login,

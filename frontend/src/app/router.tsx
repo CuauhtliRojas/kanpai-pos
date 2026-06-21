@@ -1,8 +1,31 @@
 import { HashRouter, Navigate, Outlet, Route, Routes } from "react-router";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { useAuthSession } from "../features/auth/hooks/useAuthSession";
+import { AccessDeniedPanel } from "../features/auth/components/AccessDeniedPanel";
+import { PermissionGate } from "../features/auth/components/PermissionGate";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
+import { navigationItems, type NavigationItem } from "../layouts/navigationItems";
+import { ComingSoonPage } from "../shared/components/ComingSoonPage";
+
+const moduleNavigationItems = navigationItems.filter(
+  (item) => item.to !== "/" && item.to !== "/system",
+);
+
+function ModulePlaceholder({ item }: { item: NavigationItem }) {
+  const page = <ComingSoonPage title={item.label} />;
+  if (item.status === "coming_soon") return page;
+
+  return (
+    <PermissionGate
+      anyOf={item.anyPermission}
+      allOf={item.allPermissions}
+      fallback={<AccessDeniedPanel />}
+    >
+      {page}
+    </PermissionGate>
+  );
+}
 
 function SessionBootstrap() {
   return (
@@ -35,6 +58,13 @@ export function AppRouter() {
           <Route element={<AppShell />}>
             <Route index element={<SystemDashboardPage />} />
             <Route path="system" element={<SystemDashboardPage />} />
+            {moduleNavigationItems.map((item) => (
+              <Route
+                key={item.to}
+                path={item.to.slice(1)}
+                element={<ModulePlaceholder item={item} />}
+              />
+            ))}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>
