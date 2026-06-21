@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../../api/http";
 import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
@@ -13,6 +13,9 @@ import { ProductGrid } from "../../products/components/ProductGrid";
 import { useCategoriesQuery } from "../../products/hooks/useCategoriesQuery";
 import { useProductsQuery } from "../../products/hooks/useProductsQuery";
 import type { Product } from "../../products/types/productTypes";
+import { ProductVariantDialog } from "../../variants/components/ProductVariantDialog";
+import { useProductVariantGroupsQuery } from "../../variants/hooks/useProductVariantGroupsQuery";
+import type { VariantSelection } from "../../variants/types/variantTypes";
 import { ActiveTicketLinesPanel } from "../../tickets/components/ActiveTicketLinesPanel";
 import { useAddTicketLineMutation } from "../../tickets/hooks/useAddTicketLineMutation";
 import { useTicketLinesQuery } from "../../tickets/hooks/useTicketLinesQuery";
@@ -36,6 +39,7 @@ export function PosTablesPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [productMessage, setProductMessage] = useState<string | null>(null);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { employee, permissions } = useAuthSession();
   const cashQuery = useCurrentCashShiftQuery();
   const hasOpenCash = cashQuery.data !== null && cashQuery.data !== undefined;
@@ -44,6 +48,7 @@ export function PosTablesPage() {
   const productsQuery = useProductsQuery(hasOpenCash);
   const openTicketMutation = useOpenTableTicketMutation();
   const addLineMutation = useAddTicketLineMutation();
+  const variantGroupsQuery = useProductVariantGroupsQuery(selectedProduct?.id ?? null);
   const {
     selectedTable,
     activeTicket,
@@ -71,7 +76,32 @@ export function PosTablesPage() {
     [productsQuery.data, selectedCategoryId],
   );
 
-  async function handleProductSelect(product: Product) {
+  async function addSelectedProduct(
+    product: Product,
+    variantSelections: VariantSelection[],
+    keepDialogOnError = false,
+  ) {
+    if (!displayedTicket || !employee) return;
+    setProductMessage(null);
+    try {
+      await addLineMutation.mutateAsync({
+        ticketId: displayedTicket.id,
+        payload: {
+          product_id: product.id,
+          employee_id: employee.id,
+          quantity: 1,
+          variant_selections: variantSelections,
+        },
+      });
+      setSelectedProduct(null);
+      setProductMessage("Agregado a cuenta");
+    } catch {
+      if (!keepDialogOnError) setSelectedProduct(null);
+      setProductMessage("No se pudo agregar el producto. Intenta de nuevo.");
+    }
+  }
+
+  function handleProductSelect(product: Product) {
     if (!selectedTable) {
       setProductMessage("Primero elige una mesa.");
       return;
@@ -80,19 +110,22 @@ export function PosTablesPage() {
       setProductMessage("Abre una cuenta para esta mesa.");
       return;
     }
-    if (!employee) return;
-
+    addLineMutation.reset();
     setProductMessage(null);
-    try {
-      await addLineMutation.mutateAsync({
-        ticketId: displayedTicket.id,
-        payload: { product_id: product.id, employee_id: employee.id, quantity: 1 },
-      });
-      setProductMessage("Agregado a cuenta");
-    } catch {
-      setProductMessage("No se pudo agregar el producto. Intenta de nuevo.");
-    }
+    setSelectedProduct(product);
   }
+
+  useEffect(() => {
+    if (!selectedProduct || !variantGroupsQuery.data) return;
+    const activeGroups = variantGroupsQuery.data.filter((group) => group.active);
+    if (activeGroups.length === 0) void addSelectedProduct(selectedProduct, []);
+  }, [selectedProduct, variantGroupsQuery.data]);
+
+  useEffect(() => {
+    if (!selectedProduct || !variantGroupsQuery.isError) return;
+    setProductMessage("No se pudieron cargar las opciones. Intenta de nuevo.");
+    setSelectedProduct(null);
+  }, [selectedProduct, variantGroupsQuery.isError]);
 
   if (cashQuery.isPending) return <LoadingState />;
   if (cashQuery.isError) {
@@ -168,8 +201,8 @@ export function PosTablesPage() {
               ) : (
                 <ProductGrid
                   products={products}
-                  disabled={addLineMutation.isPending || displayedTicket?.status === "En cobro"}
-                  onSelect={(product) => void handleProductSelect(product)}
+                  disabled={addLineMutation.isPending || variantGroupsQuery.isFetching || displayedTicket?.status === "En cobro"}
+                  onSelect={handleProductSelect}
                 />
               )}
             </div>
@@ -214,19 +247,40 @@ export function PosTablesPage() {
               hasSelectedTable={selectedTable !== null}
               ticket={displayedTicket}
               lineCount={(linesQuery.data ?? []).length}
+              lines={linesQuery.data ?? []}
               pendingLineCount={pendingLineCount}
               employeeId={employee?.id ?? null}
               canAuthorizeDiscount={hasPermission(permissions, "DISCOUNT_AUTHORIZE")}
+              canCancelTicket={hasPermission(permissions, "TICKET_CANCEL")}
               notice={checkoutMessage}
               onClosed={() => {
                 setProductMessage(null);
                 setCheckoutMessage("Cuenta cerrada. Mesa liberada.");
                 clearCurrentOperation();
               }}
+              onCancelled={() => {
+                setProductMessage(null);
+                setCheckoutMessage("Cuenta cancelada. Mesa liberada.");
+                clearCurrentOperation();
+              }}
             />
           </div>
         </div>
       )}
+
+      {selectedProduct && variantGroupsQuery.data?.some((group) => group.active) ? (
+        <ProductVariantDialog
+          product={selectedProduct}
+          groups={variantGroupsQuery.data}
+          isSaving={addLineMutation.isPending}
+          errorMessage={addLineMutation.isError ? "No se pudo agregar el producto. Intenta de nuevo." : null}
+          onClose={() => {
+            addLineMutation.reset();
+            setSelectedProduct(null);
+          }}
+          onSubmit={(selections) => void addSelectedProduct(selectedProduct, selections, true)}
+        />
+      ) : null}
     </div>
   );
 }

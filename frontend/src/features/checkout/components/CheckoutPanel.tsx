@@ -7,33 +7,45 @@ import { usePaymentMethodsQuery } from "../../payments/hooks/usePaymentMethodsQu
 import { usePaymentsQuery } from "../../payments/hooks/usePaymentsQuery";
 import { useStartCheckoutMutation } from "../hooks/useStartCheckoutMutation";
 import { CheckoutSummary } from "./CheckoutSummary";
+import { CancelTicketAction } from "../../ticket-cancel/components/CancelTicketAction";
+import type { TicketLine } from "../../tickets/types/ticketTypes";
+import { TicketSplitPanel } from "../../ticket-split/components/TicketSplitPanel";
+import { useTicketSplitsQuery } from "../../ticket-split/hooks/useTicketSplitsQuery";
 
 type CheckoutPanelProps = {
   hasSelectedTable: boolean;
   ticket: Ticket | null;
   lineCount: number;
+  lines: TicketLine[];
   pendingLineCount: number;
   employeeId: number | null;
   notice: string | null;
   onClosed: () => void;
   canAuthorizeDiscount: boolean;
+  canCancelTicket: boolean;
+  onCancelled: () => void;
 };
 
 export function CheckoutPanel({
   hasSelectedTable,
   ticket,
   lineCount,
+  lines,
   pendingLineCount,
   employeeId,
   notice,
   onClosed,
   canAuthorizeDiscount,
+  canCancelTicket,
+  onCancelled,
 }: CheckoutPanelProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const startMutation = useStartCheckoutMutation();
   const isInPayment = ticket?.status === "En cobro";
   const paymentsQuery = usePaymentsQuery(isInPayment ? ticket.id : null);
   const methodsQuery = usePaymentMethodsQuery(isInPayment);
+  const splitsQuery = useTicketSplitsQuery(ticket?.id ?? null);
+  const activeSplits = (splitsQuery.data ?? []).filter((split) => split.status !== "Cancelada");
 
   const guidance = notice
     ? null
@@ -84,6 +96,8 @@ export function CheckoutPanel({
           canAuthorize={canAuthorizeDiscount}
         />
       ) : null}
+      {ticket ? <CancelTicketAction ticket={ticket} employeeId={employeeId} canCancel={canCancelTicket} onCancelled={onCancelled} /> : null}
+      {ticket && !splitsQuery.isPending && !splitsQuery.isError ? <TicketSplitPanel ticket={ticket} lines={lines} splits={splitsQuery.data ?? []} employeeId={employeeId} methods={methodsQuery.data ?? []} onClosed={onClosed} /> : null}
       {notice ? <p className="mt-3 font-black text-emerald-400">{notice}</p> : null}
       {guidance ? <p className="mt-3 font-bold text-[var(--kp-muted)]">{guidance}</p> : null}
       {errorMessage ? <p className="mt-3 font-black">{errorMessage}</p> : null}
@@ -99,13 +113,7 @@ export function CheckoutPanel({
               summary={paymentsQuery.data}
               methods={methodsQuery.data}
             />
-            <PaymentForm
-              ticket={ticket}
-              employeeId={employeeId}
-              remainingCents={paymentsQuery.data.remaining_cents}
-              methods={methodsQuery.data}
-              onClosed={onClosed}
-            />
+            {activeSplits.length === 0 ? <PaymentForm ticket={ticket} employeeId={employeeId} remainingCents={paymentsQuery.data.remaining_cents} methods={methodsQuery.data} onClosed={onClosed} /> : null}
           </div>
         ) : null
       ) : (

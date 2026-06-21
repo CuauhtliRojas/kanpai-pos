@@ -14,6 +14,8 @@
     paymentMethods: ["catalog", "payment-methods"] as const,
     products: ["catalog", "products"] as const,
     stations: ["catalog", "stations"] as const,
+    productVariantGroups: (productId: number) =>
+      ["catalog", "product-variant-groups", productId] as const,
   },
   commands: {
     stationOrders: (ticketId: number) =>
@@ -43,6 +45,8 @@
   },
   audit: {
     events: ["audit", "events"] as const,
+    ticket: (ticketId: number) => ["audit", "ticket", ticketId] as const,
+    cashShift: (cashShiftId: number) => ["audit", "cash-shift", cashShiftId] as const,
   },
   tables: {
     list: ["tables", "list"] as const,
@@ -50,6 +54,7 @@
   tickets: {
     detail: (ticketId: number) => ["tickets", "detail", ticketId] as const,
     lines: (ticketId: number) => ["tickets", "lines", ticketId] as const,
+    splits: (ticketId: number) => ["tickets", "splits", ticketId] as const,
   },
   inventory: {
     items: ["inventory", "items"] as const,

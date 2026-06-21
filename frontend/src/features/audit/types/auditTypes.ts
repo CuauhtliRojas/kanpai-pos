@@ -19,3 +19,25 @@ export type AuditEventPage = {
   limit: number;
   offset: number;
 };
+
+export type TicketAudit = {
+  ticket: { folio: string; status: string; payment_status: string; total_cents: number; opened_at: string; paid_at: string | null; cancel_reason: string | null };
+  lines: unknown[];
+  payments: unknown[];
+  discounts: unknown[];
+  modifications: unknown[];
+  station_orders: unknown[];
+  print_jobs: unknown[];
+  inventory_movements: unknown[];
+  audit_events: AuditEvent[];
+};
+
+export type CashShiftAudit = {
+  cash_shift: { folio: string; status: string; opened_at: string; closed_at: string | null };
+  summary: { total_sales_cents: number; total_paid_cents: number; total_expenses_cents: number; ticket_count: number };
+  tickets: unknown[];
+  payments: unknown[];
+  expenses: unknown[];
+  print_jobs: unknown[];
+  audit_events: AuditEvent[];
+};

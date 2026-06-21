@@ -1,0 +1,19 @@
+export type TicketSplitLine = { id: number; ticket_line_id: number; amount_cents: number };
+export type TicketSplit = {
+  id: number;
+  ticket_id: number;
+  name: string;
+  split_type: string;
+  parts: number | null;
+  part_number: number | null;
+  amount_cents: number;
+  status: string;
+  created_by_employee_id: number;
+  created_at: string;
+  closed_at: string | null;
+  lines: TicketSplitLine[];
+};
+export type EqualSplitRequest = { employee_id: number; parts: number };
+export type ByLinesSplitRequest = { employee_id: number; name: string; ticket_line_ids: number[] };
+export type SplitPaymentRequest = { employee_id: number; payment_method_id: number; amount_cents: number; received_cents?: number | null; reference?: string | null };
+export type SplitPaymentResponse = { payment_id: number; split: TicketSplit; change_cents: number; ticket_closed: boolean };

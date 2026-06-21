@@ -13,18 +13,18 @@ La ventana Tauri está configurada en 1180 × 760, con mínimo de 1024 × 680. E
 | Login PIN y sesión | Completo | Inicio, recuperación y cierre de sesión |
 | Caja | Completo | Apertura, resumen, gastos y cierre |
 | Mesas y cuentas | Completo | Selección, apertura, continuidad y liberación confirmada |
-| Productos y comandas | Completo | Captura y envío por estaciones reales |
+| Productos y comandas | Completo | Captura, variantes contractuales y envío por estaciones reales |
 | Producción | Completo | Aceptar, iniciar, terminar y entregar con transiciones contractuales |
 | Impresión | Parcial | Cola pendiente, reintento y reimpresión; impresión física separada |
-| Pagos | Completo | Inicio de cobro, pagos y cierre confirmado |
+| Pagos | Completo | Inicio de cobro, pago directo o por cuenta dividida y cierre confirmado |
 | Modificaciones | Parcial | Registro auditado y aviso; no crea ticket nuevo |
 | Cancelaciones | Completo | Motivo y permiso `TICKET_CANCEL` |
 | Descuentos y cortesías | Completo | Permiso `DISCOUNT_AUTHORIZE` y total confirmado |
 | Promociones | Pendiente | Sin contrato de catálogo o aplicación |
 | Reportes | Parcial | Día, producto, forma de pago, consumo, producción e impresión; categoría sin contrato |
-| Auditoría | Parcial | Últimos 100 eventos, sin paginación |
+| Auditoría | Parcial | Últimos 100 eventos y detalle por cuenta/corte; sin paginación |
 | Sistema y Airtable | Completo | Salud, estado, fechas, error operativo y ejecución manual para `ADMIN` |
-| Inventario | Parcial | Stock, alertas de bajo stock y ajuste manual con `INVENTORY_ADJUST`; historial sin endpoint GET |
+| Inventario | Parcial | Stock, alertas, ajuste y recepción de compras; historial general sin endpoint GET |
 | Empleados / Permisos | Parcial — solo lectura | Lista activos/inactivos para `ADMIN`; roles y permisos por empleado sin contrato |
 
 ## Flujo E2E manual
@@ -50,6 +50,10 @@ Usar una caja, mesa, cuenta, comanda y trabajo de impresión de prueba.
 | 15 | Abrir Inventario | Stock real y alertas de bajo stock visibles | No |
 | 16 | Ajustar stock con insumo de prueba (solo con `INVENTORY_ADJUST`) | Cambio reflejado tras confirmación del servicio | Sí |
 | 17 | Abrir Permisos como `ADMIN` | Lista de empleados activos/inactivos sin datos sensibles | No |
+| 18 | Elegir un producto con variantes | Solicita opciones y respeta cantidades requeridas | No, hasta confirmar |
+| 19 | Dividir una cuenta de prueba | Muestra partes e importes devueltos por el servicio | Sí |
+| 20 | Cancelar una cuenta de prueba con autorización | Libera mesa solo tras respuesta confirmada | Sí |
+| 21 | Registrar una recepción de prueba | Actualiza existencias solo tras respuesta confirmada | Sí |
 
 ## Pruebas sin modificar datos
 
@@ -63,7 +67,8 @@ Usar una caja, mesa, cuenta, comanda y trabajo de impresión de prueba.
 
 - Login/cierre de sesión, apertura/cierre de caja y gastos.
 - Apertura de cuenta, captura, envío, producción y pagos.
-- Modificación, cancelación, descuento, cortesía, reintento y reimpresión.
+- Modificación, cancelación, división, descuento, cortesía, reintento y reimpresión.
+- Recepción de compras y sus gastos opcionales.
 - Sincronización manual: puede modificar datos locales y remotos; requiere `ADMIN` y confirmación explícita.
 
 ## Estado de sistema verificado

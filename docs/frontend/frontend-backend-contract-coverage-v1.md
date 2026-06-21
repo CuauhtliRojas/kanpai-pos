@@ -31,7 +31,7 @@ Estados:
 | POS | `POST /api/v1/pos/tickets/{ticket_id}/lines` | Sí | completo | `/pos` | Captura de producto. |
 | POS | `POST /api/v1/pos/ticket-lines/{line_id}/modify` | Sí | completo | `/pos` | Modificación con motivo. |
 | POS | `POST /api/v1/pos/ticket-lines/{line_id}/cancel` | Sí | completo | `/pos` | Cancelación de producto autorizada. |
-| POS | `POST /api/v1/pos/tickets/{ticket_id}/cancel` | No | pendiente | Ninguno | Cancelación total no expuesta; es una acción destructiva distinta de cancelar productos. |
+| POS | `POST /api/v1/pos/tickets/{ticket_id}/cancel` | Sí | completo | `/pos` | Cancelación total con `TICKET_CANCEL`, motivo y confirmación del backend. |
 | POS | `POST /api/v1/pos/tickets/{ticket_id}/send-round` | Sí | completo | `/pos` | Envío explícito de comanda. |
 | POS | `GET /api/v1/pos/tickets/{ticket_id}/station-orders` | Sí | completo | `/pos` | Estado de comandas por cuenta. |
 | POS | `GET /api/v1/pos/tickets/{ticket_id}/discounts` | Sí | completo | `/pos` | Descuentos existentes. |
@@ -39,17 +39,17 @@ Estados:
 | POS | `POST /api/v1/pos/tickets/{ticket_id}/start-payment` | Sí | completo | `/pos` | Inicia cobro con estado confirmado. |
 | POS | `GET /api/v1/pos/tickets/{ticket_id}/payments` | Sí | completo | `/pos` | Resumen y pagos de la cuenta. |
 | POS | `POST /api/v1/pos/tickets/{ticket_id}/payments` | Sí | completo | `/pos` | Registra pago y usa cierre devuelto. |
-| POS | `GET /api/v1/pos/tickets/{ticket_id}/splits` | No | pendiente | Ninguno | División avanzada sin interfaz. |
-| POS | `POST /api/v1/pos/tickets/{ticket_id}/splits/equal` | No | pendiente | Ninguno | Requiere flujo transaccional de cuentas divididas. |
-| POS | `POST /api/v1/pos/tickets/{ticket_id}/splits/by-lines` | No | pendiente | Ninguno | Requiere selección y validación de productos. |
-| POS | `POST /api/v1/pos/ticket-splits/{split_id}/payments` | No | pendiente | Ninguno | Requiere el flujo completo de cuentas divididas. |
+| POS | `GET /api/v1/pos/tickets/{ticket_id}/splits` | Sí | completo | `/pos` | Consulta las partes confirmadas de la cuenta. |
+| POS | `POST /api/v1/pos/tickets/{ticket_id}/splits/equal` | Sí | completo | `/pos` | División entre 2 y 50 partes. |
+| POS | `POST /api/v1/pos/tickets/{ticket_id}/splits/by-lines` | Sí | completo | `/pos` | División por productos completos sin cálculo local. |
+| POS | `POST /api/v1/pos/ticket-splits/{split_id}/payments` | Sí | completo | `/pos` | Pago del importe contractual de cada parte. |
 | POS | `GET /api/v1/pos/tickets/{ticket_id}/inventory-movements` | No | pendiente | Ninguno | Es historial por cuenta, no historial general de inventario. |
 | Catálogo | `GET /api/v1/catalog/categories` | Sí | completo | `/pos` | Filtro de productos. |
 | Catálogo | `GET /api/v1/catalog/products` | Sí | completo | `/pos` | Catálogo de venta. |
 | Catálogo | `GET /api/v1/catalog/payment-methods` | Sí | completo | `/pos` | Formas de pago. |
 | Catálogo | `GET /api/v1/catalog/stations` | Sí | completo | `/pos`, `/production` | Estaciones reales. |
-| Catálogo | `GET /api/v1/catalog/variant-groups` | No | pendiente | Ninguno | No existe selector de variantes. |
-| Catálogo | `GET /api/v1/catalog/products/{product_id}/variant-groups` | No | pendiente | Ninguno | Requiere integrar variantes en captura y envío. |
+| Catálogo | `GET /api/v1/catalog/variant-groups` | No | no aplica | Catálogo global | La venta usa la consulta específica por producto. |
+| Catálogo | `GET /api/v1/catalog/products/{product_id}/variant-groups` | Sí | completo | `/pos` | Selector por grupo, cantidades y límites contractuales. |
 | Producción | `GET /api/v1/production/station-orders` | Sí | completo | `/production` | Consulta por estación. |
 | Producción | `POST /api/v1/production/station-orders/{station_order_id}/receive` | Sí | completo | `/production` | Acción Aceptar. |
 | Producción | `POST /api/v1/production/station-orders/{station_order_id}/start` | Sí | completo | `/production` | Acción Iniciar. |
@@ -68,7 +68,7 @@ Estados:
 | Inventario | `GET /api/v1/inventory/items/{inventory_item_id}/stock` | Sí (equivalente) | completo | `/inventory` | La lista contractual ya incluye `current_stock`. |
 | Inventario | `GET /api/v1/inventory/stock-alerts/active` | Sí | completo | `/inventory` | Alertas activas. |
 | Inventario | `POST /api/v1/inventory/movements` | Sí | completo | `/inventory` | Ajuste manual protegido por permiso. No existe `GET` en esta ruta. |
-| Inventario | `POST /api/v1/inventory/purchase-receipts` | No | pendiente | Ninguno | Recepción de compra requiere flujo transaccional y validación operativa. |
+| Inventario | `POST /api/v1/inventory/purchase-receipts` | Sí | completo | `/inventory` | Recepción de una o más líneas; pago opcional según permisos reales. |
 | Reportes | `GET /api/v1/reports/operational-summary` | Sí | completo | `/reports` | Resumen del día. |
 | Reportes | `GET /api/v1/reports/sales-by-product` | Sí | completo | `/reports` | Ventas por producto. |
 | Reportes | `GET /api/v1/reports/sales-by-payment-method` | Sí | completo | `/reports` | Panel de solo lectura agregado en Fase 15. |
@@ -76,8 +76,8 @@ Estados:
 | Reportes | `GET /api/v1/reports/production-times` | Sí | completo | `/reports` | Tiempos por estación. |
 | Reportes | `GET /api/v1/reports/print-jobs-summary` | Sí | completo | `/reports` | Resumen de impresión. |
 | Auditoría | `GET /api/v1/audit/events` | Sí | parcial | `/audit` | Muestra 100 eventos; no hay paginación o filtros en UI. |
-| Auditoría | `GET /api/v1/audit/tickets/{ticket_id}` | No | pendiente | Ninguno | No existe consulta de detalle por cuenta. |
-| Auditoría | `GET /api/v1/audit/cash-shifts/{cash_shift_id}` | No | pendiente | Ninguno | No existe consulta de detalle por corte. |
+| Auditoría | `GET /api/v1/audit/tickets/{ticket_id}` | Sí | completo | `/audit` | Resumen detallado desde eventos vinculados a cuenta. |
+| Auditoría | `GET /api/v1/audit/cash-shifts/{cash_shift_id}` | Sí | completo | `/audit` | Resumen detallado desde eventos vinculados a corte. |
 | Sistema | `GET /health` | Sí | completo | `/`, `/system` | Salud del servicio local. |
 | Sistema | `GET /api/v1/system/airtable-sync` | Sí | completo | `/`, `/system` | Estado y error operativo de sincronización. |
 | Sistema | `POST /api/v1/system/airtable-sync/run` | Sí | completo | `/system` | Ejecución consolidada con confirmación para `ADMIN`. |
@@ -110,6 +110,6 @@ Estados:
 
 ## Pendientes de interfaz con contrato
 
-- Cuentas divididas, cancelación total de cuenta, variantes de producto y recepción de compras requieren flujos transaccionales completos; no se incorporaron como cambios pequeños sin QA mutante.
-- Auditoría por cuenta/corte e impresoras lógicas tienen contrato de lectura, pero no una entrada contextual definida en la interfaz actual.
+- `GET /api/v1/printing/printers` devuelve objetos sin propiedades definidas en OpenAPI; no se construyó una interfaz basada en campos no contractuales.
+- `GET /api/v1/pos/tickets/{ticket_id}/inventory-movements` sigue siendo consulta por cuenta, no historial general; el detalle de auditoría muestra el conteo agregado contractual.
 - No se ejecutó ninguna operación mutante durante esta auditoría.

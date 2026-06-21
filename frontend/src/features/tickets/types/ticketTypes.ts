@@ -2,6 +2,14 @@ export type TicketLineCreateRequest = {
   product_id: number;
   employee_id: number;
   quantity?: number;
+  note?: string | null;
+  variant_selections?: VariantSelectionRequest[];
+};
+
+export type VariantSelectionRequest = {
+  variant_group_id: number;
+  variant_option_id: number;
+  quantity?: number;
 };
 
 export type TicketLine = {
@@ -26,6 +34,11 @@ export type TicketLine = {
   cancelled_by_employee_id: number | null;
   cancel_reason: string | null;
   cancelled_at: string | null;
+  variant_selections: Array<{
+    variant_group_id: number;
+    variant_option_id: number;
+    quantity: number;
+  }>;
 };
 
 export type TicketTotals = {
