@@ -905,7 +905,7 @@
         },
         {
           "name": "Imagen_POS",
-          "type": "attachment",
+          "type": "multipleAttachments",
           "description": "Foto oficial del producto para POS. Usar máximo un archivo."
         },
         {

@@ -35,6 +35,8 @@ DEFAULT_SCHEMA = Path("airtable/schema/kanpai_airtable_schema.v1.json")
 DEFAULT_REPORT = Path("airtable/reports/airtable_drift_report.md")
 
 TYPE_MAP = {
+    "multipleAttachments": "multipleAttachments",
+    "attachment": "multipleAttachments",
     "singleLineText": "singleLineText",
     "multilineText": "multilineText",
     "number": "number",
