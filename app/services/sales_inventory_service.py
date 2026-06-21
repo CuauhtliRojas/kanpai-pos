@@ -13,7 +13,9 @@ from app.domain.constants import (
 )
 from app.models import (
     InventoryMovement,
+    Product,
     ProductRecipe,
+    ProductVariantGroup,
     ProductVariantOption,
     Ticket,
     TicketLine,
@@ -56,7 +58,16 @@ def consume_inventory_for_paid_ticket(
         )
     )
     recipes_by_product: dict[int, list[ProductRecipe]] = {}
+    product_multipliers: dict[int, Decimal] = {}
     if lines:
+        product_multipliers = {
+            product.id: Decimal(product.inventory_recipe_multiplier or 1)
+            for product in db.scalars(
+                select(Product).where(
+                    Product.id.in_({line.product_id for line in lines})
+                )
+            )
+        }
         recipes = db.scalars(
             select(ProductRecipe)
             .where(
@@ -72,10 +83,11 @@ def consume_inventory_for_paid_ticket(
     for line in lines:
         for recipe in recipes_by_product.get(line.product_id, []):
             waste_multiplier = Decimal("1") + (
-                Decimal(recipe.waste_pct or 0) / Decimal("100")
+                Decimal(recipe.waste_pct or 0)
             )
             quantity = (
                 Decimal(line.quantity)
+                * product_multipliers.get(line.product_id, Decimal("1"))
                 * Decimal(recipe.quantity_base)
                 * waste_multiplier
             )
@@ -110,11 +122,19 @@ def consume_inventory_for_paid_ticket(
                 )
             )
             for recipe in option_recipes:
+                option_product = db.get(Product, option.product_id)
+                option_group = db.get(ProductVariantGroup, selection.variant_group_id)
+                option_multiplier = (
+                    Decimal("1")
+                    if option_group is not None and option_group.name == "BROCHETAS"
+                    else Decimal(option_product.inventory_recipe_multiplier or 1)
+                )
                 quantity = (
                     Decimal(line.quantity)
                     * Decimal(selection.quantity)
+                    * option_multiplier
                     * Decimal(recipe.quantity_base)
-                    * (Decimal("1") + Decimal(recipe.waste_pct or 0) / Decimal("100"))
+                    * (Decimal("1") + Decimal(recipe.waste_pct or 0))
                 )
                 movements.append(
                     create_inventory_movement(

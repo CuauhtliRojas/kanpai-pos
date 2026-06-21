@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -13,3 +15,6 @@ class ProductResponse(BaseModel):
     price_cents: int
     active: bool
     visible_pos: bool
+    inventory_recipe_multiplier: Decimal
+    image_path: str | None = None
+    image_url: str | None = None

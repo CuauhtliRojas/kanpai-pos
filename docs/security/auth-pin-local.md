@@ -17,3 +17,9 @@ El PIN nunca se guarda en claro. `hash_pin` contiene `pbkdf2_sha256$iteraciones$
 Estados persistidos: `Activa`, `Cerrada`, `Expirada`. El token no sustituye todavía `employee_id`; esa transición requiere middleware global y queda fuera de esta fase.
 
 QA: login válido, PIN incorrecto, expiración/cierre, roles y permisos, y comprobación directa de que `1234` no aparece en `hash_pin`.
+
+## Frontera de administración y soporte
+
+Las rutas `admin-support` y `admin-read-only` requieren `X-Kanpai-Session`. `SUPPORT_ACCESS` habilita diagnóstico local y `ADMIN_READ` habilita catálogos administrativos; el rol `ADMIN` se acepta para bases existentes que aún no hayan vuelto a ejecutar el seed.
+
+Las respuestas de empleados nunca incluyen `pin_hash`. `POST /api/v1/notifications/sms/test` requiere además `SMS_SEND` y `"confirm": "SEND_SMS_TEST"`.

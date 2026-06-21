@@ -4,7 +4,8 @@
     {"clave_rol": "ADMIN", "nombre": "Administrador", "activo": true},
     {"clave_rol": "GERENTE", "nombre": "Gerente", "activo": true},
     {"clave_rol": "CAJERO", "nombre": "Cajero", "activo": true},
-    {"clave_rol": "ALMACEN", "nombre": "Almacen", "activo": true}
+    {"clave_rol": "ALMACEN", "nombre": "Almacen", "activo": true},
+    {"clave_rol": "SOPORTE", "nombre": "Soporte", "activo": true}
   ],
   "Unidades": [
     {"clave_unidad": "G", "nombre": "g", "familia_unidad": "Masa", "activo": true},
@@ -27,35 +28,32 @@
     {"clave_canal": "sms", "nombre": "SMS", "activo": true}
   ],
   "Mesas": [
-    {"codigo_mesa": "M01", "nombre_mesa": "M01 Barra", "zona": "BARRA", "orden": 1, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M02", "nombre_mesa": "M02 Barra", "zona": "BARRA", "orden": 2, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M03", "nombre_mesa": "M03 Barra", "zona": "BARRA", "orden": 3, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M04", "nombre_mesa": "M04 Barra", "zona": "BARRA", "orden": 4, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M05", "nombre_mesa": "M05 Barra", "zona": "BARRA", "orden": 5, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M06", "nombre_mesa": "M06 Barra", "zona": "BARRA", "orden": 6, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M07", "nombre_mesa": "M07 Barra", "zona": "BARRA", "orden": 7, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M08", "nombre_mesa": "M08 Barra", "zona": "BARRA", "orden": 8, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M09", "nombre_mesa": "M09 Barra", "zona": "BARRA", "orden": 9, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M10", "nombre_mesa": "M10 Salon", "zona": "SALON", "orden": 10, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M11", "nombre_mesa": "M11 Salon", "zona": "SALON", "orden": 11, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M12", "nombre_mesa": "M12 Salon", "zona": "SALON", "orden": 12, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M13", "nombre_mesa": "M13 Salon", "zona": "SALON", "orden": 13, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M14", "nombre_mesa": "M14 Salon", "zona": "SALON", "orden": 14, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M15", "nombre_mesa": "M15 Salon", "zona": "SALON", "orden": 15, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M16", "nombre_mesa": "M16 Salon", "zona": "SALON", "orden": 16, "estado_temporal": "Libre", "activo": true},
-    {"codigo_mesa": "M17", "nombre_mesa": "M17 Salon", "zona": "SALON", "orden": 17, "estado_temporal": "Libre", "activo": true}
+    {"codigo_mesa": "M01", "nombre_mesa": "Mesa 1", "zona": "SALON", "orden": 1, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M02", "nombre_mesa": "Mesa 2", "zona": "SALON", "orden": 2, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M03", "nombre_mesa": "Mesa 3", "zona": "SALON", "orden": 3, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M04", "nombre_mesa": "Mesa 4", "zona": "SALON", "orden": 4, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M05", "nombre_mesa": "Mesa 5", "zona": "SALON", "orden": 5, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M06", "nombre_mesa": "Mesa 6", "zona": "SALON", "orden": 6, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M07", "nombre_mesa": "Mesa 7", "zona": "SALON", "orden": 7, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M08", "nombre_mesa": "Mesa 8", "zona": "SALON", "orden": 8, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M09", "nombre_mesa": "Mesa 9", "zona": "SALON", "orden": 9, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M10", "nombre_mesa": "Mesa 10", "zona": "SALON", "orden": 10, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M11", "nombre_mesa": "Mesa 11", "zona": "SALON", "orden": 11, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M12", "nombre_mesa": "Mesa 12", "zona": "SALON", "orden": 12, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M13", "nombre_mesa": "Mesa 13", "zona": "SALON", "orden": 13, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M14", "nombre_mesa": "Mesa 14", "zona": "SALON", "orden": 14, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M15", "nombre_mesa": "Mesa 15", "zona": "SALON", "orden": 15, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M16", "nombre_mesa": "Mesa 16", "zona": "SALON", "orden": 16, "estado_temporal": "Libre", "activo": true},
+    {"codigo_mesa": "M17", "nombre_mesa": "Mesa 17", "zona": "SALON", "orden": 17, "estado_temporal": "Libre", "activo": true}
   ],
   "EstacionesProduccion": [
-    {"clave_estacion": "BARRA_FRIA", "nombre": "Barra fria", "orden": 1, "activo": true},
-    {"clave_estacion": "COCTELERIA", "nombre": "Cocteleria", "orden": 2, "activo": true},
-    {"clave_estacion": "BARRA_CALIENTE", "nombre": "Barra Caliente", "orden": 3, "activo": true}
+    {"clave_estacion": "COCINA", "nombre": "Cocina", "clave_impresora": "COCINA", "orden": 1, "activo": true},
+    {"clave_estacion": "BARRA", "nombre": "Barra", "clave_impresora": "BARRA", "orden": 2, "activo": true}
   ],
   "Impresoras": [
     {"clave_impresora": "CAJA", "nombre": "Caja", "estacion": [], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "CAJA", "autocorte_activo": true, "activo": true},
-    {"clave_impresora": "BARRA_FRIA", "nombre": "Barra fria", "estacion": ["BARRA_FRIA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "BARRA_FRIA", "autocorte_activo": true, "activo": true},
-    {"clave_impresora": "COCTELERIA", "nombre": "Cocteleria", "estacion": ["COCTELERIA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCTELERIA", "autocorte_activo": true, "activo": true},
-    {"clave_impresora": "BARRA_CALIENTE", "nombre": "Barra caliente", "estacion": ["BARRA_CALIENTE"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "BARRA_CALIENTE", "autocorte_activo": true, "activo": true},
-    {"clave_impresora": "COCINA", "nombre": "Cocina (legacy)", "estacion": [], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCINA", "autocorte_activo": true, "activo": true}
+    {"clave_impresora": "COCINA", "nombre": "Cocina", "estacion": ["COCINA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "COCINA", "autocorte_activo": true, "activo": true},
+    {"clave_impresora": "BARRA", "nombre": "Barra", "estacion": ["BARRA"], "ancho_papel_mm": 80, "tipo_conexion": "Logica", "referencia_conexion": "BARRA", "autocorte_activo": true, "activo": true}
   ],
   "CategoriasMenu": [
     {"nombre": "Bebidas alcohol", "orden": 1, "activo": true},
@@ -66,6 +64,6 @@
     {"nombre": "Yakitori", "orden": 6, "activo": true}
   ],
   "Empleados": [
-    {"codigo_empleado": "EMP-0001", "nombre_completo": "Alejo", "alias_pos": "Alejo", "rol": "Cajero", "rol_clave": "CAJERO", "activo": true, "pin_activo": true}
+    {"codigo_empleado": "ADMIN", "nombre_completo": "Administrador Kanpai", "alias_pos": "Admin", "rol": "Administrador", "rol_clave": "ADMIN", "activo": true, "pin_activo": true}
   ]
 }

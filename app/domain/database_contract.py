@@ -98,6 +98,7 @@ _COLUMN_OVERRIDES = {
     "expires_at": "expiracion_fecha",
     "price_delta_cents": "diferencia_precio_centavos",
     "price_delta_cents_snapshot": "diferencia_precio_centavos_instantanea",
+    "inventory_recipe_multiplier": "multiplicador_receta_inventario",
     "name_snapshot": "nombre_instantanea",
     "sku_snapshot": "sku_instantanea",
     "min_select": "seleccion_minima",

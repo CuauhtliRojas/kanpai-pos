@@ -1,6 +1,7 @@
 {
   "api_base_url": "http://127.0.0.1:8011",
   "worker_id": "kanpai-caja-01",
+  "worker_key": "copiar-el-mismo-valor-de-KANPAI_WORKER_KEY",
   "poll_seconds": 2,
   "printers": {
     "CAJA": "Nombre exacto impresora caja Windows",

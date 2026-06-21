@@ -1,14 +1,26 @@
 from fastapi.testclient import TestClient
 
 from app.db.seed import run_seed
+from app.core.config import get_settings
+from app.api.security import SessionIdentity, require_session
 from app.main import app
 
 
 client = TestClient(app)
 
 
+def _admin_headers() -> dict[str, str]:
+    run_seed(include_development_data=True)
+    response = client.post(
+        "/api/v1/auth/login-pin",
+        json={"employee_code": "EMP-0001", "pin": get_settings().kanpai_admin_pin},
+    )
+    assert response.status_code == 200
+    return {"X-Kanpai-Session": response.json()["session_token"]}
+
+
 def test_api_v1_system_db() -> None:
-    response = client.get("/api/v1/system/db")
+    response = client.get("/api/v1/system/db", headers=_admin_headers())
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
@@ -18,7 +30,7 @@ def test_api_v1_system_db() -> None:
 def test_api_v1_seed_summary() -> None:
     run_seed(include_development_data=True)
 
-    response = client.get("/api/v1/system/seed-summary")
+    response = client.get("/api/v1/system/seed-summary", headers=_admin_headers())
 
     assert response.status_code == 200
     payload = response.json()
@@ -78,9 +90,10 @@ def test_operations_employee_detail_and_permissions_hide_pin_hash() -> None:
     employees = client.get("/api/v1/operations/employees").json()
     employee_id = employees[0]["id"]
 
-    detail = client.get(f"/api/v1/operations/employees/{employee_id}")
+    headers = _admin_headers()
+    detail = client.get(f"/api/v1/operations/employees/{employee_id}", headers=headers)
     permissions = client.get(
-        f"/api/v1/operations/employees/{employee_id}/permissions"
+        f"/api/v1/operations/employees/{employee_id}/permissions", headers=headers
     )
     assert detail.status_code == permissions.status_code == 200
     assert "pin_hash" not in detail.text
@@ -91,8 +104,9 @@ def test_operations_employee_detail_and_permissions_hide_pin_hash() -> None:
 
 def test_operations_roles_permissions_and_new_read_routes_are_in_openapi() -> None:
     run_seed(include_development_data=True)
-    roles = client.get("/api/v1/operations/roles")
-    permissions = client.get("/api/v1/operations/permissions")
+    headers = _admin_headers()
+    roles = client.get("/api/v1/operations/roles", headers=headers)
+    permissions = client.get("/api/v1/operations/permissions", headers=headers)
     assert roles.status_code == permissions.status_code == 200
     assert any(role["role_key"] == "ADMIN" for role in roles.json())
     assert any(
@@ -110,5 +124,51 @@ def test_operations_roles_permissions_and_new_read_routes_are_in_openapi() -> No
         "/api/v1/operations/employees/{employee_id}/permissions",
         "/api/v1/operations/roles",
         "/api/v1/operations/permissions",
+        "/api/v1/printing/jobs/claim-next",
+        "/api/v1/printing/jobs/{print_job_id}/printed",
+        "/api/v1/printing/jobs/{print_job_id}/failed",
     }
     assert expected <= set(paths)
+
+
+def test_security_boundary_routes_reject_missing_session_and_remain_in_openapi() -> None:
+    protected = {
+        "/api/v1/system/db",
+        "/api/v1/system/seed-summary",
+        "/api/v1/preflight/local-backend",
+        "/api/v1/notifications/sms",
+        "/api/v1/operations/roles",
+        "/api/v1/operations/permissions",
+    }
+    for path in protected:
+        assert client.get(path).status_code == 401
+    assert protected <= set(client.get("/openapi.json").json()["paths"])
+
+
+def test_diagnostic_rejects_session_without_support_permission() -> None:
+    app.dependency_overrides[require_session] = lambda: SessionIdentity(
+        employee=None,  # type: ignore[arg-type]
+        roles=frozenset(),
+        permissions=frozenset(),
+    )
+    try:
+        response = client.get(
+            "/api/v1/preflight/local-backend",
+            headers={"X-Kanpai-Session": "restricted-session"},
+        )
+    finally:
+        app.dependency_overrides.pop(require_session, None)
+    assert response.status_code == 403
+
+
+def test_openapi_classifies_security_boundaries() -> None:
+    document = client.get("/openapi.json").json()
+    assert {"KanpaiSession", "KanpaiWorkerKey"} <= set(
+        document["components"]["securitySchemes"]
+    )
+    worker_operation = document["paths"][
+        "/api/v1/printing/jobs/claim-next"
+    ]["post"]
+    admin_operation = document["paths"]["/api/v1/system/db"]["get"]
+    assert "worker-only" in worker_operation["tags"]
+    assert "admin-support" in admin_operation["tags"]

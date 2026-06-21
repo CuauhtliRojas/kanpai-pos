@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.config import get_settings
 from app.db.seed import run_seed
 from app.main import app
 from app.models import (
@@ -27,7 +28,7 @@ sequence = count(1)
 @pytest.fixture(autouse=True)
 def clean_preflight_data() -> None:
     """Preserve seed catalogs and isolate every preflight invariant test."""
-    run_seed(include_development_data=True)
+    run_seed()
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()
@@ -38,7 +39,7 @@ def clean_preflight_data() -> None:
 
 
 def _catalog(db: Session) -> tuple[Employee, DiningTable]:
-    employee = db.scalar(select(Employee).where(Employee.employee_code == "EMP-0001"))
+    employee = db.scalar(select(Employee).where(Employee.employee_code == "ADMIN"))
     table = db.scalar(select(DiningTable).where(DiningTable.active.is_(True)))
     assert employee is not None and table is not None
     return employee, table
@@ -76,8 +77,25 @@ def _checks(payload: dict) -> dict[str, dict]:
     return {check["key"]: check for check in payload["checks"]}
 
 
+def _admin_headers() -> dict[str, str]:
+    response = client.post(
+        "/api/v1/auth/login-pin",
+        json={"employee_code": "ADMIN", "pin": get_settings().kanpai_admin_pin},
+    )
+    assert response.status_code == 200
+    return {"X-Kanpai-Session": response.json()["session_token"]}
+
+
+def _preflight_response():
+    return client.get("/api/v1/preflight/local-backend", headers=_admin_headers())
+
+
+def test_preflight_rejects_request_without_session() -> None:
+    assert client.get("/api/v1/preflight/local-backend").status_code == 401
+
+
 def test_preflight_endpoint_returns_complete_structure() -> None:
-    response = client.get("/api/v1/preflight/local-backend")
+    response = _preflight_response()
     assert response.status_code == 200
     payload = response.json()
     assert set(payload) == {"status", "database", "checks", "summary"}
@@ -93,24 +111,21 @@ def test_preflight_endpoint_returns_complete_structure() -> None:
     assert {"key", "status", "message"} == set(payload["checks"][0])
 
 
-def test_preflight_is_ok_with_clean_seed() -> None:
-    payload = client.get("/api/v1/preflight/local-backend").json()
-    assert payload["status"] == "OK"
-    assert all(check["status"] == "OK" for check in payload["checks"])
-    assert {
-        "catalog_products",
-        "catalog_categories",
-        "catalog_stations",
-        "catalog_inventory",
-    } <= set(_checks(payload))
 
+def test_preflight_accepts_complete_real_recipe_catalog() -> None:
+    payload = _preflight_response().json()
+    assert payload["status"] == "OK"
+    checks = _checks(payload)
+    assert checks["catalog_products"]["status"] == "OK"
+    assert checks["catalog_inventory"]["status"] == "OK"
+    assert checks["visible_product_recipes"]["status"] == "OK"
 
 def test_preflight_detects_more_than_one_open_cash_shift() -> None:
     with SessionLocal() as db:
         _shift(db)
         _shift(db)
         db.commit()
-    payload = client.get("/api/v1/preflight/local-backend").json()
+    payload = _preflight_response().json()
     assert payload["status"] == "ERROR"
     assert _checks(payload)["single_open_cash_shift"]["status"] == "ERROR"
 
@@ -122,7 +137,7 @@ def test_preflight_detects_more_than_one_active_ticket_for_table() -> None:
         _ticket(db, shift, table, "Abierto")
         _ticket(db, shift, table, "En cobro")
         db.commit()
-    payload = client.get("/api/v1/preflight/local-backend").json()
+    payload = _preflight_response().json()
     assert _checks(payload)["single_active_ticket_per_table"]["status"] == "ERROR"
 
 
@@ -143,7 +158,7 @@ def test_preflight_detects_print_job_without_printer_key() -> None:
             )
         )
         db.commit()
-    payload = client.get("/api/v1/preflight/local-backend").json()
+    payload = _preflight_response().json()
     assert _checks(payload)["print_job_printer_snapshot"]["status"] == "ERROR"
 
 
@@ -168,5 +183,5 @@ def test_preflight_detects_active_payment_for_cancelled_ticket() -> None:
             )
         )
         db.commit()
-    payload = client.get("/api/v1/preflight/local-backend").json()
+    payload = _preflight_response().json()
     assert _checks(payload)["cancelled_ticket_payments"]["status"] == "ERROR"

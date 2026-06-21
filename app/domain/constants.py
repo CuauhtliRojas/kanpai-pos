@@ -35,6 +35,8 @@ class PermissionKey:
     DISCOUNT_AUTHORIZE = "DISCOUNT_AUTHORIZE"
     REPRINT = "REPRINT"
     SMS_SEND = "SMS_SEND"
+    SUPPORT_ACCESS = "SUPPORT_ACCESS"
+    ADMIN_READ = "ADMIN_READ"
 
 
 class EmployeeSessionStatus:

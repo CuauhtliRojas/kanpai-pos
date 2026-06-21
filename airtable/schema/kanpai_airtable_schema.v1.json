@@ -886,6 +886,11 @@
           "precision": 0
         },
         {
+          "name": "multiplicador_receta_inventario",
+          "type": "number",
+          "precision": 6
+        },
+        {
           "name": "precio_mxn",
           "type": "formula",
           "formula": "{precio_centavos}/100"
@@ -897,6 +902,11 @@
         {
           "name": "visible_pos",
           "type": "checkbox"
+        },
+        {
+          "name": "Imagen_POS",
+          "type": "attachment",
+          "description": "Foto oficial del producto para POS. Usar máximo un archivo."
         },
         {
           "name": "imagen_path",

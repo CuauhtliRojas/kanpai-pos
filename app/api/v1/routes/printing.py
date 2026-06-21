@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.api.security import require_worker_key
 from app.schemas import (
     BusinessErrorResponse,
     PrintJobClaimRequest,
@@ -124,6 +125,10 @@ def list_print_jobs_endpoint(
     "/jobs/claim-next",
     response_model=PrintJobClaimResponse,
     responses=BUSINESS_ERROR_RESPONSES,
+    dependencies=[Depends(require_worker_key)],
+    tags=["printing", "worker-only"],
+    summary="Reclamar siguiente trabajo (worker)",
+    description="Uso exclusivo del worker local. Requiere X-Kanpai-Worker-Key cuando la clave está configurada.",
 )
 def claim_next_print_job_endpoint(
     payload: PrintJobClaimRequest, db: Session = Depends(get_db)
@@ -145,6 +150,10 @@ def claim_next_print_job_endpoint(
     "/jobs/{print_job_id}/printed",
     response_model=PrintJobResponse,
     responses=BUSINESS_ERROR_RESPONSES,
+    dependencies=[Depends(require_worker_key)],
+    tags=["printing", "worker-only"],
+    summary="Confirmar impresión (worker)",
+    description="Callback exclusivo del worker local para confirmar una impresión física.",
 )
 def mark_print_job_printed_endpoint(
     print_job_id: int,
@@ -166,6 +175,10 @@ def mark_print_job_printed_endpoint(
     "/jobs/{print_job_id}/failed",
     response_model=PrintJobResponse,
     responses=BUSINESS_ERROR_RESPONSES,
+    dependencies=[Depends(require_worker_key)],
+    tags=["printing", "worker-only"],
+    summary="Reportar fallo de impresión (worker)",
+    description="Callback exclusivo del worker local para registrar un fallo de impresión.",
 )
 def mark_print_job_failed_endpoint(
     print_job_id: int,

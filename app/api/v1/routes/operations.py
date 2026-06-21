@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.database import get_db
+from app.api.security import require_admin_read_permission
 from app.models import DiningTable, Employee
 from app.schemas.auth import (
     EmployeeDetailResponse,
@@ -66,7 +67,14 @@ def list_employees(db: Session = Depends(get_db)) -> list[dict]:
     ]
 
 
-@router.get("/employees/{employee_id}", response_model=EmployeeDetailResponse)
+@router.get(
+    "/employees/{employee_id}",
+    response_model=EmployeeDetailResponse,
+    dependencies=[Depends(require_admin_read_permission)],
+    tags=["operations", "admin-read-only"],
+    summary="Consultar empleado (admin)",
+    description="Detalle administrativo read-only; nunca expone pin_hash.",
+)
 def get_employee_detail_endpoint(
     employee_id: int, db: Session = Depends(get_db)
 ) -> EmployeeDetailResponse:
@@ -79,6 +87,10 @@ def get_employee_detail_endpoint(
 @router.get(
     "/employees/{employee_id}/permissions",
     response_model=EmployeePermissionsResponse,
+    dependencies=[Depends(require_admin_read_permission)],
+    tags=["operations", "admin-read-only"],
+    summary="Consultar permisos de empleado (admin)",
+    description="Roles y permisos efectivos para consulta administrativa.",
 )
 def get_employee_permissions_endpoint(
     employee_id: int, db: Session = Depends(get_db)
@@ -91,12 +103,26 @@ def get_employee_permissions_endpoint(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from None
 
 
-@router.get("/roles", response_model=list[RoleResponse])
+@router.get(
+    "/roles",
+    response_model=list[RoleResponse],
+    dependencies=[Depends(require_admin_read_permission)],
+    tags=["operations", "admin-read-only"],
+    summary="Listar roles (admin)",
+    description="Catálogo read-only de roles y permisos asociados.",
+)
 def list_roles_endpoint(db: Session = Depends(get_db)) -> list[RoleResponse]:
     return [RoleResponse.model_validate(role) for role in list_roles(db)]
 
 
-@router.get("/permissions", response_model=list[PermissionResponse])
+@router.get(
+    "/permissions",
+    response_model=list[PermissionResponse],
+    dependencies=[Depends(require_admin_read_permission)],
+    tags=["operations", "admin-read-only"],
+    summary="Listar permisos (admin)",
+    description="Catálogo read-only de permisos locales.",
+)
 def list_permissions_endpoint(db: Session = Depends(get_db)) -> list[PermissionResponse]:
     return [
         PermissionResponse.model_validate(permission)

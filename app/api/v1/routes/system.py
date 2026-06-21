@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel
 
 from app.core.database import get_db
+from app.api.security import require_support_permission
 from app.models import (
     BusinessSetting,
     DiningTable,
@@ -95,7 +96,13 @@ def business_settings(db: Session = Depends(get_db)) -> BusinessSettingResponse:
     return BusinessSettingResponse.model_validate(setting)
 
 
-@router.get("/db")
+@router.get(
+    "/db",
+    dependencies=[Depends(require_support_permission)],
+    tags=["system", "admin-support"],
+    summary="Verificar base local (admin/soporte)",
+    description="Diagnóstico local protegido por sesión administrativa o de soporte.",
+)
 def database_status(db: Session = Depends(get_db)) -> dict[str, str]:
     db.execute(text("SELECT 1"))
 
@@ -105,7 +112,13 @@ def database_status(db: Session = Depends(get_db)) -> dict[str, str]:
     }
 
 
-@router.get("/seed-summary")
+@router.get(
+    "/seed-summary",
+    dependencies=[Depends(require_support_permission)],
+    tags=["system", "admin-support"],
+    summary="Consultar resumen de seed (admin/soporte)",
+    description="Conteos de diagnóstico protegidos por sesión administrativa o de soporte.",
+)
 def seed_summary(db: Session = Depends(get_db)) -> dict[str, int]:
     business_count = len(db.execute(select(BusinessSetting)).scalars().all())
     table_count = len(db.execute(select(DiningTable)).scalars().all())

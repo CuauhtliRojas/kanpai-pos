@@ -4,55 +4,13 @@ import pytest
 
 from app.core.database import SessionLocal
 from app.db.seed import run_seed
-from app.models import InventoryItem, Product, Unit
 from scripts.check_pre_sync_invariants import main
 from scripts.reset_operational_data import reset_operational_data
 
 
-def _seed_preflight_catalog() -> None:
-    """Create deterministic threshold data without relying on the operational DB."""
-    with SessionLocal() as db:
-        unit = db.query(Unit).filter_by(unit_key="PZA").one()
-        existing_products = {
-            product.sku for product in db.query(Product).filter(Product.sku.like("QA-PREFLIGHT-%"))
-        }
-        existing_items = {
-            item.item_code
-            for item in db.query(InventoryItem).filter(
-                InventoryItem.item_code.like("QA-PREFLIGHT-%")
-            )
-        }
-        db.add_all(
-            Product(
-                sku=f"QA-PREFLIGHT-{index:03d}",
-                name=f"QA preflight {index}",
-                display_name=f"QA preflight {index}",
-                price_cents=100,
-                active=True,
-                visible_pos=True,
-            )
-            for index in range(30)
-            if f"QA-PREFLIGHT-{index:03d}" not in existing_products
-        )
-        db.add_all(
-            InventoryItem(
-                item_code=f"QA-PREFLIGHT-{index:03d}",
-                name=f"QA insumo {index}",
-                base_unit_id=unit.id,
-                minimum_stock_qty=0,
-                unit_cost_cents=0,
-                active=True,
-            )
-            for index in range(95)
-            if f"QA-PREFLIGHT-{index:03d}" not in existing_items
-        )
-        db.commit()
-
-
 @pytest.fixture(autouse=True)
 def clean_invariant_data() -> None:
-    run_seed(include_development_data=True)
-    _seed_preflight_catalog()
+    run_seed()
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()
@@ -62,12 +20,13 @@ def clean_invariant_data() -> None:
         db.commit()
 
 
-def test_invariant_script_returns_zero_for_healthy_seed(
+def test_invariant_script_blocks_incomplete_recipe_seed(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    assert main() == 0
+    assert main() == 1
     output = capsys.readouterr().out
-    assert "PRE-SYNC PREFLIGHT: OK" in output
+    assert "PRE-SYNC PREFLIGHT: ERROR" in output
+    assert "visible_product_recipes" in output
     assert "single_open_cash_shift" in output
 
 

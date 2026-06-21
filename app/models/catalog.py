@@ -101,11 +101,22 @@ class Product(RemoteCatalogMixin, TimestampMixin, Base):
     price_cents: Mapped[int] = db_column(
         "price_cents", Integer, default=0, nullable=False
     )
+    inventory_recipe_multiplier: Mapped[Decimal] = db_column(
+        "inventory_recipe_multiplier",
+        Numeric(18, 6),
+        default=Decimal("1"),
+        nullable=False,
+    )
     active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
     visible_pos: Mapped[bool] = db_column(
         "visible_pos", Boolean, default=True, nullable=False
     )
     image_path: Mapped[Optional[str]] = db_column("image_path", String(500))
+
+    @property
+    def image_url(self) -> Optional[str]:
+        """Public POS image URL/path resolved from catalog sync."""
+        return self.image_path
 
     category: Mapped[Optional["MenuCategory"]] = relationship(back_populates="products")
     station_assignments: Mapped[list["ProductStationAssignment"]] = relationship(

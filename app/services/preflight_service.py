@@ -27,12 +27,17 @@ from app.models import (
     MenuCategory,
     Payment,
     PaymentMethod,
+    Permission,
     PrintJob,
     Printer,
     Product,
     ProductRecipe,
+    ProductStationAssignment,
+    ProductVariantGroup,
+    ProductVariantOption,
     ProductionStation,
     Role,
+    RolePermission,
     StockAlert,
     Ticket,
     TicketLine,
@@ -66,19 +71,22 @@ REQUIRED_PAYMENT_METHODS = (
 REQUIRED_PRINTERS = (
     "CAJA",
     "COCINA",
-    "BARRA_FRIA",
-    "COCTELERIA",
-    "BARRA_CALIENTE",
+    "BARRA",
 )
 REQUIRED_PRODUCTION_STATIONS = (
-    "BARRA_FRIA",
-    "COCTELERIA",
-    "BARRA_CALIENTE",
+    "COCINA",
+    "BARRA",
 )
-MIN_VISIBLE_PRODUCTS = 30
+REQUIRED_ROLES = ("ADMIN", "GERENTE", "CAJERO", "ALMACEN", "SOPORTE")
+REQUIRED_PERMISSIONS = (
+    "TICKET_CANCEL", "DISCOUNT_AUTHORIZE", "CASH_SHIFT_OPEN",
+    "CASH_SHIFT_CLOSE", "EXPENSE_CREATE", "INVENTORY_ADJUST", "REPRINT",
+    "SMS_SEND", "ADMIN_READ", "SUPPORT_ACCESS",
+)
+MIN_VISIBLE_PRODUCTS = 31
 MIN_ACTIVE_CATEGORIES = 6
 MIN_ACTIVE_TABLES = 17
-MIN_ACTIVE_INVENTORY_ITEMS = 95
+MIN_ACTIVE_INVENTORY_ITEMS = 96
 
 
 def _count(db: Session, model, *conditions) -> int:
@@ -168,9 +176,9 @@ def run_local_backend_preflight(db: Session) -> dict:
         (
             _check(
                 "seed_admin",
-                "Active admin employee is present",
-                "Active admin employee seed is missing",
-                lambda: bool(
+                "Exactly one active admin employee is present",
+                "The seed must contain exactly one active admin employee",
+                lambda: (
                     db.scalar(
                         select(func.count(Employee.id))
                         .join(EmployeeRole, EmployeeRole.employee_id == Employee.id)
@@ -181,7 +189,7 @@ def run_local_backend_preflight(db: Session) -> dict:
                             Role.active.is_(True),
                         )
                     )
-                ),
+                ) == 1,
             ),
             _check(
                 "seed_payment_methods",
@@ -197,10 +205,10 @@ def run_local_backend_preflight(db: Session) -> dict:
             ),
             _check(
                 "seed_tables",
-                "At least 17 operational dining tables are active",
-                "Imported catalog has fewer than 17 active dining tables",
+                "Exactly 17 operational dining tables are active",
+                "Imported catalog must have exactly 17 active dining tables",
                 lambda: _count(db, DiningTable, DiningTable.active.is_(True))
-                >= MIN_ACTIVE_TABLES,
+                == MIN_ACTIVE_TABLES,
             ),
             _check(
                 "seed_folios",
@@ -228,12 +236,12 @@ def run_local_backend_preflight(db: Session) -> dict:
             ),
             _check(
                 "catalog_products",
-                "At least 30 imported products are active and visible in POS",
-                "Imported catalog has fewer than 30 active visible products",
+                "Exactly 31 imported products are active and visible in POS",
+                "Imported catalog must have exactly 31 active visible products",
                 lambda: _count(
                     db, Product, Product.active.is_(True), Product.visible_pos.is_(True)
                 )
-                >= MIN_VISIBLE_PRODUCTS,
+                == MIN_VISIBLE_PRODUCTS,
             ),
             _check(
                 "catalog_categories",
@@ -244,7 +252,7 @@ def run_local_backend_preflight(db: Session) -> dict:
             ),
             _check(
                 "catalog_stations",
-                "The 3 required production stations are the active station set",
+                "The 2 required production stations are the active station set",
                 "Active production stations do not match the imported catalog",
                 lambda: _count(
                     db, ProductionStation, ProductionStation.active.is_(True)
@@ -260,13 +268,101 @@ def run_local_backend_preflight(db: Session) -> dict:
             ),
             _check(
                 "catalog_inventory",
-                "At least 95 imported inventory items are active",
-                "Imported catalog has fewer than 95 active inventory items",
+                "Exactly 96 imported inventory items are active",
+                "Imported catalog must have exactly 96 active inventory items",
                 lambda: _count(db, InventoryItem, InventoryItem.active.is_(True))
-                >= MIN_ACTIVE_INVENTORY_ITEMS,
+                == MIN_ACTIVE_INVENTORY_ITEMS,
+            ),
+            _check(
+                "seed_roles", "All supported roles are active",
+                "Supported role seed is incomplete",
+                lambda: _required_values_present(
+                    db, Role, Role.role_key, REQUIRED_ROLES, Role.active.is_(True)
+                ),
+            ),
+            _check(
+                "seed_permissions", "All required permissions are active",
+                "Required permission seed is incomplete",
+                lambda: _required_values_present(
+                    db, Permission, Permission.permission_key,
+                    REQUIRED_PERMISSIONS, Permission.active.is_(True)
+                ),
+            ),
+            _check(
+                "admin_security_permissions",
+                "ADMIN has ADMIN_READ and SUPPORT_ACCESS",
+                "ADMIN lacks ADMIN_READ or SUPPORT_ACCESS",
+                lambda: set(db.scalars(
+                    select(Permission.permission_key)
+                    .join(RolePermission, RolePermission.permission_id == Permission.id)
+                    .join(Role, Role.id == RolePermission.role_id)
+                    .where(
+                        Role.role_key == "ADMIN",
+                        Permission.permission_key.in_(("ADMIN_READ", "SUPPORT_ACCESS")),
+                    )
+                )) == {"ADMIN_READ", "SUPPORT_ACCESS"},
+            ),
+            _check(
+                "no_active_demo_catalog", "No demo catalog products are active",
+                "Demo catalog products remain active",
+                lambda: _count(
+                    db, Product, Product.sku.like("DEV-%"), Product.active.is_(True)
+                ) == 0,
             ),
         )
     )
+    products_with_recipe = select(ProductRecipe.product_id).where(
+        ProductRecipe.active.is_(True)
+    )
+    missing_recipe_products = list(db.scalars(
+        select(Product).where(
+            Product.active.is_(True),
+            Product.visible_pos.is_(True),
+            Product.id.not_in(products_with_recipe),
+        ).order_by(Product.sku)
+    ))
+    prepared_product_ids = set(db.scalars(
+        select(ProductStationAssignment.product_id).where(
+            ProductStationAssignment.product_id.in_(
+                [product.id for product in missing_recipe_products]
+            ),
+            ProductStationAssignment.active.is_(True),
+        )
+    ))
+    combo_product_ids = set(db.scalars(
+        select(ProductVariantGroup.product_id)
+        .join(ProductVariantOption, ProductVariantOption.variant_group_id == ProductVariantGroup.id)
+        .where(
+            ProductVariantGroup.active.is_(True),
+            ProductVariantOption.active.is_(True),
+            ProductVariantOption.product_id.is_not(None),
+        )
+    ))
+    prepared_without_recipe = [
+        product.sku for product in missing_recipe_products
+        if product.id in prepared_product_ids and product.id not in combo_product_ids
+    ]
+    direct_without_recipe = [
+        product.sku for product in missing_recipe_products
+        if product.id not in prepared_product_ids
+    ]
+    checks.append({
+        "key": "visible_product_recipes",
+        "status": "ERROR" if prepared_without_recipe else "OK",
+        "message": (
+            "All prepared visible products have inventory recipes"
+            if not prepared_without_recipe
+            else "Prepared visible products without recipe: "
+            + ", ".join(prepared_without_recipe)
+        ),
+    })
+    if direct_without_recipe:
+        checks.append({
+            "key": "direct_products_without_recipe",
+            "status": "WARNING",
+            "message": "Direct-sale products without inventory recipe: "
+            + ", ".join(direct_without_recipe),
+        })
     duplicate_active_tables = (
         select(Ticket.table_id)
         .where(Ticket.status.in_(ACTIVE_TICKET_STATUSES))

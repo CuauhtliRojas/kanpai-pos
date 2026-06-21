@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     )
     kanpai_admin_pin: str = Field(default="1234", alias="KANPAI_ADMIN_PIN")
     auth_session_hours: int = Field(default=12, alias="KANPAI_SESSION_HOURS")
+    kanpai_worker_key: str | None = Field(default=None, alias="KANPAI_WORKER_KEY")
     cors_origins: str = Field(default="", alias="KANPAI_CORS_ORIGINS")
     labsmobile_user: str | None = Field(default=None, alias="LABSMOBILE_USER")
     labsmobile_token: str | None = Field(default=None, alias="LABSMOBILE_TOKEN")
@@ -49,6 +50,13 @@ class Settings(BaseSettings):
         """Acepta perfiles habituales además de booleanos explícitos."""
         if isinstance(value, str) and value.lower() in {"release", "production", "prod"}:
             return False
+        return value
+
+    @field_validator("kanpai_worker_key", mode="before")
+    @classmethod
+    def normalize_optional_secret(cls, value):
+        if isinstance(value, str):
+            return value.strip() or None
         return value
 
     model_config = SettingsConfigDict(

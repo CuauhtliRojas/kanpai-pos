@@ -1,10 +1,13 @@
-from sqlalchemy import select
+import pytest
+from sqlalchemy import func, select
 
 from app.db.seed import run_seed
 from app.models import (
     BusinessSetting,
     DiningTable,
     Employee,
+    InventoryItem,
+    Permission,
     FolioSequence,
     PaymentMethod,
     Product,
@@ -12,9 +15,13 @@ from app.models import (
     ProductPackageItem,
     Printer,
     Role,
+    RolePermission,
+    ProductionStation,
+    ProductVariantGroup,
 )
 from app.core.database import SessionLocal
 from scripts.deactivate_demo_catalog import deactivate_demo_catalog
+from scripts.reset_seed_catalog_data import CONFIRMATION, reset_seed_catalog_data
 
 
 def test_seed_initial_data_is_idempotent() -> None:
@@ -111,3 +118,61 @@ def test_operational_seed_does_not_reactivate_demo_catalog() -> None:
 
     assert len(demo_products) == 4
     assert all(not product.active and not product.visible_pos for product in demo_products)
+
+
+def test_real_operational_seed_matches_catalog_contract() -> None:
+    run_seed()
+    with SessionLocal() as session:
+        assert session.scalar(select(func.count(InventoryItem.id)).where(InventoryItem.active.is_(True))) == 96
+        assert session.scalar(select(func.count(Product.id)).where(Product.active.is_(True), Product.visible_pos.is_(True))) == 31
+        assert session.scalar(select(func.count(DiningTable.id)).where(DiningTable.active.is_(True))) == 17
+        assert set(session.scalars(select(ProductionStation.station_key).where(ProductionStation.active.is_(True)))) == {"COCINA", "BARRA"}
+        assert list(session.scalars(select(Employee.employee_code).where(Employee.active.is_(True)))) == ["ADMIN"]
+        assert set(session.scalars(select(Role.role_key).where(Role.active.is_(True)))) >= {"ADMIN", "GERENTE", "CAJERO", "ALMACEN", "SOPORTE"}
+
+
+
+def test_admin_permissions_and_yakitori_variants_are_reproducible() -> None:
+    run_seed()
+    run_seed()
+    with SessionLocal() as session:
+        admin_permissions = set(session.scalars(
+            select(Permission.permission_key)
+            .join(RolePermission, RolePermission.permission_id == Permission.id)
+            .join(Role, Role.id == RolePermission.role_id)
+            .where(Role.role_key == "ADMIN")
+        ))
+        assert {"ADMIN_READ", "SUPPORT_ACCESS"} <= admin_permissions
+
+        groups = list(
+            session.scalars(
+                select(ProductVariantGroup)
+                .join(Product)
+                .where(Product.sku.like("YAK-%"))
+            )
+        )
+        assert len(groups) == 8
+
+        names_by_sku: dict[str, set[str]] = {}
+        for group in groups:
+            names_by_sku.setdefault(group.product.sku, set()).add(group.name)
+
+        for sku in (
+            "YAK-COC-POLL",
+            "YAK-COC-PORK",
+            "YAK-COC-PUL",
+            "YAK-COC_CAM",
+            "YAK-COC-VER",
+            "YAK-COC-HONG",
+        ):
+            assert names_by_sku[sku] == {"Preparación"}
+
+        assert names_by_sku["YAK-COC-MIX"] == {"Preparación", "BROCHETAS"}
+
+def test_sqlite_catalog_reset_requires_confirmation_and_dry_run_is_read_only() -> None:
+    run_seed()
+    with SessionLocal() as session:
+        before = reset_seed_catalog_data(session, dry_run=True)
+        assert before["before"] == before["after"]
+        with pytest.raises(ValueError, match=CONFIRMATION):
+            reset_seed_catalog_data(session, dry_run=False, confirmation="incorrecta")

@@ -7,6 +7,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.config import get_settings
 from app.db.seed import run_seed
 from app.main import app
 from app.models import (
@@ -263,7 +264,8 @@ def test_new_print_jobs_store_sanitized_snapshot() -> None:
         assert print_job.content_snapshot.isascii()
 
 
-def test_claim_next_endpoint() -> None:
+def test_claim_next_endpoint(monkeypatch) -> None:
+    monkeypatch.setattr(get_settings(), "kanpai_worker_key", "qa-worker-secret")
     with SessionLocal() as db:
         print_job = _job(db)
         job_id = print_job.id
@@ -271,13 +273,15 @@ def test_claim_next_endpoint() -> None:
     response = TestClient(app).post(
         "/api/v1/printing/jobs/claim-next",
         json={"printer_key": "BARRA_FRIA", "worker_id": "daemon"},
+        headers={"X-Kanpai-Worker-Key": "qa-worker-secret"},
     )
     assert response.status_code == 200
     assert response.json()["job"]["id"] == job_id
     assert response.json()["job"]["status"] == "Tomado"
 
 
-def test_printed_endpoint() -> None:
+def test_printed_endpoint(monkeypatch) -> None:
+    monkeypatch.setattr(get_settings(), "kanpai_worker_key", "qa-worker-secret")
     with SessionLocal() as db:
         print_job = _job(db)
         db.commit()
@@ -285,13 +289,16 @@ def test_printed_endpoint() -> None:
         job_id = print_job.id
         db.commit()
     response = TestClient(app).post(
-        f"/api/v1/printing/jobs/{job_id}/printed", json={"worker_id": "daemon"}
+        f"/api/v1/printing/jobs/{job_id}/printed",
+        json={"worker_id": "daemon"},
+        headers={"X-Kanpai-Worker-Key": "qa-worker-secret"},
     )
     assert response.status_code == 200
     assert response.json()["status"] == "Impreso"
 
 
-def test_failed_endpoint() -> None:
+def test_failed_endpoint(monkeypatch) -> None:
+    monkeypatch.setattr(get_settings(), "kanpai_worker_key", "qa-worker-secret")
     with SessionLocal() as db:
         print_job = _job(db)
         db.commit()
@@ -301,6 +308,7 @@ def test_failed_endpoint() -> None:
     response = TestClient(app).post(
         f"/api/v1/printing/jobs/{job_id}/failed",
         json={"worker_id": "daemon", "error_message": "Sin papel"},
+        headers={"X-Kanpai-Worker-Key": "qa-worker-secret"},
     )
     assert response.status_code == 200
     assert response.json()["status"] == "Fallido"
@@ -368,8 +376,44 @@ def test_printers_contract_includes_logical_queue_counts() -> None:
     ],
 )
 def test_claim_endpoint_maps_public_errors(
-    payload: dict[str, str], expected_status: int
+    payload: dict[str, str], expected_status: int, monkeypatch
 ) -> None:
-    response = TestClient(app).post("/api/v1/printing/jobs/claim-next", json=payload)
+    monkeypatch.setattr(get_settings(), "kanpai_worker_key", "qa-worker-secret")
+    response = TestClient(app).post(
+        "/api/v1/printing/jobs/claim-next",
+        json=payload,
+        headers={"X-Kanpai-Worker-Key": "qa-worker-secret"},
+    )
     assert response.status_code == expected_status
     assert "traceback" not in response.text.lower()
+
+
+@pytest.mark.parametrize(
+    ("path", "payload"),
+    [
+        ("/api/v1/printing/jobs/claim-next", {"printer_key": "CAJA", "worker_id": "qa"}),
+        ("/api/v1/printing/jobs/999999/printed", {"worker_id": "qa"}),
+        ("/api/v1/printing/jobs/999999/failed", {"worker_id": "qa", "error_message": "qa"}),
+    ],
+)
+@pytest.mark.parametrize("supplied_key", [None, "wrong-key"])
+def test_worker_endpoints_reject_missing_or_invalid_configured_key(
+    path: str, payload: dict, supplied_key: str | None, monkeypatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "kanpai_worker_key", "qa-worker-secret")
+    headers = {"X-Kanpai-Worker-Key": supplied_key} if supplied_key else {}
+    response = TestClient(app).post(path, json=payload, headers=headers)
+    assert response.status_code == 401
+
+
+def test_worker_endpoint_fails_closed_outside_development_without_key(
+    monkeypatch,
+) -> None:
+    settings = get_settings()
+    monkeypatch.setattr(settings, "kanpai_worker_key", None)
+    monkeypatch.setattr(settings, "app_env", "production")
+    response = TestClient(app).post(
+        "/api/v1/printing/jobs/claim-next",
+        json={"printer_key": "CAJA", "worker_id": "qa"},
+    )
+    assert response.status_code == 503

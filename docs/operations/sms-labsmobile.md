@@ -12,7 +12,7 @@ LABSMOBILE_DEFAULT_MSISDN=52...
 
 Con `SMS_ENABLED=false` se crea historial `Simulada` y no hay red. Con test mode activo el request real incluye `test: 1`. El endpoint es `https://api.labsmobile.com/json/send`, usa Basic Auth y envía `message` más `recipient: [{msisdn}]`. El token solo se lee del entorno.
 
-`POST /api/v1/notifications/sms/test` exige `SMS_SEND`; `GET /api/v1/notifications/sms` lista historial. Estados: `Pendiente`, `Enviada`, `Fallida`, `Simulada`, `Cancelada`.
+`POST /api/v1/notifications/sms/test` exige una sesión con `SMS_SEND` y `"confirm": "SEND_SMS_TEST"`; `GET /api/v1/notifications/sms` exige sesión de administración/soporte y lista historial. Estados: `Pendiente`, `Enviada`, `Fallida`, `Simulada`, `Cancelada`.
 
 Al abrir una alerta de stock se crea como máximo un SMS para su `alerta_stock_id`. Si falta destinatario no se intenta. Si LabsMobile falla, la notificación queda `Fallida`, se audita y la operación que originó el movimiento continúa. Preflight emite warning si SMS está habilitado y faltan usuario, token o MSISDN.
 

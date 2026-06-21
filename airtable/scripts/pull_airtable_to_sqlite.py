@@ -48,6 +48,8 @@ from app.models import (  # noqa: E402
     Product,
     ProductRecipe,
     ProductStationAssignment,
+    ProductVariantGroup,
+    ProductVariantOption,
     ProductionStation,
     Role,
     ServiceZone,
@@ -122,6 +124,22 @@ TABLE_SPECS = (
         Product,
         ("sku",),
         {"categoria": LinkSpec("CategoriasMenu")},
+    ),
+    TableSpec(
+        "GruposVarianteProducto",
+        ProductVariantGroup,
+        ("name",),
+        {"producto": LinkSpec("Productos", required=True)},
+    ),
+    TableSpec(
+        "OpcionesVarianteProducto",
+        ProductVariantOption,
+        ("variant_group_id", "name"),
+        {
+            "grupo_variante": LinkSpec("GruposVarianteProducto", required=True),
+            "producto_opcional": LinkSpec("Productos"),
+            "estacion": LinkSpec("EstacionesProduccion"),
+        },
     ),
     TableSpec(
         "AsignacionesProductoEstacion",
@@ -311,6 +329,15 @@ def normalize_decimal(value: Any, *, nullable: bool, scale: int) -> Decimal | No
 
 
 def normalize_value(value: Any, column: Any) -> Any:
+    if isinstance(value, list):
+        if not value:
+            value = None
+        else:
+            first = value[0]
+            if isinstance(first, dict):
+                value = first.get("url") or first.get("filename") or ""
+            else:
+                value = str(first)
     if isinstance(column.type, Boolean):
         return normalize_bool(value)
     if isinstance(column.type, Integer):

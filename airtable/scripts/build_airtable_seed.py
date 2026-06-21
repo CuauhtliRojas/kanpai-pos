@@ -17,6 +17,7 @@ from openpyxl import load_workbook
 DEFAULT_EXCEL = Path("airtable/imports/Kanpai.xlsx")
 DEFAULT_FIXED = Path("airtable/seeds/kanpai_fixed_seed.v1.json")
 DEFAULT_OUTPUT = Path("airtable/seeds/kanpai_seed.generated.json")
+DEFAULT_RECIPE_MULTIPLIER = Decimal("1")
 
 TABLE_ORDER = (
     "Roles",
@@ -31,6 +32,8 @@ TABLE_ORDER = (
     "Mesas",
     "InsumosInventario",
     "Productos",
+    "GruposVarianteProducto",
+    "OpcionesVarianteProducto",
     "AsignacionesProductoEstacion",
     "RecetasProducto",
 )
@@ -47,6 +50,8 @@ NATURAL_KEYS = {
     "Mesas": "codigo_mesa",
     "InsumosInventario": "codigo_insumo",
     "Productos": "sku",
+    "GruposVarianteProducto": "nombre",
+    "OpcionesVarianteProducto": "nombre",
     "AsignacionesProductoEstacion": "nombre_registro",
     "RecetasProducto": "nombre_registro",
 }
@@ -56,6 +61,14 @@ LINK_FIELDS = {
     "Mesas": {"zona": ("ZonasServicio", "clave_zona")},
     "InsumosInventario": {"unidad_base": ("Unidades", "clave_unidad")},
     "Productos": {"categoria": ("CategoriasMenu", "nombre")},
+    "GruposVarianteProducto": {
+        "producto": ("Productos", "sku"),
+    },
+    "OpcionesVarianteProducto": {
+        "grupo_variante": ("GruposVarianteProducto", "nombre"),
+        "producto_opcional": ("Productos", "sku"),
+        "estacion": ("EstacionesProduccion", "clave_estacion"),
+    },
     "AsignacionesProductoEstacion": {
         "producto": ("Productos", "sku"),
         "estacion": ("EstacionesProduccion", "clave_estacion"),
@@ -86,6 +99,19 @@ EXPECTED_COLUMNS = {
         "Requiere_Produccion",
         "Activo",
         "Visible_POS",
+        "Inventory_Recipe_Multiplier",
+    ),
+    "Combo_Opciones": (
+        "Combo_SKU",
+        "Grupo",
+        "Min_Selecciones",
+        "Max_Selecciones",
+        "Permite_Repetir",
+        "Opcion_SKU",
+        "Opcion_Nombre",
+        "Cantidad_Componente",
+        "Usa_Receta_De_Opcion",
+        "Nota",
     ),
     "Recetas": ("SKU_Producto", "Clave_Insumo", "Cantidad", "Merma_Pct"),
 }
@@ -299,18 +325,11 @@ def normalize_category(raw: Any, product_text: str) -> tuple[str, bool]:
 def normalize_station(raw: Any, category: str) -> tuple[str, bool]:
     station = folded(raw).replace(" ", "_")
     known = {
-        "cocina": "BARRA_CALIENTE",
-        "barra_caliente": "BARRA_CALIENTE",
-        "barra_fria": "BARRA_FRIA",
-        "cocteleria": "COCTELERIA",
+        "cocina": "COCINA",
+        "barra": "BARRA",
     }
     if station in known:
         return known[station], False
-    if station == "barra":
-        if category in {"Sake", "Bebidas alcohol"}:
-            return "COCTELERIA", False
-        if category in {"Cervezas", "Refrescos", "Bebidas sin alcohol"}:
-            return "BARRA_FRIA", False
     return "", bool(station)
 
 
@@ -424,6 +443,8 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
         stats["insumos_valid"] += 1
 
     product_keys: set[str] = set()
+    product_requires_production: dict[str, bool] = {}
+    active_visible_products: set[str] = set()
     live_categories: list[str] = []
     for row_number, row in excel_rows["Productos"]:
         sku = clean_string(row.get("sku"))
@@ -439,6 +460,8 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
             issues.append(SeedIssue("warning", "duplicate_natural_key", f"SKU duplicado: {sku}", "Productos", row_number))
             continue
         variant = clean_string(row.get("variante"))
+        if folded(variant) == "no":
+            variant = ""
         category, category_warning = normalize_category(
             row.get("categoria"),
             f"{sku} {name} {variant} {clean_string(row.get('descripcion'))}",
@@ -451,6 +474,18 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
         if category not in live_categories:
             live_categories.append(category)
         display_name = clean_string(f"{name} {variant}")
+        multiplier = parse_decimal(row.get("inventory_recipe_multiplier"))
+        if multiplier is None:
+            multiplier = DEFAULT_RECIPE_MULTIPLIER
+            issues.append(
+                SeedIssue(
+                    "warning",
+                    "missing_recipe_multiplier",
+                    f"Inventory_Recipe_Multiplier inválido o vacío; se usa {DEFAULT_RECIPE_MULTIPLIER}.",
+                    "Productos",
+                    row_number,
+                )
+            )
         tables["Productos"].append(
             {
                 "sku": sku,
@@ -460,11 +495,15 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
                 "nombre_visible": display_name,
                 "categoria": [category],
                 "precio_centavos": price,
+                "multiplicador_receta_inventario": airtable_number(multiplier),
                 "activo": parse_bool(row.get("activo")),
                 "visible_pos": parse_bool(row.get("visible_pos")),
             }
         )
         requires_production = parse_bool(row.get("requiere_produccion"))
+        product_requires_production[sku] = requires_production
+        if parse_bool(row.get("activo")) and parse_bool(row.get("visible_pos")):
+            active_visible_products.add(sku)
         station, station_warning = normalize_station(row.get("estacion"), category)
         if requires_production and station:
             tables["AsignacionesProductoEstacion"].append(
@@ -530,6 +569,119 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
         recipe_keys.add(recipe_key)
         stats["recetas_valid"] += 1
 
+
+    combo_groups_seen: set[tuple[str, str]] = set()
+    combo_options_seen: set[tuple[str, str, str]] = set()
+    for row_number, row in excel_rows["Combo_Opciones"]:
+        combo_sku = clean_string(row.get("combo_sku"))
+        group_name = clean_string(row.get("grupo"))
+        option_sku = clean_string(row.get("opcion_sku"))
+        option_name = clean_string(row.get("opcion_nombre")) or option_sku
+        min_select = parse_decimal(row.get("min_selecciones"))
+        max_select = parse_decimal(row.get("max_selecciones"))
+        component_qty = parse_decimal(row.get("cantidad_componente"))
+        if (
+            not combo_sku
+            or not group_name
+            or not option_sku
+            or min_select is None
+            or max_select is None
+            or component_qty is None
+        ):
+            _add_incomplete(
+                issues,
+                stats,
+                "Combo_Opciones",
+                row_number,
+                "Se requieren Combo_SKU, Grupo, Min_Selecciones, Max_Selecciones, Opcion_SKU y Cantidad_Componente.",
+            )
+            continue
+        if combo_sku not in product_keys:
+            issues.append(
+                SeedIssue(
+                    "error",
+                    "combo_product_missing",
+                    f"Combo_SKU inexistente en Productos: {combo_sku}",
+                    "Combo_Opciones",
+                    row_number,
+                )
+            )
+            continue
+        if option_sku not in product_keys:
+            issues.append(
+                SeedIssue(
+                    "error",
+                    "combo_option_missing",
+                    f"Opcion_SKU inexistente en Productos: {option_sku}",
+                    "Combo_Opciones",
+                    row_number,
+                )
+            )
+            continue
+        group_key = (combo_sku, group_name)
+        if group_key not in combo_groups_seen:
+            tables["GruposVarianteProducto"].append(
+                {
+                    "producto": [combo_sku],
+                    "nombre": group_name,
+                    "seleccion_minima": int(min_select),
+                    "seleccion_maxima": int(max_select),
+                    "requerido": True,
+                    "activo": True,
+                }
+            )
+            combo_groups_seen.add(group_key)
+            stats["combo_groups_valid"] += 1
+        option_key = (combo_sku, group_name, option_sku)
+        if option_key in combo_options_seen:
+            issues.append(
+                SeedIssue(
+                    "warning",
+                    "duplicate_combo_option",
+                    f"Opción duplicada omitida: {combo_sku}|{group_name}|{option_sku}",
+                    "Combo_Opciones",
+                    row_number,
+                )
+            )
+            continue
+        tables["OpcionesVarianteProducto"].append(
+            {
+                "grupo_variante": [group_name],
+                "producto_opcional": [option_sku],
+                "nombre": option_name,
+                "sku": option_sku,
+                "diferencia_precio_centavos": 0,
+                "estacion": [],
+                "activo": parse_bool(row.get("usa_receta_de_opcion")),
+            }
+        )
+        combo_options_seen.add(option_key)
+        stats["combo_options_valid"] += 1
+
+    products_with_recipe = {
+        record["producto"][0] for record in tables["RecetasProducto"]
+    }
+    combo_product_skus = {
+        record["producto"][0] for record in tables["GruposVarianteProducto"]
+    }
+    for sku in sorted((active_visible_products - products_with_recipe) - combo_product_skus):
+        level = "error" if product_requires_production.get(sku) else "warning"
+        code = (
+            "prepared_product_without_recipe"
+            if level == "error"
+            else "direct_product_without_recipe"
+        )
+        issues.append(
+            SeedIssue(
+                level,
+                code,
+                f"Producto visible {sku} sin receta; no se inventa consumo de inventario.",
+                "Productos",
+            )
+        )
+        stats["productos_sin_receta"] += 1
+        stats[f"productos_sin_receta_{level}"] += 1
+
     for table, key in NATURAL_KEYS.items():
         tables[table] = _dedupe(tables[table], key, table, issues)
     for name in (
@@ -537,6 +689,9 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
         "productos_valid", "productos_incomplete", "productos_duplicates",
         "recetas_valid", "recetas_incomplete", "recetas_duplicates",
         "recetas_orphan", "recetas_text_quantity",
+        "productos_sin_receta", "productos_sin_receta_error",
+        "productos_sin_receta_warning", "combo_groups_valid",
+        "combo_options_valid", "combo_opciones_incomplete",
     ):
         stats[name] += 0
     return BuildResult(tables, issues, dict(sorted(stats.items())), excel_path.exists())

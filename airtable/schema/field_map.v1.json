@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "1.0.0",
   "policy": {
     "ignore_remote_extra_fields": true,
@@ -11,43 +11,112 @@
       "direction": "pull_to_sqlite",
       "primary_key": "nombre_negocio",
       "fields": {
-        "nombre_negocio": "business_name", "moneda": "currency", "mensaje_ticket": "ticket_message",
-        "logo_path": "logo_path", "inventario_activo": "inventory_enabled", "zona_horaria": "timezone",
-        "impuestos_activos": "tax_enabled", "tasa_impuesto_bps": "tax_rate_bps",
-        "impuesto_incluido": "tax_included", "etiqueta_impuesto": "tax_label", "activo": "active"
+        "nombre_negocio": "business_name",
+        "moneda": "currency",
+        "mensaje_ticket": "ticket_message",
+        "logo_path": "logo_path",
+        "inventario_activo": "inventory_enabled",
+        "zona_horaria": "timezone",
+        "impuestos_activos": "tax_enabled",
+        "tasa_impuesto_bps": "tax_rate_bps",
+        "impuesto_incluido": "tax_included",
+        "etiqueta_impuesto": "tax_label",
+        "activo": "active"
       }
     },
     "MetodosPago": {
-      "sqlite_table": "metodos_pago", "direction": "pull_to_sqlite", "primary_key": "clave_metodo",
-      "fields": {"clave_metodo": "method_key", "nombre": "name", "requiere_referencia": "requires_reference", "activo": "active"}
+      "sqlite_table": "metodos_pago",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_metodo",
+      "fields": {
+        "clave_metodo": "method_key",
+        "nombre": "name",
+        "requiere_referencia": "requires_reference",
+        "activo": "active"
+      }
     },
     "ZonasServicio": {
-      "sqlite_table": "zonas_servicio", "direction": "pull_to_sqlite", "primary_key": "clave_zona",
-      "fields": {"clave_zona": "zone_key", "nombre": "name", "orden": "sort_order", "activo": "active"}
+      "sqlite_table": "zonas_servicio",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_zona",
+      "fields": {
+        "clave_zona": "zone_key",
+        "nombre": "name",
+        "orden": "sort_order",
+        "activo": "active"
+      }
     },
     "Mesas": {
-      "sqlite_table": "mesas", "direction": "pull_to_sqlite", "primary_key": "codigo_mesa",
-      "fields": {"codigo_mesa": "table_code", "nombre_mesa": "display_name", "zona": "zone_id", "localizador": "buzzer_number", "orden": "sort_order", "activo": "active"}
+      "sqlite_table": "mesas",
+      "direction": "pull_to_sqlite",
+      "primary_key": "codigo_mesa",
+      "fields": {
+        "codigo_mesa": "table_code",
+        "nombre_mesa": "display_name",
+        "zona": "zone_id",
+        "localizador": "buzzer_number",
+        "orden": "sort_order",
+        "activo": "active"
+      }
     },
     "EstacionesProduccion": {
-      "sqlite_table": "estaciones_produccion", "direction": "pull_to_sqlite", "primary_key": "clave_estacion",
-      "fields": {"clave_estacion": "station_key", "nombre": "name", "clave_impresora": "printer_key", "orden": "sort_order", "activo": "active"}
+      "sqlite_table": "estaciones_produccion",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_estacion",
+      "fields": {
+        "clave_estacion": "station_key",
+        "nombre": "name",
+        "clave_impresora": "printer_key",
+        "orden": "sort_order",
+        "activo": "active"
+      }
     },
     "Impresoras": {
-      "sqlite_table": "impresoras", "direction": "pull_to_sqlite", "primary_key": "clave_impresora",
-      "fields": {"clave_impresora": "printer_key", "nombre": "name", "estacion": "station_id", "ancho_papel_mm": "paper_width_mm", "tipo_conexion": "connection_type", "referencia_conexion": "connection_ref", "autocorte_activo": "autocut_enabled", "activo": "active"}
+      "sqlite_table": "impresoras",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_impresora",
+      "fields": {
+        "clave_impresora": "printer_key",
+        "nombre": "name",
+        "estacion": "station_id",
+        "ancho_papel_mm": "paper_width_mm",
+        "tipo_conexion": "connection_type",
+        "referencia_conexion": "connection_ref",
+        "autocorte_activo": "autocut_enabled",
+        "activo": "active"
+      }
     },
     "Roles": {
-      "sqlite_table": "roles", "direction": "pull_to_sqlite", "primary_key": "clave_rol",
-      "fields": {"clave_rol": "role_key", "nombre": "name", "activo": "active"}
+      "sqlite_table": "roles",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_rol",
+      "fields": {
+        "clave_rol": "role_key",
+        "nombre": "name",
+        "activo": "active"
+      }
     },
     "Empleados": {
-      "sqlite_table": "empleados", "direction": "pull_to_sqlite", "primary_key": "codigo_empleado",
-      "fields": {"codigo_empleado": "employee_code", "nombre_completo": "full_name", "alias_pos": "pos_alias", "roles": "roles", "activo": "active"}
+      "sqlite_table": "empleados",
+      "direction": "pull_to_sqlite",
+      "primary_key": "codigo_empleado",
+      "fields": {
+        "codigo_empleado": "employee_code",
+        "nombre_completo": "full_name",
+        "alias_pos": "pos_alias",
+        "roles": "roles",
+        "activo": "active"
+      }
     },
     "CategoriasMenu": {
-      "sqlite_table": "categorias_menu", "direction": "pull_to_sqlite", "primary_key": "nombre",
-      "fields": {"nombre": "name", "orden": "sort_order", "activo": "active"}
+      "sqlite_table": "categorias_menu",
+      "direction": "pull_to_sqlite",
+      "primary_key": "nombre",
+      "fields": {
+        "nombre": "name",
+        "orden": "sort_order",
+        "activo": "active"
+      }
     },
     "Productos": {
       "sqlite_table": "productos",
@@ -58,42 +127,98 @@
         "tipo_producto": "product_type",
         "nombre": "name",
         "variante": "variant",
-        "nombre_visible": "display_name", "categoria": "category_id",
+        "nombre_visible": "display_name",
+        "categoria": "category_id",
         "precio_centavos": "price_cents",
+        "multiplicador_receta_inventario": "inventory_recipe_multiplier",
         "activo": "active",
         "visible_pos": "visible_pos",
-        "imagen_path": "image_path"
+        "Imagen_POS": "image_path"
       }
     },
     "AsignacionesProductoEstacion": {
-      "sqlite_table": "asignaciones_estacion_producto", "direction": "pull_to_sqlite", "primary_key": ["producto", "estacion"],
-      "fields": {"producto": "product_id", "estacion": "station_id", "es_principal": "is_primary", "activo": "active"}
+      "sqlite_table": "asignaciones_estacion_producto",
+      "direction": "pull_to_sqlite",
+      "primary_key": [
+        "producto",
+        "estacion"
+      ],
+      "fields": {
+        "producto": "product_id",
+        "estacion": "station_id",
+        "es_principal": "is_primary",
+        "activo": "active"
+      }
     },
     "Unidades": {
-      "sqlite_table": "unidades", "direction": "pull_to_sqlite", "primary_key": "clave_unidad",
-      "fields": {"clave_unidad": "unit_key", "nombre": "name", "familia_unidad": "unit_family", "activo": "active"}
+      "sqlite_table": "unidades",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_unidad",
+      "fields": {
+        "clave_unidad": "unit_key",
+        "nombre": "name",
+        "familia_unidad": "unit_family",
+        "activo": "active"
+      }
     },
     "InsumosInventario": {
-      "sqlite_table": "insumos_inventario", "direction": "pull_to_sqlite", "primary_key": "codigo_insumo",
-      "fields": {"codigo_insumo": "item_code", "nombre": "name", "unidad_base": "base_unit_id", "tipo_insumo": "item_type", "stock_minimo": "minimum_stock_qty", "costo_unitario_centavos": "unit_cost_cents", "activo": "active"}
+      "sqlite_table": "insumos_inventario",
+      "direction": "pull_to_sqlite",
+      "primary_key": "codigo_insumo",
+      "fields": {
+        "codigo_insumo": "item_code",
+        "nombre": "name",
+        "unidad_base": "base_unit_id",
+        "tipo_insumo": "item_type",
+        "stock_minimo": "minimum_stock_qty",
+        "costo_unitario_centavos": "unit_cost_cents",
+        "activo": "active"
+      }
     },
     "RecetasProducto": {
-      "sqlite_table": "recetas_producto", "direction": "pull_to_sqlite", "primary_key": ["producto", "insumo"],
-      "fields": {"producto": "product_id", "insumo": "inventory_item_id", "cantidad_base": "quantity_base", "porcentaje_merma": "waste_pct", "activo": "active"}
+      "sqlite_table": "recetas_producto",
+      "direction": "pull_to_sqlite",
+      "primary_key": [
+        "producto",
+        "insumo"
+      ],
+      "fields": {
+        "producto": "product_id",
+        "insumo": "inventory_item_id",
+        "cantidad_base": "quantity_base",
+        "porcentaje_merma": "waste_pct",
+        "activo": "active"
+      }
     },
     "CanalesNotificacion": {
-      "sqlite_table": "canales_notificacion", "direction": "pull_to_sqlite", "primary_key": "clave_canal",
-      "fields": {"clave_canal": "channel_key", "nombre": "name", "activo": "active"}
+      "sqlite_table": "canales_notificacion",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_canal",
+      "fields": {
+        "clave_canal": "channel_key",
+        "nombre": "name",
+        "activo": "active"
+      }
     },
     "CortesCaja": {
-      "sqlite_table": "cortes_caja", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "sqlite_table": "cortes_caja",
+      "direction": "push_to_airtable_readonly",
+      "primary_key": "id_sqlite",
       "fields": {
-        "folio": "folio", "estado": "status", "abierto_por": "opened_by_employee_id",
-        "cerrado_por": "closed_by_employee_id", "apertura_caja_centavos": "opening_cash_cents",
-        "declarado_caja_centavos": "declared_cash_cents", "esperado_caja_centavos": "expected_cash_cents",
-        "diferencia_caja_centavos": "cash_difference_cents", "ventas_total_centavos": "sales_total_cents",
-        "gastos_total_centavos": "expenses_total_cents", "neto_total_centavos": "net_total_cents",
-        "abierto_en": "opened_at", "cerrado_en": "closed_at", "id_sqlite": "id",
+        "folio": "folio",
+        "estado": "status",
+        "abierto_por": "opened_by_employee_id",
+        "cerrado_por": "closed_by_employee_id",
+        "apertura_caja_centavos": "opening_cash_cents",
+        "declarado_caja_centavos": "declared_cash_cents",
+        "esperado_caja_centavos": "expected_cash_cents",
+        "diferencia_caja_centavos": "cash_difference_cents",
+        "ventas_total_centavos": "sales_total_cents",
+        "gastos_total_centavos": "expenses_total_cents",
+        "neto_total_centavos": "net_total_cents",
+        "abierto_en": "opened_at",
+        "cerrado_en": "closed_at",
+        "id_sqlite": "id",
         "actualizado_sqlite_en": "updated_at"
       }
     },
@@ -102,60 +227,143 @@
       "direction": "push_to_airtable_readonly",
       "primary_key": "id_sqlite",
       "fields": {
-        "folio": "folio", "corte_caja": "cash_shift_id", "mesa": "table_id",
-        "abierto_por": "opened_by_employee_id", "estado": "status", "estado_pago": "payment_status",
-        "subtotal_centavos": "subtotal_cents", "descuento_centavos": "discount_cents",
-        "impuesto_centavos": "tax_cents", "total_centavos": "total_cents",
-        "abierto_en": "opened_at", "pagado_en": "paid_at", "id_sqlite": "id",
+        "folio": "folio",
+        "corte_caja": "cash_shift_id",
+        "mesa": "table_id",
+        "abierto_por": "opened_by_employee_id",
+        "estado": "status",
+        "estado_pago": "payment_status",
+        "subtotal_centavos": "subtotal_cents",
+        "descuento_centavos": "discount_cents",
+        "impuesto_centavos": "tax_cents",
+        "total_centavos": "total_cents",
+        "abierto_en": "opened_at",
+        "pagado_en": "paid_at",
+        "id_sqlite": "id",
         "actualizado_sqlite_en": "updated_at"
       }
     },
     "LineasTicket": {
-      "sqlite_table": "lineas_ticket", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "sqlite_table": "lineas_ticket",
+      "direction": "push_to_airtable_readonly",
+      "primary_key": "id_sqlite",
       "fields": {
-        "ticket": "ticket_id", "producto": "product_id", "tipo_linea": "line_type",
-        "cantidad": "quantity", "precio_unitario_centavos": "unit_price_cents",
-        "total_linea_centavos": "line_total_cents", "nombre_producto_snapshot": "product_name_snapshot",
-        "estado": "status", "ronda": "round_number", "id_sqlite": "id",
+        "ticket": "ticket_id",
+        "producto": "product_id",
+        "tipo_linea": "line_type",
+        "cantidad": "quantity",
+        "precio_unitario_centavos": "unit_price_cents",
+        "total_linea_centavos": "line_total_cents",
+        "nombre_producto_snapshot": "product_name_snapshot",
+        "estado": "status",
+        "ronda": "round_number",
+        "id_sqlite": "id",
         "actualizado_sqlite_en": "updated_at"
       }
     },
     "Pagos": {
-      "sqlite_table": "pagos", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "sqlite_table": "pagos",
+      "direction": "push_to_airtable_readonly",
+      "primary_key": "id_sqlite",
       "fields": {
-        "folio": "folio", "ticket": "ticket_id", "corte_caja": "cash_shift_id",
-        "metodo_pago": "payment_method_id", "cajero": "cashier_employee_id",
-        "importe_centavos": "amount_cents", "recibido_centavos": "received_cents",
-        "cambio_centavos": "change_cents", "referencia": "reference", "estado": "status",
-        "id_sqlite": "id", "actualizado_sqlite_en": "updated_at"
+        "folio": "folio",
+        "ticket": "ticket_id",
+        "corte_caja": "cash_shift_id",
+        "metodo_pago": "payment_method_id",
+        "cajero": "cashier_employee_id",
+        "importe_centavos": "amount_cents",
+        "recibido_centavos": "received_cents",
+        "cambio_centavos": "change_cents",
+        "referencia": "reference",
+        "estado": "status",
+        "id_sqlite": "id",
+        "actualizado_sqlite_en": "updated_at"
       }
     },
     "TrabajosImpresion": {
-      "sqlite_table": "trabajos_impresion", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "sqlite_table": "trabajos_impresion",
+      "direction": "push_to_airtable_readonly",
+      "primary_key": "id_sqlite",
       "fields": {
-        "folio": "folio", "tipo_trabajo": "job_type", "impresora": "printer_id",
-        "clave_impresora_snapshot": "printer_key_snapshot", "ticket": "ticket_id",
-        "contenido_snapshot": "content_snapshot", "estado": "status", "intentos": "attempts",
-        "ultimo_error": "last_error", "impreso_en": "printed_at", "fallido_en": "failed_at",
-        "id_sqlite": "id", "actualizado_sqlite_en": "updated_at"
+        "folio": "folio",
+        "tipo_trabajo": "job_type",
+        "impresora": "printer_id",
+        "clave_impresora_snapshot": "printer_key_snapshot",
+        "ticket": "ticket_id",
+        "contenido_snapshot": "content_snapshot",
+        "estado": "status",
+        "intentos": "attempts",
+        "ultimo_error": "last_error",
+        "impreso_en": "printed_at",
+        "fallido_en": "failed_at",
+        "id_sqlite": "id",
+        "actualizado_sqlite_en": "updated_at"
       }
     },
     "HistorialSMS": {
-      "sqlite_table": "notificaciones_sms", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "sqlite_table": "notificaciones_sms",
+      "direction": "push_to_airtable_readonly",
+      "primary_key": "id_sqlite",
       "fields": {
-        "canal": "channel_id", "empleado": "employee_id", "msisdn": "msisdn",
-        "mensaje": "message", "estado": "status", "modo_prueba": "test_mode",
-        "respuesta_contenido": "response_payload", "error": "error", "creado_en": "created_at",
-        "enviado_en": "sent_at", "id_sqlite": "id"
+        "canal": "channel_id",
+        "empleado": "employee_id",
+        "msisdn": "msisdn",
+        "mensaje": "message",
+        "estado": "status",
+        "modo_prueba": "test_mode",
+        "respuesta_contenido": "response_payload",
+        "error": "error",
+        "creado_en": "created_at",
+        "enviado_en": "sent_at",
+        "id_sqlite": "id"
       }
     },
     "EventosAuditoria": {
-      "sqlite_table": "eventos_auditoria", "direction": "push_to_airtable_readonly", "primary_key": "id_sqlite",
+      "sqlite_table": "eventos_auditoria",
+      "direction": "push_to_airtable_readonly",
+      "primary_key": "id_sqlite",
       "fields": {
-        "tipo_evento": "event_type", "tipo_entidad": "entity_type", "entidad_id": "entity_id",
-        "actor_empleado": "actor_employee_id", "corte_caja": "cash_shift_id", "ticket": "ticket_id",
-        "snapshot_antes": "before_snapshot", "snapshot_despues": "after_snapshot",
-        "motivo": "reason", "creado_en": "created_at", "id_sqlite": "id"
+        "tipo_evento": "event_type",
+        "tipo_entidad": "entity_type",
+        "entidad_id": "entity_id",
+        "actor_empleado": "actor_employee_id",
+        "corte_caja": "cash_shift_id",
+        "ticket": "ticket_id",
+        "snapshot_antes": "before_snapshot",
+        "snapshot_despues": "after_snapshot",
+        "motivo": "reason",
+        "creado_en": "created_at",
+        "id_sqlite": "id"
+      }
+    },
+    "GruposVarianteProducto": {
+      "sqlite_table": "grupos_variante_producto",
+      "direction": "pull_to_sqlite",
+      "primary_key": "nombre",
+      "fields": {
+        "producto": "product_id",
+        "nombre": "name",
+        "seleccion_minima": "min_select",
+        "seleccion_maxima": "max_select",
+        "requerido": "required",
+        "activo": "active"
+      }
+    },
+    "OpcionesVarianteProducto": {
+      "sqlite_table": "opciones_variante_producto",
+      "direction": "pull_to_sqlite",
+      "primary_key": [
+        "grupo_variante",
+        "nombre"
+      ],
+      "fields": {
+        "grupo_variante": "variant_group_id",
+        "producto_opcional": "product_id",
+        "nombre": "name",
+        "sku": "sku",
+        "diferencia_precio_centavos": "price_delta_cents",
+        "estacion": "station_id",
+        "activo": "active"
       }
     }
   }

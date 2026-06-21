@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 
@@ -6,6 +7,7 @@ class SmsTestRequest(BaseModel):
     employee_id: int
     msisdn: str
     message: str
+    confirm: Literal["SEND_SMS_TEST"]
 
 
 class SmsNotificationResponse(BaseModel):

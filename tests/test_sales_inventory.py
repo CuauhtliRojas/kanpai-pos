@@ -153,12 +153,22 @@ def test_decimal_recipe_quantity_is_consumed_without_truncation() -> None:
             select(ProductRecipe).where(ProductRecipe.product_id == product.id)
         )
         recipe.quantity_base = Decimal("0.125000")
-        recipe.waste_pct = Decimal("1.500000")
+        recipe.waste_pct = Decimal("0.015000")
         ticket = _open_ticket(db, quantity=2)
         _pay_ticket(db, ticket)
         movement = _sales_movements(db, ticket.id)[0]
         assert movement.quantity_base == Decimal("0.253750")
         assert movement.signed_quantity_base == Decimal("-0.253750")
+
+
+def test_product_recipe_multiplier_scales_piece_recipe_consumption() -> None:
+    with SessionLocal() as db:
+        product = _product(db, "DEV-CHELA")
+        product.inventory_recipe_multiplier = Decimal("2")
+        ticket = _open_ticket(db, quantity=1)
+        _pay_ticket(db, ticket)
+        movement = _sales_movements(db, ticket.id)[0]
+        assert movement.quantity_base == Decimal("200")
 
 
 def test_package_consumes_components_and_not_parent() -> None:

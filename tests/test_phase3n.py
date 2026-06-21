@@ -61,7 +61,10 @@ def _context(db, sku="DEV-CHELA", quantity=1):
 
 def test_pin_login_me_logout_and_hash_not_plaintext():
     client = TestClient(app)
-    login = client.post("/api/v1/auth/login-pin", json={"employee_code": "EMP-0001", "pin": "1234"})
+    login = client.post(
+        "/api/v1/auth/login-pin",
+        json={"employee_code": "EMP-0001", "pin": get_settings().kanpai_admin_pin},
+    )
     assert login.status_code == 200
     token = login.json()["session_token"]
     me = client.get("/api/v1/auth/me", headers={"X-Kanpai-Session": token})
@@ -187,13 +190,14 @@ def test_worker_dry_run_marks_printed_and_failure_marks_failed():
     calls = []
     job = {"id": 9, "content_snapshot": "KANPAI"}
 
-    def http_ok(url, payload):
-        calls.append((url, payload))
+    def http_ok(url, payload, worker_key):
+        calls.append((url, payload, worker_key))
         return {"job": job} if url.endswith("claim-next") else {}
 
-    config = {"api_base_url": "http://local", "worker_id": "qa", "printers": {"CAJA": "Caja"}}
+    config = {"api_base_url": "http://local", "worker_id": "qa", "worker_key": "secret", "printers": {"CAJA": "Caja"}}
     assert module.process_once(config, dry_run=True, http_post=http_ok) == 1
     assert calls[-1][0].endswith("/9/printed")
+    assert calls[-1][2] == "secret"
     calls.clear()
 
     def broken_printer(*_):

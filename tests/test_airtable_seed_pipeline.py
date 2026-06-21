@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import sys
 
 from openpyxl import Workbook
@@ -93,9 +93,7 @@ def test_build_seed_normalizes_and_skips_incomplete_rows(tmp_path: Path) -> None
     assert product["categoria"] == ["Bebidas alcohol"]
     assert product["activo"] is True
     assert result.tables["RecetasProducto"][0]["cantidad_base"] == 1
-    assert result.tables["AsignacionesProductoEstacion"][0]["estacion"] == [
-        "COCTELERIA"
-    ]
+    assert result.tables["AsignacionesProductoEstacion"][0]["estacion"] == ["BARRA"]
 
 
 def test_missing_excel_builds_fixed_seed_only(tmp_path: Path) -> None:
@@ -104,7 +102,7 @@ def test_missing_excel_builds_fixed_seed_only(tmp_path: Path) -> None:
     assert result.excel_present is False
     assert len(result.tables["Mesas"]) == 17
     assert result.tables["Mesas"][0]["codigo_mesa"] == "M01"
-    assert result.tables["Mesas"][0]["zona"] == ["BARRA"]
+    assert result.tables["Mesas"][0]["zona"] == ["SALON"]
     assert not result.tables["Productos"]
     assert any(issue.code == "excel_missing" for issue in result.warnings)
 
@@ -264,6 +262,7 @@ def test_fixed_seed_contains_role_and_unit_dependencies(tmp_path: Path) -> None:
         "GERENTE",
         "CAJERO",
         "ALMACEN",
+        "SOPORTE",
     }
     assert {unit["clave_unidad"] for unit in result.tables["Unidades"]} == {
         "G",
@@ -284,12 +283,74 @@ def test_fixed_seed_contains_role_and_unit_dependencies(tmp_path: Path) -> None:
     printers = {
         printer["clave_impresora"]: printer for printer in result.tables["Impresoras"]
     }
-    assert set(printers) == {
-        "CAJA",
-        "BARRA_FRIA",
-        "COCTELERIA",
-        "BARRA_CALIENTE",
-        "COCINA",
-    }
+    assert set(printers) == {"CAJA", "COCINA", "BARRA"}
     assert printers["COCINA"]["activo"] is True
     assert TABLE_ORDER.index("EstacionesProduccion") < TABLE_ORDER.index("Impresoras")
+
+
+def test_real_excel_catalog_counts_and_does_not_invent_links() -> None:
+    result = build_seed(Path("airtable/imports/Kanpai.xlsx"), DEFAULT_FIXED)
+
+    assert result.excel_present is True
+    assert result.errors == []
+
+    assert result.stats["insumos_valid"] == 96
+    assert result.stats["productos_valid"] == 31
+    assert result.stats["productos_incomplete"] == 0
+    assert result.stats["recetas_valid"] == 168
+    assert result.stats["recetas_duplicates"] == 0
+    assert result.stats["recetas_orphan"] == 0
+    assert result.stats["recetas_text_quantity"] == 0
+    assert result.stats["productos_sin_receta"] == 0
+    assert result.stats["productos_sin_receta_error"] == 0
+    assert result.stats["productos_sin_receta_warning"] == 0
+
+    assert result.stats["combo_groups_valid"] == 1
+    assert result.stats["combo_options_valid"] == 6
+
+    issue_codes = {issue.code for issue in result.issues}
+    assert "prepared_product_without_recipe" not in issue_codes
+    assert "direct_product_without_recipe" not in issue_codes
+    assert "duplicate_natural_key" not in issue_codes
+    assert "orphan_reference" not in issue_codes
+    assert "text_quantity_normalized" not in issue_codes
+
+    products_by_sku = {
+        product["sku"]: product for product in result.tables["Productos"]
+    }
+
+    for sku in (
+        "YAK-COC-POLL",
+        "YAK-COC-PORK",
+        "YAK-COC-PUL",
+        "YAK-COC_CAM",
+        "YAK-COC-VER",
+        "YAK-COC-HONG",
+    ):
+        assert products_by_sku[sku]["multiplicador_receta_inventario"] == 3
+
+    assert products_by_sku["YAK-COC-MIX"]["multiplicador_receta_inventario"] == 1
+
+    combo_groups = result.tables["GruposVarianteProducto"]
+    combo_options = result.tables["OpcionesVarianteProducto"]
+
+    assert combo_groups == [
+        {
+            "producto": ["YAK-COC-MIX"],
+            "nombre": "BROCHETAS",
+            "seleccion_minima": 3,
+            "seleccion_maxima": 3,
+            "requerido": True,
+            "activo": True,
+        }
+    ]
+
+    assert len(combo_options) == 6
+    assert {option["producto_opcional"][0] for option in combo_options} == {
+        "YAK-COC-POLL",
+        "YAK-COC-PORK",
+        "YAK-COC-PUL",
+        "YAK-COC_CAM",
+        "YAK-COC-VER",
+        "YAK-COC-HONG",
+    }

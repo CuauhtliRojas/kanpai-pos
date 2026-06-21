@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Callable
 from urllib.request import Request, urlopen
 
-HttpPost = Callable[[str, dict], dict]
+HttpPost = Callable[[str, dict, str | None], dict]
 
 
 def configure_logging() -> None:
@@ -22,11 +22,14 @@ def configure_logging() -> None:
     )
 
 
-def post_json(url: str, payload: dict) -> dict:
+def post_json(url: str, payload: dict, worker_key: str | None = None) -> dict:
     """Envía JSON al backend con timeout para no bloquear el ciclo completo."""
+    headers = {"Content-Type": "application/json"}
+    if worker_key:
+        headers["X-Kanpai-Worker-Key"] = worker_key
     request = Request(
         url, data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json"}, method="POST",
+        headers=headers, method="POST",
     )
     with urlopen(request, timeout=10) as response:  # noqa: S310 - URL local configurada por operador
         return json.loads(response.read().decode())
@@ -55,9 +58,10 @@ def process_once(config: dict, *, dry_run: bool = False, http_post: HttpPost = p
     """Procesa como máximo un trabajo por clave y confirma siempre su resultado."""
     base = config["api_base_url"].rstrip("/")
     worker_id = config["worker_id"]
+    worker_key = config.get("worker_key")
     processed = 0
     for printer_key, windows_name in config["printers"].items():
-        claimed = http_post(f"{base}/api/v1/printing/jobs/claim-next", {"printer_key": printer_key, "worker_id": worker_id})
+        claimed = http_post(f"{base}/api/v1/printing/jobs/claim-next", {"printer_key": printer_key, "worker_id": worker_id}, worker_key)
         job = claimed.get("job")
         if not job:
             continue
@@ -67,12 +71,13 @@ def process_once(config: dict, *, dry_run: bool = False, http_post: HttpPost = p
                 logging.info("DRY-RUN job=%s printer=%s content=%r", job["id"], windows_name, job["content_snapshot"])
             else:
                 printer(windows_name, job["content_snapshot"])
-            http_post(f"{base}/api/v1/printing/jobs/{job['id']}/printed", {"worker_id": worker_id})
+            http_post(f"{base}/api/v1/printing/jobs/{job['id']}/printed", {"worker_id": worker_id}, worker_key)
         except Exception as error:
             logging.exception("Falló job=%s printer=%s", job["id"], windows_name)
             http_post(
                 f"{base}/api/v1/printing/jobs/{job['id']}/failed",
                 {"worker_id": worker_id, "error_message": str(error)[:1000]},
+                worker_key,
             )
     return processed
 

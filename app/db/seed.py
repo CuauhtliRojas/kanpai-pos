@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from sqlalchemy import select
 from decimal import Decimal
@@ -45,6 +46,10 @@ from app.models import (
     NotificationChannel,
 )
 from app.services.auth_service import hash_pin, verify_pin
+from airtable.scripts.build_airtable_seed import build_seed
+
+REAL_CATALOG_EXCEL = Path("airtable/imports/Kanpai.xlsx")
+REAL_CATALOG_FIXED = Path("airtable/seeds/kanpai_fixed_seed.v1.json")
 
 
 def get_or_create(
@@ -148,7 +153,7 @@ def seed_service_zones_and_tables(session: Session) -> None:
     )
 
     for number in range(1, 18):
-        get_or_create(
+        table, _ = get_or_create(
             session,
             DiningTable,
             {"table_code": f"M{number:02d}"},
@@ -161,6 +166,16 @@ def seed_service_zones_and_tables(session: Session) -> None:
                 "active": True,
             },
         )
+        table.display_name = f"Mesa {number}"
+        table.zone_id = salon.id
+        table.sort_order = number
+        table.status_cache = TableStatus.FREE
+        table.active = True
+
+    operational_codes = {f"M{number:02d}" for number in range(1, 18)}
+    for table in session.scalars(select(DiningTable)):
+        if table.table_code not in operational_codes:
+            table.active = False
 
 
 
@@ -205,7 +220,8 @@ def seed_units(session: Session) -> None:
         ("G", "g", UnitFamily.MASS),
         ("KG", "kg", UnitFamily.MASS),
         ("ML", "ml", UnitFamily.VOLUME),
-        ("L", "lt", UnitFamily.VOLUME),
+        ("LT", "lt", UnitFamily.VOLUME),
+        ("L", "lt (legacy)", UnitFamily.VOLUME),
         ("PZA", "pza", UnitFamily.COUNT),
         ("OZ", "oz", UnitFamily.VOLUME),
     ]
@@ -227,6 +243,8 @@ def seed_unit_conversions(session: Session) -> None:
     conversions = [
         ("KG", "G", Decimal("1000")),
         ("G", "KG", Decimal("0.001")),
+        ("LT", "ML", Decimal("1000")),
+        ("ML", "LT", Decimal("0.001")),
         ("L", "ML", Decimal("1000")),
         ("ML", "L", Decimal("0.001")),
         ("OZ", "ML", Decimal("29.573529")),
@@ -293,9 +311,8 @@ def seed_categories_and_stations(session: Session) -> None:
         )
 
     stations = [
-        ("BARRA_FRIA", "Barra fria", "BARRA_FRIA", 1),
-        ("COCTELERIA", "Cocteleria", "COCTELERIA", 2),
-        ("BARRA_CALIENTE", "Barra caliente", "BARRA_CALIENTE", 3),
+        ("COCINA", "Cocina", "COCINA", 1),
+        ("BARRA", "Barra", "BARRA", 2),
     ]
 
     for station_key, name, printer_key, sort_order in stations:
@@ -311,6 +328,8 @@ def seed_categories_and_stations(session: Session) -> None:
                 "sync_status": CatalogStatus.ACTIVE,
             },
         )
+    for station in session.scalars(select(ProductionStation)):
+        station.active = station.station_key in {"COCINA", "BARRA"}
 
 
 def seed_logical_printers(session: Session) -> None:
@@ -325,6 +344,7 @@ def seed_logical_printers(session: Session) -> None:
         ("BARRA_FRIA", "Barra fría", "BARRA_FRIA"),
         ("COCTELERIA", "Coctelería", "COCTELERIA"),
         ("BARRA_CALIENTE", "Barra caliente", "BARRA_CALIENTE"),
+        ("BARRA", "Barra", "BARRA"),
     ]
 
     for printer_key, name, station_key in printers:
@@ -341,6 +361,9 @@ def seed_logical_printers(session: Session) -> None:
             },
         )
 
+    for printer in session.scalars(select(Printer)):
+        printer.active = printer.printer_key in {"CAJA", "COCINA", "BARRA"}
+
 
 def seed_development_products(session: Session) -> None:
     """Crea productos temporales para probar captura simple y paquetes."""
@@ -356,7 +379,7 @@ def seed_development_products(session: Session) -> None:
             "sync_status": CatalogStatus.ACTIVE,
         },
     )
-    kitchen.active = False
+    kitchen.active = True
     beer_category = session.execute(
         select(MenuCategory).where(MenuCategory.name == "Cervezas")
     ).scalar_one()
@@ -364,13 +387,9 @@ def seed_development_products(session: Session) -> None:
         select(MenuCategory).where(MenuCategory.name == "Sake")
     ).scalar_one()
     cold_bar = session.execute(
-        select(ProductionStation).where(ProductionStation.station_key == "BARRA_FRIA")
+        select(ProductionStation).where(ProductionStation.station_key == "BARRA")
     ).scalar_one()
-    hot_bar = session.execute(
-        select(ProductionStation).where(
-            ProductionStation.station_key == "BARRA_CALIENTE"
-        )
-    ).scalar_one()
+    hot_bar = cold_bar
     yakitori_category = session.execute(
         select(MenuCategory).where(MenuCategory.name == "Yakitori")
     ).scalar_one()
@@ -429,6 +448,7 @@ def seed_development_products(session: Session) -> None:
             "display_name": "Orden yakitori 3 piezas",
             "category_id": yakitori_category.id,
             "price_cents": 15_000,
+            "inventory_recipe_multiplier": Decimal("3"),
             "active": True,
             "visible_pos": True,
             "sync_status": CatalogStatus.ACTIVE,
@@ -516,6 +536,182 @@ def seed_development_recipes(session: Session) -> None:
         )
 
 
+def seed_real_catalog(session: Session) -> None:
+    """Upsert the normalized Excel catalog without inventing missing recipes."""
+    result = build_seed(REAL_CATALOG_EXCEL, REAL_CATALOG_FIXED)
+    if not result.excel_present:
+        raise FileNotFoundError(f"No existe el catálogo real: {REAL_CATALOG_EXCEL}")
+
+    units = {unit.unit_key: unit for unit in session.scalars(select(Unit))}
+    for record in result.tables["InsumosInventario"]:
+        unit_key = record["unidad_base"][0]
+        item, _ = get_or_create(
+            session,
+            InventoryItem,
+            {"item_code": record["codigo_insumo"]},
+            {
+                "name": record["nombre"],
+                "base_unit_id": units[unit_key].id,
+                "item_type": ItemType.OTHER,
+                "minimum_stock_qty": Decimal(str(record["stock_minimo"])),
+                "unit_cost_cents": record["costo_unitario_centavos"],
+                "active": True,
+            },
+        )
+        item.name = record["nombre"]
+        item.base_unit_id = units[unit_key].id
+        item.item_type = ItemType.OTHER
+        item.minimum_stock_qty = Decimal(str(record["stock_minimo"]))
+        item.unit_cost_cents = record["costo_unitario_centavos"]
+        item.active = True
+        item.sync_status = CatalogStatus.ACTIVE
+
+    categories = {
+        category.name: category for category in session.scalars(select(MenuCategory))
+    }
+    for record in result.tables["CategoriasMenu"]:
+        category, _ = get_or_create(
+            session,
+            MenuCategory,
+            {"name": record["nombre"]},
+            {"sort_order": record["orden"]},
+        )
+        category.active = bool(record["activo"])
+        categories[category.name] = category
+
+    products: dict[str, Product] = {}
+    for record in result.tables["Productos"]:
+        product, _ = get_or_create(
+            session,
+            Product,
+            {"sku": record["sku"]},
+            {
+                "product_type": ProductType.SIMPLE,
+                "name": record["nombre"],
+                "display_name": record["nombre_visible"],
+                "price_cents": record["precio_centavos"],
+                "active": bool(record["activo"]),
+                "visible_pos": bool(record["visible_pos"]),
+            },
+        )
+        product.product_type = ProductType.SIMPLE
+        product.name = record["nombre"]
+        product.variant = record["variante"] or None
+        product.display_name = record["nombre_visible"]
+        product.category_id = categories[record["categoria"][0]].id
+        product.price_cents = record["precio_centavos"]
+        product.inventory_recipe_multiplier = Decimal(
+            str(record["multiplicador_receta_inventario"])
+        )
+        product.active = bool(record["activo"])
+        product.visible_pos = bool(record["visible_pos"])
+        product.sync_status = CatalogStatus.ACTIVE
+        products[product.sku] = product
+    session.flush()
+
+    stations = {
+        station.station_key: station
+        for station in session.scalars(select(ProductionStation))
+    }
+    for record in result.tables["AsignacionesProductoEstacion"]:
+        assignment, _ = get_or_create(
+            session,
+            ProductStationAssignment,
+            {
+                "product_id": products[record["producto"][0]].id,
+                "station_id": stations[record["estacion"][0]].id,
+            },
+        )
+        assignment.is_primary = True
+        assignment.active = True
+
+    items = {
+        item.item_code: item for item in session.scalars(select(InventoryItem))
+    }
+    for record in result.tables["RecetasProducto"]:
+        recipe, _ = get_or_create(
+            session,
+            ProductRecipe,
+            {
+                "product_id": products[record["producto"][0]].id,
+                "inventory_item_id": items[record["insumo"][0]].id,
+            },
+            {
+                "quantity_base": Decimal(str(record["cantidad_base"])),
+                "waste_pct": Decimal(str(record["porcentaje_merma"])),
+                "active": True,
+            },
+        )
+        recipe.quantity_base = Decimal(str(record["cantidad_base"]))
+        recipe.waste_pct = Decimal(str(record["porcentaje_merma"]))
+        recipe.active = True
+        recipe.sync_status = CatalogStatus.ACTIVE
+
+
+    combo_groups: dict[str, ProductVariantGroup] = {}
+    for record in result.tables.get("GruposVarianteProducto", []):
+        product = products[record["producto"][0]]
+        group, _ = get_or_create(
+            session,
+            ProductVariantGroup,
+            {"product_id": product.id, "name": record["nombre"]},
+            {
+                "min_select": int(record["seleccion_minima"]),
+                "max_select": int(record["seleccion_maxima"]),
+                "required": bool(record["requerido"]),
+                "active": bool(record["activo"]),
+            },
+        )
+        group.min_select = int(record["seleccion_minima"])
+        group.max_select = int(record["seleccion_maxima"])
+        group.required = bool(record["requerido"])
+        group.active = bool(record["activo"])
+        combo_groups[record["nombre"]] = group
+
+    for record in result.tables.get("OpcionesVarianteProducto", []):
+        group_name = record["grupo_variante"][0]
+        group = combo_groups[group_name]
+        option_product = products.get(record["producto_opcional"][0])
+        option, _ = get_or_create(
+            session,
+            ProductVariantOption,
+            {"variant_group_id": group.id, "name": record["nombre"]},
+            {
+                "product_id": option_product.id if option_product else None,
+                "sku": record["sku"],
+                "price_delta_cents": int(record["diferencia_precio_centavos"]),
+                "active": bool(record["activo"]),
+            },
+        )
+        option.product_id = option_product.id if option_product else None
+        option.sku = record["sku"]
+        option.price_delta_cents = int(record["diferencia_precio_centavos"])
+        option.active = bool(record["activo"])
+
+    for product in products.values():
+        raw_variant = product.variant or ""
+        if "/" not in raw_variant:
+            continue
+        group, _ = get_or_create(
+            session,
+            ProductVariantGroup,
+            {"product_id": product.id, "name": "Preparación"},
+            {"min_select": 1, "max_select": 1, "required": True, "active": True},
+        )
+        group.min_select = group.max_select = 1
+        group.required = group.active = True
+        for option_name in dict.fromkeys(
+            part.strip().title() for part in raw_variant.split("/") if part.strip()
+        ):
+            option, _ = get_or_create(
+                session,
+                ProductVariantOption,
+                {"variant_group_id": group.id, "name": option_name},
+                {"price_delta_cents": 0, "active": True},
+            )
+            option.active = True
+
+
 def seed_roles_permissions_and_admin(session: Session) -> None:
     permission_defs = [
         ("DISCOUNT_AUTHORIZE", "Autorizar descuentos"),
@@ -526,6 +722,8 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
         ("INVENTORY_ADJUST", "Ajustar inventario"),
         ("REPRINT", "Autorizar reimpresiones"),
         ("SMS_SEND", "Enviar notificaciones SMS"),
+        ("SUPPORT_ACCESS", "Consultar diagnóstico y soporte local"),
+        ("ADMIN_READ", "Consultar configuración administrativa"),
     ]
 
     permissions: dict[str, Permission] = {}
@@ -553,6 +751,8 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
             "INVENTORY_ADJUST",
             "REPRINT",
             "SMS_SEND",
+            "SUPPORT_ACCESS",
+            "ADMIN_READ",
         ],
         "GERENTE": [
             "DISCOUNT_AUTHORIZE",
@@ -564,6 +764,7 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
         ],
         "CAJERO": ["CASH_SHIFT_OPEN", "EXPENSE_CREATE"],
         "ALMACEN": ["INVENTORY_ADJUST"],
+        "SOPORTE": ["SUPPORT_ACCESS", "ADMIN_READ"],
     }
 
     roles: dict[str, Role] = {}
@@ -591,9 +792,9 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
     admin, _ = get_or_create(
         session,
         Employee,
-        {"employee_code": "EMP-0001"},
+        {"employee_code": "ADMIN"},
         {
-            "full_name": "Administrador",
+            "full_name": "Administrador Kanpai",
             "pos_alias": "Admin",
             "active": True,
             "sync_status": CatalogStatus.ACTIVE,
@@ -609,6 +810,39 @@ def seed_roles_permissions_and_admin(session: Session) -> None:
     if not admin.pin_hash or not verify_pin(configured_pin, admin.pin_hash):
         admin.pin_hash = hash_pin(configured_pin)
     admin.pin_enabled = True
+
+    for employee in session.scalars(select(Employee)):
+        employee.active = employee.id == admin.id
+
+
+def seed_development_admin(session: Session) -> None:
+    """Keep legacy test fixtures isolated from the one-operator production seed."""
+    admin_role = session.scalar(select(Role).where(Role.role_key == "ADMIN"))
+    employee, _ = get_or_create(
+        session,
+        Employee,
+        {"employee_code": "EMP-0001"},
+        {
+            "full_name": "Administrador QA",
+            "pos_alias": "Admin QA",
+            "active": True,
+            "sync_status": CatalogStatus.ACTIVE,
+        },
+    )
+    employee.active = True
+    employee.pin_hash = hash_pin(get_settings().kanpai_admin_pin)
+    employee.pin_enabled = True
+    get_or_create(
+        session,
+        EmployeeRole,
+        {"employee_id": employee.id, "role_id": admin_role.id},
+    )
+    for printer in session.scalars(
+        select(Printer).where(
+            Printer.printer_key.in_(("BARRA_FRIA", "COCTELERIA", "BARRA_CALIENTE"))
+        )
+    ):
+        printer.active = True
 
 
 def seed_notification_channels(session: Session) -> None:
@@ -630,13 +864,17 @@ def run_seed(*, include_development_data: bool = False) -> None:
         seed_unit_conversions(session)
         seed_categories_and_stations(session)
         seed_logical_printers(session)
+        seed_real_catalog(session)
+        seed_roles_permissions_and_admin(session)
         if include_development_data:
             seed_development_tables(session)
             seed_development_inventory_items(session)
             seed_development_products(session)
             seed_development_recipes(session)
             _activate_development_catalog(session)
-        seed_roles_permissions_and_admin(session)
+            seed_development_admin(session)
+        else:
+            _deactivate_development_catalog(session)
         seed_notification_channels(session)
         session.commit()
 
@@ -686,6 +924,20 @@ def _activate_development_catalog(session: Session) -> None:
             )
         ):
             option.active = True
+
+
+def _deactivate_development_catalog(session: Session) -> None:
+    demo_skus = (
+        "DEV-CHELA", "DEV-SAKE", "DEV-CHELA-SAKE", "DEV-YAKITORI-ORDEN-3"
+    )
+    demo_item_codes = ("INV-ARROZ", "INV-SAKE", "INV-LIMON")
+    for product in session.scalars(select(Product).where(Product.sku.in_(demo_skus))):
+        product.active = False
+        product.visible_pos = False
+    for item in session.scalars(
+        select(InventoryItem).where(InventoryItem.item_code.in_(demo_item_codes))
+    ):
+        item.active = False
 
 
 if __name__ == "__main__":
