@@ -5,6 +5,7 @@ import { useAirtableSyncStatusQuery } from "../features/system/hooks/useAirtable
 import { BrandMark } from "../shared/components/BrandMark";
 import { SessionSummary } from "../features/auth/components/SessionSummary";
 import { useAuthSession } from "../features/auth/hooks/useAuthSession";
+import { CurrentTableSummary } from "../features/operations/components/CurrentTableSummary";
 import {
   navigationItems,
   resolveNavigationItemAccess,
@@ -123,6 +124,7 @@ export function AppShell() {
               <BrandMark variant="logo" className="hidden h-6 w-auto sm:block" />
             </div>
             <SessionSummary />
+            <CurrentTableSummary />
           </div>
 
           <div

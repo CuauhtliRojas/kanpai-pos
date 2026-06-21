@@ -4,6 +4,7 @@ import { useAuthSession } from "../features/auth/hooks/useAuthSession";
 import { AccessDeniedPanel } from "../features/auth/components/AccessDeniedPanel";
 import { PermissionGate } from "../features/auth/components/PermissionGate";
 import { CashPage } from "../features/cash/pages/CashPage";
+import { PosTablesPage } from "../features/tables/pages/PosTablesPage";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
 import { navigationItems, type NavigationItem } from "../layouts/navigationItems";
@@ -70,8 +71,9 @@ export function AppRouter() {
                 </PermissionGate>
               }
             />
+            <Route path="pos" element={<PosTablesPage />} />
             {moduleNavigationItems
-              .filter((item) => item.to !== "/cash")
+              .filter((item) => item.to !== "/cash" && item.to !== "/pos")
               .map((item) => (
                 <Route
                   key={item.to}

@@ -40,7 +40,7 @@ export const navigationItems: readonly NavigationItem[] = [
     status: "available",
     anyPermission: ["CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE"],
   },
-  { to: "/pos", label: "POS", icon: ReceiptText, status: "coming_soon" },
+  { to: "/pos", label: "POS", icon: ReceiptText, status: "available" },
   { to: "/production", label: "Producción", icon: Utensils, status: "coming_soon" },
   {
     to: "/printing",

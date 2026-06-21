@@ -1,6 +1,7 @@
 ﻿import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { AuthSessionProvider } from "../features/auth/context/AuthSessionProvider";
+import { CurrentOperationProvider } from "../features/operations/context/CurrentOperationProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,9 @@ type AppProvidersProps = {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthSessionProvider>{children}</AuthSessionProvider>
+      <AuthSessionProvider>
+        <CurrentOperationProvider>{children}</CurrentOperationProvider>
+      </AuthSessionProvider>
     </QueryClientProvider>
   );
 }
