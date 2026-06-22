@@ -9,7 +9,14 @@ const statusTone = {
   Cancelado: "neutral",
 } as const;
 
+const statusLabel: Record<PrintJobStatus, string> = {
+  Pendiente: "Pendiente",
+  Tomado: "En proceso",
+  Impreso: "Impreso",
+  Fallido: "Falló",
+  Cancelado: "Cancelado",
+};
+
 export function PrintStatusBadge({ status }: { status: PrintJobStatus }) {
-  const label = status === "Pendiente" ? "Impresión pendiente" : status === "Fallido" ? "Falló" : status;
-  return <StatusBadge label={label} tone={statusTone[status]} />;
+  return <StatusBadge label={statusLabel[status]} tone={statusTone[status]} />;
 }
