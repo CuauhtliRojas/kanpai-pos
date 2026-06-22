@@ -24,7 +24,7 @@ export function ProductCard({ product, disabled, onSelect }: ProductCardProps) {
           : "bg-[var(--kp-surface-raised)] text-[var(--kp-text)]",
       ].join(" ")}
     >
-      <ProductImage alt={product.display_name || product.name} />
+      <ProductImage imageUrl={product.image_url ?? product.image_path} alt={product.display_name || product.name} />
       <span className="grid min-h-24 content-between gap-2 p-3">
         <span className="text-base font-black uppercase leading-tight">
           {product.display_name || product.name}

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,6 +16,14 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="sqlite:///./data/kanpai_pos.db",
         alias="DATABASE_URL",
+    )
+    product_image_media_dir: Path = Field(
+        default=Path("data/media/product-images"),
+        alias="PRODUCT_IMAGE_MEDIA_DIR",
+    )
+    product_image_media_url: str = Field(
+        default="/media/product-images",
+        alias="PRODUCT_IMAGE_MEDIA_URL",
     )
     kanpai_admin_pin: str = Field(default="1234", alias="KANPAI_ADMIN_PIN")
     auth_session_hours: int = Field(default=12, alias="KANPAI_SESSION_HOURS")
@@ -63,6 +72,14 @@ class Settings(BaseSettings):
             return value.strip() or None
         return value
 
+    @field_validator("product_image_media_url", mode="before")
+    @classmethod
+    def normalize_media_url(cls, value):
+        normalized = str(value).strip().rstrip("/")
+        if not normalized.startswith("/"):
+            raise ValueError("PRODUCT_IMAGE_MEDIA_URL must start with /")
+        return normalized
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -78,6 +95,12 @@ class Settings(BaseSettings):
             for origin in self.cors_origins.split(",")
             if origin.strip()
         ]
+
+    @property
+    def resolved_product_image_media_dir(self) -> Path:
+        if self.product_image_media_dir.is_absolute():
+            return self.product_image_media_dir
+        return Path(__file__).resolve().parents[2] / self.product_image_media_dir
 
 
 @lru_cache

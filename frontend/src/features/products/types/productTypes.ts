@@ -16,4 +16,6 @@ export type Product = {
   price_cents: number;
   active: boolean;
   visible_pos: boolean;
+  image_path?: string | null;
+  image_url?: string | null;
 };

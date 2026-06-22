@@ -14,6 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, relationship
 
+from app.core.config import get_settings
 from app.core.database import Base
 from app.domain.database_contract import db_column
 from app.domain.constants import (
@@ -116,6 +117,15 @@ class Product(RemoteCatalogMixin, TimestampMixin, Base):
     @property
     def image_url(self) -> Optional[str]:
         """Public POS image URL/path resolved from catalog sync."""
+        if not self.image_path:
+            return None
+        if self.image_path.startswith("/media/") or self.image_path.startswith(
+            ("http://", "https://")
+        ):
+            return self.image_path
+        if self.image_path.startswith("product-images/"):
+            filename = self.image_path.removeprefix("product-images/")
+            return f"{get_settings().product_image_media_url}/{filename}"
         return self.image_path
 
     category: Mapped[Optional["MenuCategory"]] = relationship(back_populates="products")

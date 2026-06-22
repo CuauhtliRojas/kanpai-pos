@@ -325,7 +325,12 @@ class AirtableSyncScheduler:
 
     def _run_pull(self, *, execute: bool) -> dict[str, Any]:
         client = self._client()
-        argv = ["--database-url", self.settings.database_url]
+        argv = [
+            "--database-url",
+            self.settings.database_url,
+            "--product-image-media-dir",
+            str(self.settings.resolved_product_image_media_dir),
+        ]
         if execute:
             argv = ["--execute", "--confirm", PULL_CONFIRM_TEXT, *argv]
         args = parse_pull_args(argv)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import subprocess
 import sys
@@ -55,6 +56,12 @@ from app.models import (  # noqa: E402
     ServiceZone,
     Unit,
 )
+from app.services.product_image_service import (  # noqa: E402
+    ProductImageDownloadError,
+    download_product_image,
+    first_valid_attachment,
+    stable_product_image_path,
+)
 
 CONFIRM_TEXT = "PULL_AIRTABLE_TO_SQLITE"
 DEFAULT_FIELD_MAP = Path("airtable/schema/field_map.v1.json")
@@ -71,6 +78,7 @@ FORBIDDEN_FIELDS = {
     "error_sync",
 }
 UNSUPPORTED_TABLES = {"DestinatariosNotificacion": "No existe tabla SQLite destino."}
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -430,6 +438,8 @@ def prepare_records(
     remote: dict[str, list[dict[str, Any]]],
     field_map: dict[str, Any],
     remote_indexes: dict[str, dict[str, str]],
+    *,
+    product_image_media_dir: Path | None = None,
 ) -> tuple[dict[str, list[PreparedRecord]], list[Issue]]:
     prepared: dict[str, list[PreparedRecord]] = {}
     issues: list[Issue] = []
@@ -456,6 +466,34 @@ def prepare_records(
                         links[source_field] = _resolve_link(
                             source.get(source_field), spec.links[source_field], remote_indexes
                         )
+                        continue
+                    if spec.model is Product and target_attr == "image_path":
+                        attachment = first_valid_attachment(source.get(source_field))
+                        if attachment is None:
+                            continue
+                        sku = str(source.get("sku") or "").strip()
+                        try:
+                            image_path = stable_product_image_path(sku, attachment)
+                            if product_image_media_dir is not None:
+                                image_path = download_product_image(
+                                    attachment,
+                                    sku=sku,
+                                    media_dir=product_image_media_dir,
+                                )
+                        except ProductImageDownloadError as error:
+                            message = f"No se pudo descargar Imagen_POS para {sku}: {error}"
+                            logger.warning(message)
+                            issues.append(
+                                Issue(
+                                    "warning",
+                                    "product_image_download_failed",
+                                    message,
+                                    spec.airtable_table,
+                                    sku,
+                                )
+                            )
+                            continue
+                        values[target_attr] = image_path
                         continue
                     column = columns[target_attr]
                     if source_field not in source and not isinstance(column.type, Boolean):
@@ -778,12 +816,18 @@ def render_report(plan: PullPlan, *, mode: str, executed: bool) -> str:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    settings = get_settings()
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true")
     mode.add_argument("--execute", action="store_true")
     parser.add_argument("--confirm", default="")
-    parser.add_argument("--database-url", default=get_settings().database_url)
+    parser.add_argument("--database-url", default=settings.database_url)
+    parser.add_argument(
+        "--product-image-media-dir",
+        type=Path,
+        default=settings.resolved_product_image_media_dir,
+    )
     parser.add_argument("--field-map", type=Path, default=DEFAULT_FIELD_MAP)
     parser.add_argument("--airtable-schema", type=Path, default=DEFAULT_AIRTABLE_SCHEMA)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
@@ -833,7 +877,14 @@ def run_pull(
             checks.append("Airtable Records API: lectura de tablas soportadas OK.")
             remote_indexes, index_issues = build_remote_indexes(remote, field_map)
             issues.extend(index_issues)
-            prepared, preparation_issues = prepare_records(remote, field_map, remote_indexes)
+            prepared, preparation_issues = prepare_records(
+                remote,
+                field_map,
+                remote_indexes,
+                product_image_media_dir=(
+                    args.product_image_media_dir if args.execute else None
+                ),
+            )
             issues.extend(preparation_issues)
             with Session(engine) as session:
                 plan_records_by_table, planning_issues = plan_records(session, prepared, field_map)
