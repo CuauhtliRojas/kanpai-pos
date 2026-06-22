@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from app.services.print_formatters import (
-    format_cancellation_80mm,
-    format_command_80mm,
-    format_modification_80mm,
+    format_cancellation_58mm,
+    format_command_58mm,
+    format_modification_58mm,
 )
 
 OUTPUT_DIR = Path("_tmp_print_previews_real")
@@ -51,7 +51,7 @@ def main() -> None:
     # Misma comanda, mismo cuerpo, cambiando estacion.
     barra = deepcopy(base)
     barra["station"] = base.get("station") or "BARRA"
-    write_preview("comanda_80mm_estacion_barra.txt", format_command_80mm(barra))
+    write_preview("comanda_58mm_estacion_barra.txt", format_command_58mm(barra))
 
     cocina = deepcopy(base)
     cocina["station"] = "COCINA"
@@ -69,7 +69,7 @@ def main() -> None:
             "note": "Sin cebolla",
         },
     ]
-    write_preview("comanda_80mm_estacion_cocina_con_notas.txt", format_command_80mm(cocina))
+    write_preview("comanda_58mm_estacion_cocina_con_notas.txt", format_command_58mm(cocina))
 
     cocteleria = deepcopy(base)
     cocteleria["station"] = "BARRA"
@@ -82,16 +82,16 @@ def main() -> None:
         }
     ]
     write_preview(
-        "comanda_80mm_estacion_barra_con_notas.txt",
-        format_command_80mm(cocteleria),
+        "comanda_58mm_estacion_barra_con_notas.txt",
+        format_command_58mm(cocteleria),
     )
 
     cancelacion = deepcopy(base)
     cancelacion["items"] = [first_item_or_sample(base)]
     cancelacion["reason"] = "Cliente cancela antes de preparar."
     write_preview(
-        "cancelacion_comanda_80mm_muestra.txt",
-        format_cancellation_80mm(cancelacion),
+        "cancelacion_comanda_58mm_muestra.txt",
+        format_cancellation_58mm(cancelacion),
     )
 
     modificacion = {
@@ -117,7 +117,7 @@ def main() -> None:
         ],
         "reason": "Correccion solicitada por mesa.",
     }
-    write_preview("modificacion_80mm_muestra.txt", format_modification_80mm(modificacion))
+    write_preview("modificacion_58mm_muestra.txt", format_modification_58mm(modificacion))
 
 
 if __name__ == "__main__":

@@ -2,11 +2,11 @@
 
 from app.services.print_formatters import (
     WIDTH_58MM,
-    WIDTH_80MM,
-    format_cancellation_80mm,
+    WIDTH_STATION_58MM,
+    format_cancellation_58mm,
     format_cash_shift_58mm,
-    format_command_80mm,
-    format_modification_80mm,
+    format_command_58mm,
+    format_modification_58mm,
     format_ticket_58mm,
 )
 
@@ -49,8 +49,8 @@ def test_ticket_58mm_preview_width_and_content() -> None:
     assert_width(content, WIDTH_58MM)
 
 
-def test_command_80mm_preview_width_and_content() -> None:
-    content = format_command_80mm(
+def test_command_58mm_preview_width_and_content() -> None:
+    content = format_command_58mm(
         {
             "folio": "CMD-1",
             "table": "Mesa 2",
@@ -71,12 +71,13 @@ def test_command_80mm_preview_width_and_content() -> None:
     assert "COMANDA" in content
     assert "COCINA" in content
     assert "NOTA" in content
-    assert "doble mezcal" in content
-    assert_width(content, WIDTH_80MM)
+    normalized_content = " ".join(content.split())
+    assert "doble mezcal" in normalized_content
+    assert_width(content, WIDTH_STATION_58MM)
 
 
-def test_cancellation_80mm_preview_width_and_content() -> None:
-    content = format_cancellation_80mm(
+def test_cancellation_58mm_preview_width_and_content() -> None:
+    content = format_cancellation_58mm(
         {
             "folio": "CAN-1",
             "table": "Mesa 2",
@@ -90,11 +91,11 @@ def test_cancellation_80mm_preview_width_and_content() -> None:
 
     assert "CANCELACION" in content
     assert "CANCELAR PRODUCTO" in content
-    assert_width(content, WIDTH_80MM)
+    assert_width(content, WIDTH_STATION_58MM)
 
 
-def test_modification_80mm_preview_width_and_content() -> None:
-    content = format_modification_80mm(
+def test_modification_58mm_preview_width_and_content() -> None:
+    content = format_modification_58mm(
         {
             "folio": "MOD-1",
             "table": "Mesa 2",
@@ -109,7 +110,7 @@ def test_modification_80mm_preview_width_and_content() -> None:
     assert "MODIFICACION" in content
     assert "ANTES" in content
     assert "DESPUES" in content
-    assert_width(content, WIDTH_80MM)
+    assert_width(content, WIDTH_STATION_58MM)
 
 
 def test_cash_shift_58mm_preview_width_and_content() -> None:

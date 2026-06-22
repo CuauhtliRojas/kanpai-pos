@@ -200,8 +200,8 @@ Falta implementar:
 - Daemon local de impresión.
 - Reintentos.
 - Marcar impresión como exitosa o fallida.
-- Autocorte por impresora 80mm.
-- Manejo separado de caja 58mm y estaciones 80mm.
+- Autocorte por impresora 58mm.
+- Manejo separado de caja 58mm y estaciones 58mm.
 
 ### 7. Documentación pendiente
 

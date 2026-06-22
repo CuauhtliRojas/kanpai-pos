@@ -10,7 +10,7 @@ from typing import Any
 from app.services.print_profile import get_print_profile
 from app.services.print_formatters import (
     format_cash_shift_58mm,
-    format_command_80mm,
+    format_command_58mm,
     format_ticket_58mm,
 )
 
@@ -773,7 +773,7 @@ def main() -> None:
         command_data = build_command_data(conn, diagnostics)
         if command_data:
             write_json(output_dir, "comanda_real_data.json", command_data)
-            write_text(output_dir, "comanda_80mm_real.txt", format_command_80mm(command_data))
+            write_text(output_dir, "comanda_58mm_real.txt", format_command_58mm(command_data))
     except Exception as exc:
         diagnostics["errors"]["comanda"] = f"{type(exc).__name__}: {exc}"
 

@@ -6,7 +6,7 @@ from typing import Any, Mapping
 from unicodedata import normalize
 
 WIDTH_58MM = 32
-WIDTH_80MM = 48
+WIDTH_STATION_58MM = WIDTH_58MM
 
 
 def _clean(value: Any) -> str:
@@ -192,8 +192,8 @@ def format_ticket_58mm(data: Mapping[str, Any]) -> str:
     return render(lines, width)
 
 
-def format_command_80mm(data: Mapping[str, Any]) -> str:
-    width = WIDTH_80MM
+def format_command_58mm(data: Mapping[str, Any]) -> str:
+    width = WIDTH_STATION_58MM
     title = data.get("title") or "COMANDA"
     lines: list[str] = [
         _center(f"*** {_clean(title)} ***", width),
@@ -219,21 +219,21 @@ def format_command_80mm(data: Mapping[str, Any]) -> str:
     return render(lines, width)
 
 
-def format_cancellation_80mm(data: Mapping[str, Any]) -> str:
+def format_cancellation_58mm(data: Mapping[str, Any]) -> str:
     payload = dict(data)
     payload["title"] = "CANCELACION"
-    output = format_command_80mm(payload).rstrip().splitlines()
+    output = format_command_58mm(payload).rstrip().splitlines()
     reason = data.get("reason")
-    output.insert(-2, _hr(WIDTH_80MM))
+    output.insert(-2, _hr(WIDTH_STATION_58MM))
     output.insert(-2, "CANCELAR PRODUCTO")
     if _clean(reason):
         output.insert(-2, "MOTIVO")
-        output[-2:-2] = _wrap_text(reason, WIDTH_80MM)
-    return render(output, WIDTH_80MM)
+        output[-2:-2] = _wrap_text(reason, WIDTH_STATION_58MM)
+    return render(output, WIDTH_STATION_58MM)
 
 
-def format_modification_80mm(data: Mapping[str, Any]) -> str:
-    width = WIDTH_80MM
+def format_modification_58mm(data: Mapping[str, Any]) -> str:
+    width = WIDTH_STATION_58MM
     lines: list[str] = [
         _center("*** MODIFICACION ***", width),
         _hr(width, "="),

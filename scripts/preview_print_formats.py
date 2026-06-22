@@ -4,10 +4,10 @@ import argparse
 from pathlib import Path
 
 from app.services.print_formatters import (
-    format_cancellation_80mm,
+    format_cancellation_58mm,
     format_cash_shift_58mm,
-    format_command_80mm,
-    format_modification_80mm,
+    format_command_58mm,
+    format_modification_58mm,
     format_ticket_58mm,
     sample_now,
 )
@@ -150,16 +150,16 @@ def main() -> None:
     }
 
     write_preview(output_dir, "ticket_58mm.txt", format_ticket_58mm(ticket_data))
-    write_preview(output_dir, "comanda_80mm.txt", format_command_80mm(command_data))
+    write_preview(output_dir, "comanda_58mm.txt", format_command_58mm(command_data))
     write_preview(
         output_dir,
-        "cancelacion_comanda_80mm.txt",
-        format_cancellation_80mm(cancellation_data),
+        "cancelacion_comanda_58mm.txt",
+        format_cancellation_58mm(cancellation_data),
     )
     write_preview(
         output_dir,
-        "modificacion_80mm.txt",
-        format_modification_80mm(modification_data),
+        "modificacion_58mm.txt",
+        format_modification_58mm(modification_data),
     )
     write_preview(output_dir, "corte_58mm.txt", format_cash_shift_58mm(cash_shift_data))
 

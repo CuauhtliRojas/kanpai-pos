@@ -23,10 +23,10 @@ from app.models import (
 from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 from app.services.folio_service import generate_folio
 from app.services.print_formatters import (
-    format_cancellation_80mm,
+    format_cancellation_58mm,
     format_cash_shift_58mm,
-    format_command_80mm,
-    format_modification_80mm,
+    format_command_58mm,
+    format_modification_58mm,
     format_ticket_58mm,
 )
 from app.services.print_profile import get_print_profile
@@ -147,7 +147,7 @@ def build_command_content(
     lines: list[TicketLine],
 ) -> str:
     profile = get_print_profile()
-    content = format_command_80mm(
+    content = format_command_58mm(
         {
             "title": profile.command_title,
             "folio": ticket.folio,
@@ -168,7 +168,7 @@ def build_cancellation_content(
     reason: str | None,
 ) -> str:
     profile = get_print_profile()
-    content = format_cancellation_80mm(
+    content = format_cancellation_58mm(
         {
             "title": profile.cancel_title,
             "folio": ticket.folio,
@@ -190,7 +190,7 @@ def build_modification_content(
     note_text: str,
 ) -> str:
     profile = get_print_profile()
-    content = format_modification_80mm(
+    content = format_modification_58mm(
         {
             "title": profile.modification_title,
             "folio": ticket.folio,
