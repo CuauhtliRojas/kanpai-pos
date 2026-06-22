@@ -89,7 +89,7 @@ def main() -> None:
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
     configure_logging()
-    config = json.loads(Path(args.config).read_text(encoding="utf-8"))
+    config = json.loads(Path(args.config).read_text(encoding="utf-8-sig"))
     while True:
         try:
             process_once(config, dry_run=args.dry_run)
