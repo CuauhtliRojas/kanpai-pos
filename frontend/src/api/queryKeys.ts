@@ -34,6 +34,13 @@
   },
   printing: {
     jobs: ["printing", "jobs"] as const,
+    pending: ["printing", "jobs", "pending"] as const,
+    job: (printJobId: number) => ["printing", "jobs", printJobId] as const,
+  },
+  ticketHistory: {
+    all: ["ticket-history"] as const,
+    list: (filters: unknown) => ["ticket-history", "list", filters] as const,
+    detail: (ticketId: number) => ["ticket-history", "detail", ticketId] as const,
   },
   reports: {
     dailySales: ["reports", "daily-sales"] as const,

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../../../api/http";
 import { BrutalButton } from "../../../shared/components/BrutalButton";
+import { formatCentsToPesos } from "../../../shared/lib/money";
 import { DiscountPanel } from "../../discounts/components/DiscountPanel";
 import { PaymentForm } from "../../payments/components/PaymentForm";
 import { PaymentList } from "../../payments/components/PaymentList";
@@ -12,6 +13,7 @@ import { TicketSplitPanel } from "../../ticket-split/components/TicketSplitPanel
 import { useTicketSplitsQuery } from "../../ticket-split/hooks/useTicketSplitsQuery";
 import type { TicketLine } from "../../tickets/types/ticketTypes";
 import { useStartCheckoutMutation } from "../hooks/useStartCheckoutMutation";
+import { CheckoutSection } from "./CheckoutSection";
 import { CheckoutSummary } from "./CheckoutSummary";
 
 type AccountCheckoutDialogProps = {
@@ -68,6 +70,7 @@ export function AccountCheckoutDialog({
   const activeSplits = (splitsQuery.data ?? []).filter(
     (split) => split.status !== "Cancelada",
   );
+  const paymentSummary = paymentsQuery.data;
   const blockingMessage =
     pendingLineCount > 0
       ? "Envía la comanda pendiente antes de cobrar."
@@ -108,7 +111,7 @@ export function AccountCheckoutDialog({
 
   return (
     <div
-      className="fixed inset-0 z-40 grid place-items-center bg-black/75 p-2"
+      className="fixed inset-0 z-40 grid place-items-center bg-black/75 p-2 sm:p-4"
       onClick={() => {
         if (!startMutation.isPending) onClose();
       }}
@@ -117,54 +120,93 @@ export function AccountCheckoutDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="account-checkout-title"
-        className="flex max-h-[calc(100vh-8rem)] w-[min(90vw,38rem)] flex-col border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] shadow-[var(--kp-shadow-hard)]"
+        className="flex max-h-[calc(100dvh-1rem)] w-full max-w-[38rem] flex-col overflow-hidden border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] shadow-[var(--kp-shadow-hard)] sm:max-h-[calc(100dvh-2rem)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex flex-wrap items-start justify-between gap-2 border-b-4 border-[var(--kp-ink)] p-3">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b-4 border-[var(--kp-ink)] p-2 sm:p-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-selected)]">Cuenta</p>
-            <h2 id="account-checkout-title" className="mt-1 text-2xl font-black uppercase">
-              {isInPayment ? "Cobro" : "Cuenta"}
+            <h2 id="account-checkout-title" className="text-xl font-black uppercase sm:text-2xl">
+              {isInPayment ? "Cobro" : "Cuenta"} · {ticket.folio}
             </h2>
-            <p className="mt-1 font-bold text-[var(--kp-muted)]">{ticket.folio}</p>
           </div>
-          <BrutalButton type="button" size="md" onClick={onClose} disabled={startMutation.isPending}>
+          <BrutalButton type="button" size="sm" onClick={onClose} disabled={startMutation.isPending}>
             Volver
           </BrutalButton>
         </header>
 
-        <div className="min-h-0 overflow-y-auto p-3">
-          <CheckoutSummary ticket={ticket} lineCount={lineCount} />
+        <div className="min-h-0 overflow-y-auto overscroll-contain p-2 sm:p-3">
+          <div className="grid gap-2">
+            <CheckoutSection
+              title="Resumen"
+              defaultOpen
+              summary={`Saldo ${formatCentsToPesos(paymentSummary?.remaining_cents ?? ticket.total_cents)}`}
+            >
+              <CheckoutSummary ticket={ticket} lineCount={lineCount} remainingCents={paymentSummary?.remaining_cents} embedded />
+            </CheckoutSection>
 
-          {!isInPayment ? (
-            <div className="mt-3 grid gap-2">
-              <p className="font-bold">Se pausará la captura para cobrar esta cuenta.</p>
-              {blockingMessage ? (
-                <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-warning-bg)] p-3 font-bold text-[var(--kp-text)]">
-                  {blockingMessage}
-                </p>
+            {pendingLineCount > 0 ? (
+              <CheckoutSection title="Productos pendientes" defaultOpen tone="warning" summary={`${pendingLineCount} por enviar`}>
+                <p className="font-black">Envía estos productos antes de cobrar.</p>
+                <p className="mt-1 text-sm font-bold text-[var(--kp-muted)]">Productos pendientes: {pendingLineCount}</p>
+              </CheckoutSection>
+            ) : null}
+
+            <CheckoutSection title="Comandas / estado de cuenta" summary={ticket.status}>
+              <div className="grid gap-1 font-bold">
+                <div className="flex justify-between gap-3"><span>Estado</span><span>{ticket.status}</span></div>
+                <div className="flex justify-between gap-3"><span>Productos</span><span>{lineCount}</span></div>
+                <div className="flex justify-between gap-3"><span>Pendientes de envío</span><span>{pendingLineCount}</span></div>
+              </div>
+            </CheckoutSection>
+
+            <section className="grid gap-2 border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-2">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--kp-muted)]">Acciones de cuenta</p>
+              <div className={`grid gap-2 ${!isInPayment ? "grid-cols-2" : "grid-cols-1"}`}>
+                {!isInPayment ? (
+                  <DiscountPanel ticket={ticket} employeeId={employeeId} canAuthorize={canAuthorizeDiscount} actionOnly />
+                ) : null}
+                {!splitsQuery.isPending && !splitsQuery.isError ? (
+                  <TicketSplitPanel
+                    ticket={ticket}
+                    lines={lines}
+                    splits={splitsQuery.data ?? []}
+                    employeeId={employeeId}
+                    methods={methodsQuery.data ?? []}
+                    onClosed={onClosed}
+                    actionOnly
+                  />
+                ) : (
+                  <BrutalButton type="button" fullWidth disabled>Dividir cuenta</BrutalButton>
+                )}
+              </div>
+              {!isInPayment ? (
+                <>
+                  {blockingMessage ? (
+                    <p className="border-2 border-[var(--kp-ink)] bg-[var(--kp-warning-bg)] p-2 font-bold">{blockingMessage}</p>
+                  ) : null}
+                  {errorMessage ? (
+                    <p className="border-2 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-2 font-bold text-[var(--kp-danger-text)]">{errorMessage}</p>
+                  ) : null}
+                  <BrutalButton type="button" variant="success" size="lg" fullWidth disabled={!canStart} onClick={() => void handleStart()}>
+                    {startMutation.isPending ? "Iniciando..." : "Iniciar cobro"}
+                  </BrutalButton>
+                </>
               ) : null}
-              {errorMessage ? (
-                <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 font-bold text-[var(--kp-danger-text)]">
-                  {errorMessage}
-                </p>
-              ) : null}
-              <DiscountPanel ticket={ticket} employeeId={employeeId} canAuthorize={canAuthorizeDiscount} />
-              <BrutalButton type="button" variant="success" size="lg" fullWidth disabled={!canStart} onClick={() => void handleStart()}>
-                {startMutation.isPending ? "Iniciando..." : "Iniciar cobro"}
-              </BrutalButton>
-            </div>
-          ) : (
-            <div className="mt-3 grid gap-3">
-              <DiscountPanel ticket={ticket} employeeId={employeeId} canAuthorize={canAuthorizeDiscount} />
-              <section className="border-t-2 border-[var(--kp-ink)] pt-3">
-                <h3 className="text-lg font-black uppercase">Pagos registrados</h3>
+            </section>
+
+            {isInPayment ? (
+              <CheckoutSection
+                title="Pagos registrados"
+                defaultOpen
+                summary={paymentSummary ? `${paymentSummary.payments.length} pagos` : "Consultando"}
+              >
                 {paymentsQuery.isPending || methodsQuery.isPending ? (
-                  <p className="mt-3 font-bold">Consultando pagos...</p>
+                  <p className="font-bold">Consultando pagos...</p>
                 ) : paymentsQuery.isError || methodsQuery.isError ? (
-                  <p className="mt-3 font-bold">No se pudieron cargar los pagos.</p>
+                  <p className="font-bold">No se pudieron cargar los pagos.</p>
                 ) : paymentsQuery.data && methodsQuery.data ? (
-                  <div className="mt-2 grid gap-3">
+                  <div className="grid gap-3">
                     <PaymentList summary={paymentsQuery.data} methods={methodsQuery.data} />
                     {activeSplits.length === 0 ? (
                       <div>
@@ -177,24 +219,37 @@ export function AccountCheckoutDialog({
                           onClosed={onClosed}
                         />
                       </div>
-                    ) : null}
+                    ) : (
+                      <p className="text-sm font-bold text-[var(--kp-muted)]">Registra los pagos dentro de cada parte de la división.</p>
+                    )}
                   </div>
                 ) : null}
-              </section>
-            </div>
-          )}
+              </CheckoutSection>
+            ) : null}
 
-          <div className="mt-3 grid gap-2 border-t-2 border-[var(--kp-ink)] pt-3">
-            <CancelTicketAction ticket={ticket} employeeId={employeeId} canCancel={canCancelTicket} onCancelled={onCancelled} />
             {!splitsQuery.isPending && !splitsQuery.isError ? (
-              <TicketSplitPanel
-                ticket={ticket}
-                lines={lines}
+              <CheckoutSection
+                title="División de cuenta"
+                defaultOpen={activeSplits.length > 0}
+                summary={activeSplits.length > 0 ? `${activeSplits.length} partes activas` : "Sin división activa"}
+              >
+                <TicketSplitPanel
+                  ticket={ticket}
+                  lines={lines}
                 splits={splitsQuery.data ?? []}
                 employeeId={employeeId}
-                methods={methodsQuery.data ?? []}
-                onClosed={onClosed}
-              />
+                  methods={methodsQuery.data ?? []}
+                  onClosed={onClosed}
+                  hideDivideAction
+                />
+              </CheckoutSection>
+            ) : null}
+
+            {canCancelTicket ? (
+              <CheckoutSection title="Zona de cancelación" tone="danger" summary="Acción irreversible">
+                <p className="mb-3 text-sm font-bold">Cancela toda la cuenta únicamente cuando sea necesario.</p>
+                <CancelTicketAction ticket={ticket} employeeId={employeeId} canCancel={canCancelTicket} onCancelled={onCancelled} />
+              </CheckoutSection>
             ) : null}
           </div>
         </div>

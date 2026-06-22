@@ -7,12 +7,14 @@ type ActiveTicketPanelProps = {
   table: DiningTable;
   ticket: Ticket;
   onChangeTable: () => void;
+  onSearchTickets: () => void;
 };
 
 export function ActiveTicketPanel({
   table,
   ticket,
   onChangeTable,
+  onSearchTickets,
 }: ActiveTicketPanelProps) {
   return (
     <aside className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
@@ -29,10 +31,7 @@ export function ActiveTicketPanel({
             Cuenta activa
           </p>
         </div>
-        <BrutalButton type="button" size="md" onClick={onChangeTable}>
-          <ArrowLeftRight className="h-5 w-5" />
-          Cambiar mesa
-        </BrutalButton>
+        <div className="flex flex-wrap gap-2"><BrutalButton type="button" size="md" onClick={onSearchTickets}>Buscar tickets</BrutalButton><BrutalButton type="button" size="md" onClick={onChangeTable}><ArrowLeftRight className="h-5 w-5" />Cambiar mesa</BrutalButton></div>
       </div>
 
       <dl className="mt-4 grid grid-cols-3 gap-2 border-t-4 border-[var(--kp-ink)] pt-3">

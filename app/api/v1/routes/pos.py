@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,8 @@ from app.schemas import (
     TicketLinesCreatedResponse,
     TicketOpenRequest,
     TicketResponse,
+    TicketHistoryResponse,
+    TicketReadonlyResponse,
 )
 from app.services.cash_shift_service import (
     close_cash_shift,
@@ -73,6 +75,7 @@ from app.schemas.modification import (
 )
 from app.services.discount_service import apply_discount, list_ticket_discounts
 from app.services.modification_service import modify_ticket_line
+from app.services.ticket_history_service import get_readonly_ticket, list_ticket_history
 
 router = APIRouter(prefix="/pos", tags=["pos"])
 
@@ -117,6 +120,46 @@ def _to_http_exception(error: BusinessError) -> HTTPException:
     else:
         status_code = status.HTTP_400_BAD_REQUEST
     return HTTPException(status_code=status_code, detail=str(error))
+
+
+@router.get(
+    "/ticket-history",
+    response_model=TicketHistoryResponse,
+    responses=BUSINESS_ERROR_RESPONSES,
+)
+def list_ticket_history_endpoint(
+    cash_shift_id: int | None = None,
+    table_id: int | None = None,
+    q: str | None = None,
+    status_filter: str | None = Query(default=None, alias="status"),
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> TicketHistoryResponse:
+    try:
+        return TicketHistoryResponse.model_validate(
+            list_ticket_history(
+                db, cash_shift_id, table_id, q, status_filter, date_from, date_to, limit, offset
+            )
+        )
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
+
+
+@router.get(
+    "/tickets/{ticket_id}/readonly",
+    response_model=TicketReadonlyResponse,
+    responses={404: {"model": BusinessErrorResponse}},
+)
+def get_readonly_ticket_endpoint(
+    ticket_id: int, db: Session = Depends(get_db)
+) -> TicketReadonlyResponse:
+    try:
+        return TicketReadonlyResponse.model_validate(get_readonly_ticket(db, ticket_id))
+    except BusinessError as error:
+        raise _to_http_exception(error) from None
 
 
 @router.post(

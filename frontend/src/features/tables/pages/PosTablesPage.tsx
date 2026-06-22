@@ -29,6 +29,8 @@ import { useOpenTableTicketMutation } from "../hooks/useOpenTableTicketMutation"
 import { useTablesQuery } from "../hooks/useTablesQuery";
 import { useTicketQuery } from "../hooks/useTicketQuery";
 import type { DiningTable, Ticket } from "../types/tableTypes";
+import { TicketHistoryPanel } from "../../ticket-history/components/TicketHistoryPanel";
+import { useTicketHistoryQuery } from "../../ticket-history/hooks/useTicketHistoryQuery";
 
 function getPosErrorMessage(error: unknown): string | null {
   if (!error) return null;
@@ -46,6 +48,10 @@ function ticketIsActive(ticket: Ticket | null): ticket is Ticket {
 
 export function PosTablesPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [tableSearch, setTableSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyTableId, setHistoryTableId] = useState<number | undefined>();
   const [productMessage, setProductMessage] = useState<string | null>(null);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -79,6 +85,10 @@ export function PosTablesPage() {
   const isCaptureMode = hasOpenCash && hasActiveTicket && viewMode === "capture";
   const isChangingTable = hasOpenCash && hasActiveTicket && viewMode === "tables";
   const tablesQuery = useTablesQuery(hasOpenCash);
+  const tableHistoryQuery = useTicketHistoryQuery(
+    { cash_shift_id: cashQuery.data?.id, limit: 200, offset: 0 },
+    hasOpenCash,
+  );
   const categoriesQuery = useCategoriesQuery(isCaptureMode);
   const productsQuery = useProductsQuery(isCaptureMode);
   const openTicketMutation = useOpenTableTicketMutation();
@@ -93,13 +103,26 @@ export function PosTablesPage() {
     () => (categoriesQuery.data ?? []).filter((category) => category.active),
     [categoriesQuery.data],
   );
-  const products = useMemo(
-    () =>
-      (productsQuery.data ?? []).filter(
-        (product) =>
-          selectedCategoryId === null || product.category_id === selectedCategoryId,
-      ),
-    [productsQuery.data, selectedCategoryId],
+  const products = useMemo(() => {
+    const search = productSearch.trim().toLocaleLowerCase("es-MX");
+    return (productsQuery.data ?? []).filter((product) => {
+      const matchesCategory = selectedCategoryId === null || product.category_id === selectedCategoryId;
+      const searchable = `${product.name} ${product.display_name} ${product.sku}`.toLocaleLowerCase("es-MX");
+      return matchesCategory && (!search || searchable.includes(search));
+    });
+  }, [productSearch, productsQuery.data, selectedCategoryId]);
+  const filteredTables = useMemo(() => {
+    const search = tableSearch.trim().toLocaleLowerCase("es-MX");
+    if (!search) return tablesQuery.data ?? [];
+    return (tablesQuery.data ?? []).filter((table) =>
+      `${table.display_name} ${table.table_code} ${table.buzzer_number ?? ""} ${table.active_ticket_folio ?? ""}`
+        .toLocaleLowerCase("es-MX")
+        .includes(search),
+    );
+  }, [tableSearch, tablesQuery.data]);
+  const historyTableIds = useMemo(
+    () => new Set((tableHistoryQuery.data?.items ?? []).map((item) => item.table_id)),
+    [tableHistoryQuery.data],
   );
 
   useEffect(() => {
@@ -243,6 +266,10 @@ export function PosTablesPage() {
       ) : isCaptureMode ? (
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
           <main className="order-2 min-w-0 border-4 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-4 shadow-[var(--kp-shadow-hard)] lg:order-1">
+            <label className="mb-3 block">
+              <span className="sr-only">Buscar producto</span>
+              <input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="Buscar comida o bebida" className="min-h-12 w-full border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] px-3 font-bold outline-none focus:bg-white" />
+            </label>
             <h2 className="text-xl font-black uppercase">Categorías</h2>
             {categoriesQuery.isError ? (
               <p className="mt-3 font-bold">No se pudo cargar productos</p>
@@ -294,6 +321,10 @@ export function PosTablesPage() {
               onChangeTable={() => {
                 setTableSelectionError(null);
                 setViewMode("tables");
+              }}
+              onSearchTickets={() => {
+                setHistoryTableId(undefined);
+                setHistoryOpen(true);
               }}
             />
             {ticketQuery.isError ? (
@@ -363,12 +394,21 @@ export function PosTablesPage() {
               Cargando cuenta...
             </p>
           ) : null}
+          <label className="mb-4 block">
+            <span className="sr-only">Buscar mesa</span>
+            <input value={tableSearch} onChange={(event) => setTableSearch(event.target.value)} placeholder="Buscar mesa" className="min-h-14 w-full border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] px-4 text-lg font-bold outline-none focus:bg-white" />
+          </label>
           <TableGrid
-            tables={tablesQuery.data}
+            tables={filteredTables}
             selectedTableId={
               pendingTicketTable?.id ?? pendingOpenTable?.id ?? selectedTable?.id ?? null
             }
             onSelect={handleTableSelect}
+            historyTableIds={historyTableIds}
+            onViewSales={(table) => {
+              setHistoryTableId(table.id);
+              setHistoryOpen(true);
+            }}
           />
         </main>
       )}
@@ -422,6 +462,16 @@ export function PosTablesPage() {
           onSubmit={(selections) =>
             void addSelectedProduct(selectedProduct, selections, true)
           }
+        />
+      ) : null}
+      {historyOpen ? (
+        <TicketHistoryPanel
+          cashShiftId={cashQuery.data?.id ?? null}
+          initialTableId={historyTableId}
+          currentTableId={selectedTable?.id ?? null}
+          employeeId={employee?.id ?? null}
+          canReprint={hasPermission(permissions, "REPRINT")}
+          onClose={() => setHistoryOpen(false)}
         />
       ) : null}
     </div>

@@ -6,9 +6,11 @@ type TableGridProps = {
   selectedTableId: number | null;
   compact?: boolean;
   onSelect: (table: DiningTable) => void;
+  onViewSales?: (table: DiningTable) => void;
+  historyTableIds?: Set<number>;
 };
 
-export function TableGrid({ tables, selectedTableId, compact = false, onSelect }: TableGridProps) {
+export function TableGrid({ tables, selectedTableId, compact = false, onSelect, onViewSales, historyTableIds }: TableGridProps) {
   if (tables.length === 0) {
     return (
       <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-8 text-center shadow-[var(--kp-shadow-hard)]">
@@ -27,6 +29,7 @@ export function TableGrid({ tables, selectedTableId, compact = false, onSelect }
           selected={table.id === selectedTableId}
           compact={compact}
           onSelect={onSelect}
+          onViewSales={historyTableIds?.has(table.id) ? onViewSales : undefined}
         />
       ))}
     </div>
