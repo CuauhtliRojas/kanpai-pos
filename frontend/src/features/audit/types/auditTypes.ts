@@ -32,12 +32,26 @@ export type TicketAudit = {
   audit_events: AuditEvent[];
 };
 
+export type CashShiftAuditExpense = {
+  id: number;
+  folio: string;
+  cash_shift_id: number;
+  registered_by_employee_id: number;
+  amount_cents: number;
+  description: string;
+  category: string | null;
+  payment_method_id: number | null;
+  note: string | null;
+  status: string;
+  created_at: string;
+};
+
 export type CashShiftAudit = {
   cash_shift: { folio: string; status: string; opened_at: string; closed_at: string | null };
   summary: { total_sales_cents: number; total_paid_cents: number; total_expenses_cents: number; ticket_count: number };
   tickets: unknown[];
   payments: unknown[];
-  expenses: unknown[];
+  expenses: CashShiftAuditExpense[];
   print_jobs: unknown[];
   audit_events: AuditEvent[];
 };

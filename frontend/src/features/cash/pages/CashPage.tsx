@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ApiError } from "../../../api/http";
 import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
@@ -7,6 +8,7 @@ import { CashClosedPanel } from "../components/CashClosedPanel";
 import { CashExpensePanel } from "../components/CashExpensePanel";
 import { CashOpenPanel } from "../components/CashOpenPanel";
 import { CashSummaryPanel } from "../components/CashSummaryPanel";
+import { CashShiftDetailDialog, type CashDetailTab } from "../components/CashShiftDetailDialog";
 import { useCashShiftSummaryQuery } from "../hooks/useCashShiftSummaryQuery";
 import { useCloseCashShiftMutation } from "../hooks/useCloseCashShiftMutation";
 import { useCreateCashExpenseMutation } from "../hooks/useCreateCashExpenseMutation";
@@ -35,6 +37,7 @@ function getCashErrorMessage(error: unknown): string | null {
 }
 
 export function CashPage() {
+  const [detailTab, setDetailTab] = useState<CashDetailTab | null>(null);
   const { employee, permissions } = useAuthSession();
   const currentQuery = useCurrentCashShiftQuery();
   const cashShift = currentQuery.data ?? null;
@@ -58,9 +61,12 @@ export function CashPage() {
 
   return (
     <div className="grid gap-4">
-      <header className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
+      <header className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] px-4 py-3 shadow-[var(--kp-shadow-hard)] md:px-5">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--kp-selected)]">Operación</p>
-        <h1 className="mt-2 text-4xl font-black uppercase md:text-6xl">Caja</h1>
+        <h1 className="mt-1 text-3xl font-black uppercase md:text-4xl">Caja</h1>
+        <p className="mt-1 font-bold text-[var(--kp-muted)]">
+          {cashShift ? "Controla el efectivo y revisa el turno." : "Abre el turno para empezar a vender."}
+        </p>
       </header>
 
       {!cashShift ? (
@@ -99,20 +105,34 @@ export function CashPage() {
             summary={summaryQuery.data}
             isLoading={summaryQuery.isPending}
             errorMessage={getCashErrorMessage(summaryQuery.error)}
+            onViewDetails={() => setDetailTab("expenses")}
           />
           <CashExpensePanel
             canCreate={hasPermission(permissions, "EXPENSE_CREATE")}
             isSaving={expenseMutation.isPending}
             errorMessage={getCashErrorMessage(expenseMutation.error)}
-            onCreate={async (amountCents, description) => {
+            totalExpensesCents={summaryQuery.data?.total_expenses_cents ?? 0}
+            expenseCount={summaryQuery.data?.active_expense_count ?? 0}
+            onViewExpenses={() => setDetailTab("expenses")}
+            onCreate={async (amountCents, description, category, note) => {
               if (!employee) return;
               await expenseMutation.mutateAsync({
                 employee_id: employee.id,
                 amount_cents: amountCents,
                 description,
+                category,
+                note,
               });
             }}
           />
+          {detailTab ? (
+            <CashShiftDetailDialog
+              cashShiftId={cashShift.id}
+              summary={summaryQuery.data}
+              initialTab={detailTab}
+              onClose={() => setDetailTab(null)}
+            />
+          ) : null}
         </>
       )}
     </div>
