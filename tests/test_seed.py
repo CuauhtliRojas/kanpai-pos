@@ -151,23 +151,20 @@ def test_admin_permissions_and_yakitori_variants_are_reproducible() -> None:
                 .where(Product.sku.like("YAK-%"))
             )
         )
-        assert len(groups) == 8
+        assert len(groups) == 1
+        assert groups[0].name == "BROCHETAS"
 
-        names_by_sku: dict[str, set[str]] = {}
-        for group in groups:
-            names_by_sku.setdefault(group.product.sku, set()).add(group.name)
-
-        for sku in (
+        option_skus = {option.sku for group in groups for option in group.options}
+        assert option_skus == {
             "YAK-COC-POLL",
             "YAK-COC-PORK",
             "YAK-COC-PUL",
             "YAK-COC_CAM",
             "YAK-COC-VER",
             "YAK-COC-HONG",
-        ):
-            assert names_by_sku[sku] == {"Preparación"}
+        }
 
-        assert names_by_sku["YAK-COC-MIX"] == {"Preparación", "BROCHETAS"}
+        assert groups[0].product.sku == "YAK-COC-MIX"
 
 def test_sqlite_catalog_reset_requires_confirmation_and_dry_run_is_read_only() -> None:
     run_seed()

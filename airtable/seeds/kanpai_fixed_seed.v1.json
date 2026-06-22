@@ -25,7 +25,7 @@
     {"clave_metodo": "Transferencia", "nombre": "Transferencia", "requiere_referencia": true, "activo": true}
   ],
   "CanalesNotificacion": [
-    {"clave_canal": "sms", "nombre": "SMS", "activo": true}
+    {"clave_canal": "SMS", "nombre": "SMS LabsMobile", "activo": true}
   ],
   "Mesas": [
     {"codigo_mesa": "M01", "nombre_mesa": "Mesa 1", "zona": "SALON", "orden": 1, "estado_temporal": "Libre", "activo": true},

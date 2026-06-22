@@ -467,18 +467,6 @@ def seed_development_products(session: Session) -> None:
         {"product_id": yakitori.id, "station_id": kitchen.id},
         {"is_primary": True, "active": True, "sync_status": CatalogStatus.ACTIVE},
     )
-    group, _ = get_or_create(
-        session, ProductVariantGroup,
-        {"product_id": yakitori.id, "name": "Sabores yakitori"},
-        {"min_select": 3, "max_select": 3, "required": True, "active": True},
-    )
-    for index, name in enumerate(("Pollo", "Pulpo", "Verduras"), 1):
-        get_or_create(
-            session, ProductVariantOption,
-            {"variant_group_id": group.id, "sku": f"YAK-{index}"},
-            {"name": name, "price_delta_cents": 0, "station_id": kitchen.id, "active": True},
-        )
-
     package, _ = get_or_create(
         session,
         ProductPackage,
@@ -687,30 +675,6 @@ def seed_real_catalog(session: Session) -> None:
         option.sku = record["sku"]
         option.price_delta_cents = int(record["diferencia_precio_centavos"])
         option.active = bool(record["activo"])
-
-    for product in products.values():
-        raw_variant = product.variant or ""
-        if "/" not in raw_variant:
-            continue
-        group, _ = get_or_create(
-            session,
-            ProductVariantGroup,
-            {"product_id": product.id, "name": "Preparación"},
-            {"min_select": 1, "max_select": 1, "required": True, "active": True},
-        )
-        group.min_select = group.max_select = 1
-        group.required = group.active = True
-        for option_name in dict.fromkeys(
-            part.strip().title() for part in raw_variant.split("/") if part.strip()
-        ):
-            option, _ = get_or_create(
-                session,
-                ProductVariantOption,
-                {"variant_group_id": group.id, "name": option_name},
-                {"price_delta_cents": 0, "active": True},
-            )
-            option.active = True
-
 
 def seed_roles_permissions_and_admin(session: Session) -> None:
     permission_defs = [
