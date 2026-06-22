@@ -21,7 +21,7 @@ export function HealthStatusCard() {
       <SurfaceCard title="Datos locales" eyebrow="Sistema">
         <ErrorState
           title="Sin conexión"
-          message="Revisar conexión o pedir ayuda."
+          message="Revisa el sistema o pide ayuda."
         />
       </SurfaceCard>
     );
@@ -38,7 +38,10 @@ export function HealthStatusCard() {
           <Activity className="h-6 w-6 text-[var(--kp-selected)]" />
           <span className="font-black uppercase">Listo para operar</span>
         </div>
-        <p>Información disponible en esta computadora.</p>
+        <p>La información está disponible en esta computadora.</p>
+        <p className="text-xs text-[var(--kp-muted)]">
+          Si ves “Sin conexión”, revisa el sistema o pide ayuda.
+        </p>
       </div>
     </SurfaceCard>
   );

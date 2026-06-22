@@ -22,12 +22,15 @@ type MenuItemProps = {
 function MenuItem({ item, access, onNavigate }: MenuItemProps) {
   if (access === "denied") {
     return (
-      <div className="flex min-h-[var(--kp-touch-md)] items-center justify-between gap-3 border-4 border-dashed border-[var(--kp-ink)] bg-[var(--kp-surface-soft)] px-4 text-sm font-black uppercase tracking-[0.08em] text-[var(--kp-muted)]">
-        <span className="flex items-center gap-3">
-          <item.icon className="h-6 w-6" />
-          {item.label}
+      <div className="flex min-h-[var(--kp-touch-md)] items-center gap-3 border-2 border-dashed border-[var(--kp-ink)] bg-[var(--kp-surface-soft)] px-3 text-[var(--kp-muted)]">
+        <item.icon className="h-5 w-5 shrink-0" />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-xs font-black uppercase tracking-[0.08em]">{item.label}</span>
+            <span className="shrink-0 text-[9px] font-black uppercase">Sin permiso</span>
+          </span>
+          <span className="block truncate text-[11px] font-bold leading-tight">{item.description}</span>
         </span>
-        <span className="text-[10px]">Sin permiso</span>
       </div>
     );
   }
@@ -39,18 +42,25 @@ function MenuItem({ item, access, onNavigate }: MenuItemProps) {
       onClick={onNavigate}
       className={({ isActive }) =>
         [
-          "flex min-h-[var(--kp-touch-md)] items-center justify-between gap-3 border-4 border-[var(--kp-ink)] px-4 text-sm font-black uppercase tracking-[0.08em] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+          "flex min-h-[var(--kp-touch-md)] items-center gap-3 border-2 border-[var(--kp-ink)] px-3 shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
           isActive
             ? "bg-[var(--kp-accent)] text-[var(--kp-accent-contrast)]"
             : "bg-[var(--kp-surface-raised)] text-[var(--kp-text)]",
         ].join(" ")
       }
     >
-      <span className="flex items-center gap-3">
-        <item.icon className="h-6 w-6" />
-        {item.label}
+      <item.icon className="h-5 w-5 shrink-0" />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-xs font-black uppercase tracking-[0.08em]">{item.label}</span>
+          {access === "coming_soon" ? (
+            <span className="shrink-0 text-[9px] font-black uppercase">No disponible</span>
+          ) : null}
+        </span>
+        <span className="block truncate text-[11px] font-bold normal-case leading-tight tracking-normal opacity-70">
+          {item.description}
+        </span>
       </span>
-      {access === "coming_soon" ? <span className="text-[10px]">No disponible</span> : null}
     </NavLink>
   );
 }
@@ -59,44 +69,44 @@ function resolveEstadoSignal(
   status: string | undefined,
   running: boolean | undefined,
   isError: boolean,
-): { label: string; className: string } {
+): { value: string; className: string } {
   if (isError) {
     return {
-      label: "SIN CONEXIÓN",
+      value: "Sin conexión",
       className: "border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)]",
     };
   }
 
   if (running) {
     return {
-      label: "ACTUALIZANDO DATOS",
+      value: "Actualizando",
       className: "border-[var(--kp-ink)] bg-[var(--kp-info)] text-[var(--kp-info-contrast)]",
     };
   }
 
   if (!status || status === "not_started" || status.includes("disabled") || status.includes("no_directions")) {
     return {
-      label: "ACTUALIZACIÓN PENDIENTE",
+      value: "Pendiente",
       className: "border-[var(--kp-ink)] bg-[var(--kp-warning)] text-[var(--kp-warning-contrast)]",
     };
   }
 
   if (status.includes("error") || status.includes("missing")) {
     return {
-      label: "REVISAR CONEXIÓN",
+      value: "Revisar",
       className: "border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)]",
     };
   }
 
   if (status.includes("success")) {
     return {
-      label: "DATOS AL DÍA",
+      value: "Al día",
       className: "border-[var(--kp-ink)] bg-[var(--kp-success)] text-[var(--kp-success-contrast)]",
     };
   }
 
   return {
-    label: "ACTUALIZACIÓN PENDIENTE",
+    value: "Pendiente",
     className: "border-[var(--kp-ink)] bg-[var(--kp-warning)] text-[var(--kp-warning-contrast)]",
   };
 }
@@ -135,18 +145,26 @@ export function AppShell() {
           </div>
 
           <div
-            title="Estado de actualización de datos"
-            className={`flex min-h-9 max-w-44 items-center border-4 px-2 text-center text-[9px] font-black uppercase leading-tight tracking-[0.04em] sm:px-3 sm:text-xs sm:tracking-[0.08em] ${statusSignal.className}`}
+            title="Estado de los datos"
+            aria-label={`Datos: ${statusSignal.value}`}
+            className={`flex min-h-10 min-w-20 flex-col items-center justify-center border-2 px-2 text-center font-black uppercase leading-none sm:min-w-24 ${statusSignal.className}`}
           >
-            {statusSignal.label}
+            <span className="text-[8px] tracking-[0.14em] opacity-75">Datos</span>
+            <span className="mt-1 text-[10px] tracking-[0.06em] sm:text-xs">{statusSignal.value}</span>
           </div>
         </div>
       </header>
 
       {menuOpen ? (
-        <div className="fixed inset-0 z-40 bg-[rgba(0,0,0,0.72)]">
-          <aside className="h-full w-full max-w-md overflow-y-auto border-r-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
-            <div className="mb-5 flex items-center justify-between gap-3">
+        <div
+          className="fixed inset-0 z-40 bg-[rgba(0,0,0,0.62)]"
+          onClick={() => setMenuOpen(false)}
+        >
+          <aside
+            className="h-full w-[min(90vw,24rem)] overflow-y-auto border-r-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
                   Navegación
@@ -157,20 +175,34 @@ export function AppShell() {
                 type="button"
                 aria-label="Cerrar menú"
                 onClick={() => setMenuOpen(false)}
-                className="flex h-12 w-12 items-center justify-center border-4 border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+                className="flex h-12 w-12 items-center justify-center border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] text-[var(--kp-text)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
               >
-                <X className="h-7 w-7" />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
-            <nav className="grid gap-3">
-              {navigationItems.map((item) => (
-                <MenuItem
-                  key={item.to}
-                  item={item}
-                  access={resolveNavigationItemAccess(item, roles, permissions)}
-                  onNavigate={() => setMenuOpen(false)}
-                />
+            <nav className="grid gap-4" aria-label="Navegación principal">
+              {(["Operación", "Servicio", "Administración"] as const).map((group) => (
+                <section key={group} aria-labelledby={`navigation-${group}`}>
+                  <h2
+                    id={`navigation-${group}`}
+                    className="mb-1.5 border-b-2 border-[var(--kp-divider)] pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--kp-muted)]"
+                  >
+                    {group}
+                  </h2>
+                  <div className="grid gap-2">
+                    {navigationItems
+                      .filter((item) => item.group === group)
+                      .map((item) => (
+                        <MenuItem
+                          key={item.to}
+                          item={item}
+                          access={resolveNavigationItemAccess(item, roles, permissions)}
+                          onNavigate={() => setMenuOpen(false)}
+                        />
+                      ))}
+                  </div>
+                </section>
               ))}
             </nav>
 
@@ -180,7 +212,7 @@ export function AppShell() {
                 setMenuOpen(false);
                 void logout().catch(() => undefined);
               }}
-              className="mt-5 flex min-h-[var(--kp-touch-md)] w-full items-center gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-4 text-sm font-black uppercase tracking-[0.08em] text-[var(--kp-text)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+              className="mt-4 flex min-h-[var(--kp-touch-md)] w-full items-center gap-3 border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 text-xs font-black uppercase tracking-[0.08em] text-[var(--kp-text)] shadow-[var(--kp-shadow-hard-sm)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
             >
               <LogOut className="h-6 w-6" />
               Cerrar sesión

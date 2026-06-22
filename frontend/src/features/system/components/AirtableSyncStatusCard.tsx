@@ -31,7 +31,7 @@ function syncTone(status: string, running: boolean) {
 
 function syncLabel(status: string, running: boolean) {
   if (running) {
-    return "Actualización pendiente";
+    return "Actualizando";
   }
 
   if (status.includes("error") || status.includes("missing")) {
@@ -69,8 +69,8 @@ export function AirtableSyncStatusCard() {
     return (
       <SurfaceCard title="Actualización de datos" eyebrow="Sistema">
         <ErrorState
-          title="Sin conexión"
-          message="Revisar conexión o pedir ayuda."
+          title="Revisar sistema"
+          message="No se pudo revisar la información. Revisa conexión o pide ayuda."
         />
       </SurfaceCard>
     );
@@ -95,40 +95,52 @@ export function AirtableSyncStatusCard() {
           </span>
         </div>
 
+        <SyncActionPanel
+          canRun={hasRole(roles, "ADMIN")}
+          disabled={!syncQuery.data.enabled || syncQuery.data.running}
+        />
+
         <dl className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
           <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">Entrada de datos</dt>
+            <dt className="font-black uppercase text-[var(--kp-selected)]">Recibir catálogo</dt>
             <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
               {syncQuery.data.pull_enabled ? "Activa" : "Pausada"}
             </dd>
           </div>
           <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">Salida de datos</dt>
+            <dt className="font-black uppercase text-[var(--kp-selected)]">Enviar movimientos</dt>
             <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
               {syncQuery.data.push_enabled ? "Activa" : "Pausada"}
             </dd>
           </div>
           <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">Último inicio</dt>
+            <dt className="font-black uppercase text-[var(--kp-selected)]">
+              Última revisión iniciada
+            </dt>
             <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
-              {formatNullableDate(syncQuery.data.last_started_at)}
+              {syncQuery.data.last_started_at
+                ? formatNullableDate(syncQuery.data.last_started_at)
+                : "Aún no se ha realizado"}
             </dd>
           </div>
           <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">Última actualización</dt>
+            <dt className="font-black uppercase text-[var(--kp-selected)]">
+              Última revisión terminada
+            </dt>
             <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
-              {formatNullableDate(syncQuery.data.last_finished_at)}
+              {syncQuery.data.last_finished_at
+                ? formatNullableDate(syncQuery.data.last_finished_at)
+                : "Aún no se ha realizado"}
             </dd>
           </div>
         </dl>
 
         {syncQuery.data.last_error ? (
-          <ErrorState title="Revisar conexión" message="Revisar conexión o pedir ayuda." />
+          <ErrorState
+            title="Revisar sistema"
+            message="No se pudo revisar la información. Revisa conexión o pide ayuda."
+          />
         ) : null}
-        <SyncActionPanel
-          canRun={hasRole(roles, "ADMIN")}
-          disabled={!syncQuery.data.enabled || syncQuery.data.running}
-        />
       </div>
     </SurfaceCard>
   );

@@ -21,6 +21,8 @@ import type { PermissionKey } from "../features/auth/types/authTypes";
 export type NavigationItem = {
   to: string;
   label: string;
+  description: string;
+  group: "Operación" | "Servicio" | "Administración";
   icon: LucideIcon;
   status: "available" | "coming_soon";
   anyPermission?: readonly PermissionKey[];
@@ -31,32 +33,90 @@ export type NavigationItem = {
 export type NavigationItemAccess = "available" | "coming_soon" | "denied";
 
 export const navigationItems: readonly NavigationItem[] = [
-  { to: "/", label: "Inicio", icon: Home, status: "available" },
-  { to: "/system", label: "Sistema", icon: DatabaseZap, status: "available" },
+  {
+    to: "/",
+    label: "Inicio",
+    description: "Estado general y próximos pasos.",
+    group: "Operación",
+    icon: Home,
+    status: "available",
+  },
   {
     to: "/cash",
     label: "Caja",
+    description: "Abrir o cerrar turno.",
+    group: "Operación",
     icon: CircleDollarSign,
     status: "available",
     anyPermission: ["CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE"],
   },
-  { to: "/pos", label: "Venta", icon: ReceiptText, status: "available" },
-  { to: "/production", label: "Producción", icon: Utensils, status: "available" },
+  {
+    to: "/pos",
+    label: "Venta",
+    description: "Elegir mesa y tomar pedido.",
+    group: "Operación",
+    icon: ReceiptText,
+    status: "available",
+  },
+  {
+    to: "/production",
+    label: "Producción",
+    description: "Ver comandas por estación.",
+    group: "Servicio",
+    icon: Utensils,
+    status: "available",
+  },
   {
     to: "/printing",
     label: "Impresión",
+    description: "Revisar tickets pendientes.",
+    group: "Servicio",
     icon: Printer,
     status: "available",
   },
   {
     to: "/inventory",
     label: "Inventario",
+    description: "Controlar stock y alertas.",
+    group: "Servicio",
     icon: Boxes,
     status: "available",
   },
-  { to: "/reports", label: "Reportes", icon: BarChart3, status: "available", adminOnly: true },
-  { to: "/audit", label: "Auditoría", icon: ClipboardList, status: "available", adminOnly: true },
-  { to: "/security", label: "Empleados", icon: ShieldCheck, status: "available", adminOnly: true },
+  {
+    to: "/system",
+    label: "Sistema",
+    description: "Revisar conexión y datos.",
+    group: "Administración",
+    icon: DatabaseZap,
+    status: "available",
+  },
+  {
+    to: "/reports",
+    label: "Reportes",
+    description: "Consultar ventas del día.",
+    group: "Administración",
+    icon: BarChart3,
+    status: "available",
+    adminOnly: true,
+  },
+  {
+    to: "/audit",
+    label: "Auditoría",
+    description: "Revisar movimientos.",
+    group: "Administración",
+    icon: ClipboardList,
+    status: "available",
+    adminOnly: true,
+  },
+  {
+    to: "/security",
+    label: "Empleados",
+    description: "Ver accesos del personal.",
+    group: "Administración",
+    icon: ShieldCheck,
+    status: "available",
+    adminOnly: true,
+  },
 ];
 
 export function resolveNavigationItemAccess(
