@@ -17,3 +17,5 @@ export type EqualSplitRequest = { employee_id: number; parts: number };
 export type ByLinesSplitRequest = { employee_id: number; name: string; ticket_line_ids: number[] };
 export type SplitPaymentRequest = { employee_id: number; payment_method_id: number; amount_cents: number; received_cents?: number | null; reference?: string | null };
 export type SplitPaymentResponse = { payment_id: number; split: TicketSplit; change_cents: number; ticket_closed: boolean };
+export type CancelSplitsRequest = { employee_id: number; reason?: string | null };
+export type CancelSplitsResponse = { cancelled_count: number; ticket_id: number };

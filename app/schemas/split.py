@@ -49,3 +49,13 @@ class SplitPaymentResponse(BaseModel):
     split: TicketSplitResponse
     change_cents: int
     ticket_closed: bool
+
+
+class CancelSplitsRequest(BaseModel):
+    employee_id: int
+    reason: str | None = None
+
+
+class CancelSplitsResponse(BaseModel):
+    cancelled_count: int
+    ticket_id: int

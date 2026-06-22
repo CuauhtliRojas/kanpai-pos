@@ -15,6 +15,8 @@ export function useModifyTicketLineMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.tickets.detail(input.ticketId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lines(input.ticketId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tickets.splits(input.ticketId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.payments.list(input.ticketId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.commands.stationOrders(input.ticketId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.printing.jobs }),
       ]);

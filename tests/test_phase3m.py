@@ -16,10 +16,14 @@ from app.models import (
     Employee,
     PrintJob,
     Product,
+    ProductVariantGroup,
+    ProductVariantOption,
     StationOrder,
     TicketDiscount,
     TicketLineModification,
+    TicketLineVariantSelection,
 )
+from app.services.split_service import create_lines_split
 from app.services.cash_shift_service import open_cash_shift
 from app.services.discount_service import apply_discount
 from app.services.exceptions import (
@@ -296,3 +300,203 @@ def test_operational_reset_deletes_phase_3m_transactions() -> None:
         db.commit()
         assert db.scalar(select(func.count(TicketLineModification.id))) == 0
         assert db.scalar(select(func.count(TicketDiscount.id))) == 0
+
+
+# --- V3 quantity tests ---
+
+def test_modify_captured_line_quantity_recalculates_total() -> None:
+    with SessionLocal() as db:
+        employee, ticket, line = _context(db)
+        original_unit = line.unit_price_cents
+        assert line.quantity == 1
+
+        modification = modify_ticket_line(db, line.id, employee.id, quantity=3)
+        db.commit()
+
+        assert line.quantity == 3
+        assert line.line_total_cents == original_unit * 3
+        assert ticket.subtotal_cents == original_unit * 3
+        assert modification.print_job_id is None
+        assert "3" in modification.note
+        assert db.scalar(
+            select(AuditEvent.event_type).where(
+                AuditEvent.event_type == "Modificacion de linea"
+            )
+        )
+
+
+def test_modify_sent_line_quantity_is_rejected() -> None:
+    from app.services.exceptions import BusinessConflictError as BCE
+    with SessionLocal() as db:
+        employee, ticket, line = _context(db)
+        send_round(db, ticket.id, employee.id)
+        db.commit()
+
+        with pytest.raises(BCE, match="enviada"):
+            modify_ticket_line(db, line.id, employee.id, quantity=2)
+
+
+def test_modify_captured_line_note_does_not_print() -> None:
+    with SessionLocal() as db:
+        employee, _, line = _context(db)
+        modification = modify_ticket_line(db, line.id, employee.id, note="Sin sal")
+        db.commit()
+
+        assert line.note == "Sin sal"
+        assert modification.print_job_id is None
+
+
+def test_modify_sent_line_note_creates_print_job_existing_behavior() -> None:
+    with SessionLocal() as db:
+        employee, ticket, line = _context(db)
+        send_round(db, ticket.id, employee.id)
+        db.commit()
+
+        modification = modify_ticket_line(db, line.id, employee.id, note="Sin sal")
+        db.commit()
+
+        assert modification.print_job_id is not None
+        job = db.get(PrintJob, modification.print_job_id)
+        assert job is not None
+        assert "MODIFICACION" in job.content_snapshot
+        assert "Sin sal" in job.content_snapshot
+
+
+# --- V3-05B variant tests ---
+
+def _clear_dev_chela_variants(db) -> None:
+    """Remove any ProductVariantGroup rows added by previous tests for DEV-CHELA."""
+    product = db.scalar(select(Product).where(Product.sku == "DEV-CHELA"))
+    if product is None:
+        return
+    for group in list(db.scalars(
+        select(ProductVariantGroup).where(ProductVariantGroup.product_id == product.id)
+    )):
+        db.delete(group)
+    db.flush()
+
+
+def _add_variant_group(db, product, *, min_select=0, max_select=1, required=False):
+    group = ProductVariantGroup(
+        product_id=product.id,
+        name="Preparación",
+        min_select=min_select,
+        max_select=max_select,
+        required=required,
+        active=True,
+    )
+    db.add(group)
+    db.flush()
+    opt_normal = ProductVariantOption(
+        variant_group_id=group.id, name="Normal", price_delta_cents=0, active=True
+    )
+    opt_spicy = ProductVariantOption(
+        variant_group_id=group.id, name="Extra picante", price_delta_cents=500, active=True
+    )
+    db.add(opt_normal)
+    db.add(opt_spicy)
+    db.flush()
+    return group, [opt_normal, opt_spicy]
+
+
+def test_captured_line_quantity_can_change_without_note() -> None:
+    with SessionLocal() as db:
+        _clear_dev_chela_variants(db)
+        employee, ticket, line = _context(db)
+        original_unit = line.unit_price_cents
+        modification = modify_ticket_line(db, line.id, employee.id, quantity=5)
+        db.commit()
+        assert line.quantity == 5
+        assert line.line_total_cents == original_unit * 5
+        assert "5" in modification.note
+        assert modification.print_job_id is None
+
+
+def test_captured_line_variant_selections_can_be_replaced() -> None:
+    with SessionLocal() as db:
+        _clear_dev_chela_variants(db)
+        employee, ticket, line = _context(db)
+        product = db.get(Product, line.product_id)
+        group, options = _add_variant_group(db, product, min_select=0, max_select=1)
+
+        modification = modify_ticket_line(
+            db,
+            line.id,
+            employee.id,
+            variant_selections=[{
+                "variant_group_id": group.id,
+                "variant_option_id": options[0].id,
+                "quantity": 1,
+            }],
+        )
+        db.commit()
+
+        assert modification.print_job_id is None
+        sels = list(
+            db.scalars(
+                select(TicketLineVariantSelection).where(
+                    TicketLineVariantSelection.ticket_line_id == line.id
+                )
+            )
+        )
+        assert len(sels) == 1
+        assert sels[0].variant_option_id == options[0].id
+
+
+def test_variant_price_delta_recalculates_unit_price_and_ticket_total() -> None:
+    with SessionLocal() as db:
+        _clear_dev_chela_variants(db)
+        employee, ticket, line = _context(db)
+        product = db.get(Product, line.product_id)
+        base_price = product.price_cents
+        group, options = _add_variant_group(db, product)
+        expensive = options[1]  # price_delta_cents=500
+
+        modify_ticket_line(
+            db,
+            line.id,
+            employee.id,
+            variant_selections=[{
+                "variant_group_id": group.id,
+                "variant_option_id": expensive.id,
+                "quantity": 1,
+            }],
+        )
+        db.commit()
+
+        assert line.unit_price_cents == base_price + 500
+        assert line.line_total_cents == (base_price + 500) * line.quantity
+        assert ticket.subtotal_cents == line.line_total_cents
+
+
+def test_sent_line_variant_change_is_rejected() -> None:
+    with SessionLocal() as db:
+        _clear_dev_chela_variants(db)
+        employee, ticket, line = _context(db)
+        product = db.get(Product, line.product_id)
+        group, options = _add_variant_group(db, product)
+        send_round(db, ticket.id, employee.id)
+        db.commit()
+
+        with pytest.raises(BusinessConflictError, match="preparación"):
+            modify_ticket_line(
+                db,
+                line.id,
+                employee.id,
+                variant_selections=[{
+                    "variant_group_id": group.id,
+                    "variant_option_id": options[0].id,
+                    "quantity": 1,
+                }],
+            )
+
+
+def test_line_in_active_split_cannot_change_variants() -> None:
+    with SessionLocal() as db:
+        _clear_dev_chela_variants(db)
+        employee, ticket, line = _context(db)
+        create_lines_split(db, ticket.id, employee.id, "Persona 1", [line.id])
+        db.commit()
+
+        with pytest.raises(BusinessConflictError, match="división"):
+            modify_ticket_line(db, line.id, employee.id, variant_selections=[])

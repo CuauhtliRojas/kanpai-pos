@@ -1,9 +1,17 @@
 import type { TicketLine } from "../../tickets/types/ticketTypes";
 import type { Ticket } from "../../tables/types/tableTypes";
 
+export type VariantSelectionRequest = {
+  variant_group_id: number;
+  variant_option_id: number;
+  quantity: number;
+};
+
 export type ModifyTicketLineRequest = {
   employee_id: number;
-  note: string;
+  note?: string | null;
+  quantity?: number | null;
+  variant_selections?: VariantSelectionRequest[] | null;
 };
 
 export type TicketLineModification = {

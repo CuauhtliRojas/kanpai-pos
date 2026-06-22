@@ -237,6 +237,7 @@ AUDIT_EVENT_VALUES = {
     "REPRINT_REQUESTED": "Reimpresion solicitada",
     "TICKET_SPLIT_CREATED": "Division de cuenta creada",
     "TICKET_SPLIT_PAYMENT": "Pago de division registrado",
+    "TICKET_SPLITS_CANCELLED": "Divisiones de ticket canceladas",
     "SMS_FAILED": "Notificacion SMS fallida",
 }
 

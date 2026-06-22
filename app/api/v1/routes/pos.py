@@ -606,7 +606,14 @@ def modify_ticket_line_endpoint(
     db: Session = Depends(get_db),
 ) -> TicketLineModificationResponse:
     try:
-        modification = modify_ticket_line(db, line_id, payload.employee_id, payload.note)
+        var_sels = (
+            [sel.model_dump() for sel in payload.variant_selections]
+            if payload.variant_selections is not None
+            else None
+        )
+        modification = modify_ticket_line(
+            db, line_id, payload.employee_id, payload.note, payload.quantity, var_sels
+        )
         response = TicketLineModificationResponse.model_validate(modification)
         db.commit()
         return response

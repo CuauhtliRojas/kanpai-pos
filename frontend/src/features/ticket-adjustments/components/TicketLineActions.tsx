@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { ApiError } from "../../../api/http";
 import type { TicketLine } from "../../tickets/types/ticketTypes";
+import { useProductVariantGroupsQuery } from "../../variants/hooks/useProductVariantGroupsQuery";
 import { useCancelTicketLineMutation } from "../hooks/useCancelTicketLineMutation";
 import { useModifyTicketLineMutation } from "../hooks/useModifyTicketLineMutation";
+import type { VariantSelectionRequest } from "../types/ticketAdjustmentTypes";
 import { CancelLineDialog } from "./CancelLineDialog";
 import { ModifyLineDialog } from "./ModifyLineDialog";
 import { TicketLineActionsDialog } from "./TicketLineActionsDialog";
@@ -27,6 +29,22 @@ function cancellationError(error: unknown): string | null {
   return "No se pudo cancelar.";
 }
 
+function buildOriginalQtys(line: TicketLine): Record<number, number> {
+  const m: Record<number, number> = {};
+  for (const sel of line.variant_selections) {
+    m[sel.variant_option_id] = sel.quantity;
+  }
+  return m;
+}
+
+function toCanonical(qtys: Record<number, number>): string {
+  return JSON.stringify(
+    Object.entries(qtys)
+      .filter(([, v]) => v > 0)
+      .sort(([a], [b]) => Number(a) - Number(b)),
+  );
+}
+
 export function TicketLineActions({
   ticketId,
   ticketStatus,
@@ -37,8 +55,12 @@ export function TicketLineActions({
   const [actionsOpen, setActionsOpen] = useState(false);
   const [dialog, setDialog] = useState<"modify" | "cancel" | null>(null);
   const [note, setNote] = useState(line.note ?? "");
+  const [quantity, setQuantity] = useState(line.quantity);
+  const [variantQuantities, setVariantQuantities] = useState<Record<number, number>>(
+    () => buildOriginalQtys(line),
+  );
   const [reason, setReason] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const modifyMutation = useModifyTicketLineMutation();
   const cancelMutation = useCancelTicketLineMutation();
   const ticketAllowsAdjustments = ticketStatus === "Abierto" || ticketStatus === "En cobro";
@@ -47,6 +69,37 @@ export function TicketLineActions({
 
   const canModify = ticketAllowsAdjustments && lineIsActive;
   const canCancelLine = canModify && canCancelThisLine && canCancel;
+
+  const isCaptured = line.status === "Capturado";
+
+  const variantGroups = useProductVariantGroupsQuery(isCaptured ? line.product_id : null);
+
+  const originalVariantQtys = useMemo(() => buildOriginalQtys(line), [line]);
+
+  const optionGroupMap = useMemo(() => {
+    const m: Record<number, number> = {};
+    for (const group of variantGroups.data ?? []) {
+      for (const option of group.options) {
+        m[option.id] = group.id;
+      }
+    }
+    return m;
+  }, [variantGroups.data]);
+
+  const noteIsDirty = note.trim() !== (line.note ?? "").trim() && note.trim().length > 0;
+  const quantityChanged = isCaptured && quantity !== line.quantity;
+  const variantsChanged =
+    isCaptured && toCanonical(variantQuantities) !== toCanonical(originalVariantQtys);
+  const isDirty = noteIsDirty || quantityChanged || variantsChanged;
+
+  function handleCloseModify() {
+    setSaveSuccess(null);
+    setDialog(null);
+  }
+
+  function handleVariantChange(optionId: number, qty: number) {
+    setVariantQuantities((prev) => ({ ...prev, [optionId]: qty }));
+  }
 
   return (
     <div>
@@ -70,6 +123,9 @@ export function TicketLineActions({
           onModify={() => {
             setActionsOpen(false);
             setNote(line.note ?? "");
+            setQuantity(line.quantity);
+            setVariantQuantities(buildOriginalQtys(line));
+            setSaveSuccess(null);
             modifyMutation.reset();
             setDialog("modify");
           }}
@@ -82,25 +138,49 @@ export function TicketLineActions({
         />
       ) : null}
 
-      {notice ? <p className="mt-2 text-xs font-black uppercase text-[var(--kp-success-text)]">{notice}</p> : null}
-
       {dialog === "modify" ? (
         <ModifyLineDialog
           productName={line.product_name_snapshot}
+          lineStatus={line.status}
           note={note}
+          quantity={quantity}
+          groups={variantGroups.data ?? []}
+          variantQuantities={variantQuantities}
+          isDirty={isDirty}
           isSaving={modifyMutation.isPending}
           errorMessage={modificationError(modifyMutation.error)}
+          successMessage={saveSuccess}
           onNoteChange={setNote}
-          onClose={() => setDialog(null)}
+          onQuantityChange={setQuantity}
+          onVariantChange={handleVariantChange}
+          onClose={handleCloseModify}
           onSubmit={() => {
-            void modifyMutation.mutateAsync({
-              ticketId,
-              lineId: line.id,
-              payload: { employee_id: employeeId, note: note.trim() },
-            }).then(() => {
-              setNotice(line.status === "Capturado" ? "Pendiente de enviar" : "Modificación enviada");
-              setDialog(null);
-            }).catch(() => undefined);
+            const payload: {
+              employee_id: number;
+              note?: string | null;
+              quantity?: number | null;
+              variant_selections?: VariantSelectionRequest[] | null;
+            } = { employee_id: employeeId };
+
+            const noteToSend = note.trim();
+            if (noteToSend) payload.note = noteToSend;
+            if (quantityChanged) payload.quantity = quantity;
+            if (variantsChanged) {
+              payload.variant_selections = Object.entries(variantQuantities)
+                .filter(([, qty]) => qty > 0)
+                .map(([optionId, qty]) => ({
+                  variant_group_id: optionGroupMap[Number(optionId)] ?? 0,
+                  variant_option_id: Number(optionId),
+                  quantity: qty,
+                }));
+            }
+
+            void modifyMutation
+              .mutateAsync({ ticketId, lineId: line.id, payload })
+              .then(() => {
+                setSaveSuccess(isCaptured ? "Cambio guardado" : "Modificación enviada");
+              })
+              .catch(() => undefined);
           }}
         />
       ) : null}
@@ -114,14 +194,14 @@ export function TicketLineActions({
           onReasonChange={setReason}
           onClose={() => setDialog(null)}
           onSubmit={() => {
-            void cancelMutation.mutateAsync({
-              ticketId,
-              lineId: line.id,
-              payload: { employee_id: employeeId, reason: reason.trim() },
-            }).then(() => {
-              setNotice("Producto cancelado");
-              setDialog(null);
-            }).catch(() => undefined);
+            void cancelMutation
+              .mutateAsync({
+                ticketId,
+                lineId: line.id,
+                payload: { employee_id: employeeId, reason: reason.trim() },
+              })
+              .then(() => setDialog(null))
+              .catch(() => undefined);
           }}
         />
       ) : null}

@@ -27,6 +27,20 @@ from app.services.ticket_service import get_active_employee, get_ticket
 CANCELLED_LINE_STATUSES = (TicketLineStatus.CANCELLED,)
 
 
+def _normalized_method_text(payment_method: PaymentMethod) -> str:
+    return f"{payment_method.method_key} {payment_method.name}".casefold()
+
+
+def _requires_payment_reference(payment_method: PaymentMethod) -> bool:
+    """Apply the operational policy while legacy catalog data is corrected."""
+    method_text = _normalized_method_text(payment_method)
+    if "transfer" in method_text:
+        return True
+    if "tarjeta" in method_text or "card" in method_text:
+        return False
+    return payment_method.requires_reference
+
+
 def _has_captured_lines(db: Session, ticket_id: int) -> bool:
     return bool(
         db.scalar(
@@ -127,7 +141,7 @@ def create_payment(
         raise InvalidBusinessDataError("El monto debe ser mayor a cero.")
 
     normalized_reference = reference.strip() if reference else None
-    if payment_method.requires_reference and not normalized_reference:
+    if _requires_payment_reference(payment_method) and not normalized_reference:
         raise InvalidBusinessDataError("El método de pago requiere referencia.")
     is_cash = payment_method.method_key == PaymentMethodValue.CASH
     if is_cash and received_cents is not None and received_cents < amount_cents:

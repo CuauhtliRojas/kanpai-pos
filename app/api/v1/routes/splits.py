@@ -3,15 +3,22 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domain.constants import TicketStatus
-from app.schemas.split import ByLinesSplitRequest, EqualSplitRequest, SplitPaymentRequest, SplitPaymentResponse, TicketSplitResponse
-from app.services.exceptions import BusinessError, EntityNotFoundError, InvalidBusinessDataError
-from app.services.split_service import create_equal_splits, create_lines_split, list_splits, pay_split
+from app.schemas.split import ByLinesSplitRequest, CancelSplitsRequest, CancelSplitsResponse, EqualSplitRequest, SplitPaymentRequest, SplitPaymentResponse, TicketSplitResponse
+from app.services.exceptions import BusinessConflictError, BusinessError, EntityNotFoundError, InvalidBusinessDataError
+from app.services.split_service import cancel_ticket_splits, create_equal_splits, create_lines_split, list_splits, pay_split
 
 router = APIRouter(prefix="/pos", tags=["pos-splits"])
 
 
 def _http(error: BusinessError) -> HTTPException:
-    code = 404 if isinstance(error, EntityNotFoundError) else 400 if isinstance(error, InvalidBusinessDataError) else 409
+    if isinstance(error, EntityNotFoundError):
+        code = 404
+    elif isinstance(error, InvalidBusinessDataError):
+        code = 400
+    elif isinstance(error, BusinessConflictError):
+        code = 409
+    else:
+        code = 400
     return HTTPException(status_code=code, detail=str(error))
 
 
@@ -42,6 +49,17 @@ def get_all(ticket_id: int, db: Session = Depends(get_db)):
     try:
         return [TicketSplitResponse.model_validate(item) for item in list_splits(db, ticket_id)]
     except BusinessError as error:
+        raise _http(error) from None
+
+
+@router.post("/tickets/{ticket_id}/splits/cancel", response_model=CancelSplitsResponse)
+def cancel_splits(ticket_id: int, payload: CancelSplitsRequest, db: Session = Depends(get_db)):
+    try:
+        cancelled_count = cancel_ticket_splits(db, ticket_id, payload.employee_id, payload.reason)
+        db.commit()
+        return CancelSplitsResponse(cancelled_count=cancelled_count, ticket_id=ticket_id)
+    except BusinessError as error:
+        db.rollback()
         raise _http(error) from None
 
 

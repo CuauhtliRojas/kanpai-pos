@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../../api/queryKeys";
-import { createEqualSplits, createLinesSplit, payTicketSplit } from "../api/ticketSplitApi";
-import type { ByLinesSplitRequest, EqualSplitRequest, SplitPaymentRequest } from "../types/ticketSplitTypes";
+import { cancelTicketSplits, createEqualSplits, createLinesSplit, payTicketSplit } from "../api/ticketSplitApi";
+import type { ByLinesSplitRequest, CancelSplitsRequest, EqualSplitRequest, SplitPaymentRequest } from "../types/ticketSplitTypes";
 
 function useRefreshSplits() {
   const client = useQueryClient();
@@ -27,4 +27,8 @@ export function useCreateLinesSplitMutation() {
 export function usePayTicketSplitMutation() {
   const refresh = useRefreshSplits();
   return useMutation({ mutationFn: ({ splitId, payload }: { ticketId: number; cashShiftId: number; splitId: number; payload: SplitPaymentRequest }) => payTicketSplit(splitId, payload), onSuccess: (_result, input) => refresh(input.ticketId, input.cashShiftId) });
+}
+export function useCancelTicketSplitsMutation() {
+  const refresh = useRefreshSplits();
+  return useMutation({ mutationFn: ({ ticketId, payload }: { ticketId: number; payload: CancelSplitsRequest }) => cancelTicketSplits(ticketId, payload), onSuccess: (_result, input) => refresh(input.ticketId) });
 }

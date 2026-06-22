@@ -18,9 +18,12 @@ from app.models import (
     Ticket, TicketLine, TicketLineVariantSelection, TicketSplit, TicketSplitLine,
 )
 from app.services.cash_shift_service import open_cash_shift
+from app.services.exceptions import BusinessConflictError
+from app.services.modification_service import modify_ticket_line
 from app.services.order_service import send_round
 from app.services.payment_service import start_payment
 from app.services.product_service import add_product_to_ticket
+from app.services.split_service import create_lines_split
 from app.services.reporting_service import get_sales_by_product
 from app.services.preflight_service import run_local_backend_preflight
 from app.services.sms_service import send_sms
@@ -210,3 +213,72 @@ def test_worker_dry_run_marks_printed_and_failure_marks_failed():
 
 def test_worker_example_config_exists():
     assert (Path(__file__).parents[1] / "scripts" / "print_worker_config.example.json").exists()
+
+
+# --- V3 split cancel tests ---
+
+def test_cancel_open_splits_without_payments():
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee, _, ticket, product = _context(db)
+        add_product_to_ticket(db, ticket.id, product.id, employee.id, 2)
+        send_round(db, ticket.id, employee.id)
+        start_payment(db, ticket.id, employee.id)
+        db.commit()
+        employee_id, ticket_id = employee.id, ticket.id
+    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2})
+    response = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id})
+    assert response.status_code == 200
+    assert response.json()["cancelled_count"] == 2
+    with SessionLocal() as db:
+        splits = list(db.scalars(select(TicketSplit).where(TicketSplit.ticket_id == ticket_id)))
+        assert all(s.status == "Cancelada" for s in splits)
+        assert db.scalar(select(AuditEvent).where(AuditEvent.event_type == "Divisiones de ticket canceladas"))
+
+
+def test_cancel_splits_with_active_payment_is_rejected():
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee, _, ticket, product = _context(db)
+        add_product_to_ticket(db, ticket.id, product.id, employee.id, 2)
+        send_round(db, ticket.id, employee.id)
+        start_payment(db, ticket.id, employee.id)
+        cash = db.scalar(select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo"))
+        db.commit()
+        employee_id, ticket_id, cash_id = employee.id, ticket.id, cash.id
+    created = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2})
+    splits = created.json()
+    client.post(
+        f"/api/v1/pos/ticket-splits/{splits[0]['id']}/payments",
+        json={"employee_id": employee_id, "payment_method_id": cash_id, "amount_cents": splits[0]["amount_cents"]},
+    )
+    response = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id})
+    assert response.status_code == 409
+    assert "pagos" in response.json()["detail"].lower()
+
+
+def test_can_create_new_split_after_cancelling_previous():
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee, _, ticket, product = _context(db)
+        add_product_to_ticket(db, ticket.id, product.id, employee.id, 2)
+        send_round(db, ticket.id, employee.id)
+        start_payment(db, ticket.id, employee.id)
+        db.commit()
+        employee_id, ticket_id = employee.id, ticket.id
+    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2})
+    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id})
+    new_split = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 3})
+    assert new_split.status_code == 201
+    assert len(new_split.json()) == 3
+
+
+def test_quantity_change_blocked_when_line_is_in_active_split():
+    with SessionLocal() as db:
+        employee, _, ticket, product = _context(db)
+        line = add_product_to_ticket(db, ticket.id, product.id, employee.id, 1)[0]
+        create_lines_split(db, ticket.id, employee.id, "Persona 1", [line.id])
+        db.commit()
+
+        with pytest.raises(BusinessConflictError, match="división"):
+            modify_ticket_line(db, line.id, employee.id, quantity=2)

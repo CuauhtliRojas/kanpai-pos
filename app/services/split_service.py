@@ -13,6 +13,70 @@ from app.services.payment_service import create_payment
 from app.services.permission_service import get_active_employee
 
 
+def cancel_ticket_splits(
+    db: Session,
+    ticket_id: int,
+    employee_id: int,
+    reason: str | None = None,
+) -> int:
+    """Cancels all active splits for a ticket when no payments are attached.
+
+    Returns the number of splits cancelled.
+    """
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise EntityNotFoundError("El ticket no existe.")
+    get_active_employee(db, employee_id)
+
+    active_splits = list(
+        db.scalars(
+            select(TicketSplit).where(
+                TicketSplit.ticket_id == ticket_id,
+                TicketSplit.status != TicketSplitStatus.CANCELLED,
+            )
+        )
+    )
+    if not active_splits:
+        raise BusinessConflictError("No hay divisiones activas para cancelar.")
+
+    split_ids = [s.id for s in active_splits]
+    active_payment_count = int(
+        db.scalar(
+            select(func.count(Payment.id)).where(
+                Payment.ticket_split_id.in_(split_ids),
+                Payment.status == ActiveStatus.ACTIVE,
+            )
+        )
+        or 0
+    )
+    if active_payment_count > 0:
+        raise BusinessConflictError(
+            "Esta división ya tiene pagos. Termina el cobro o pide ayuda."
+        )
+
+    now = datetime.utcnow()
+    for split in active_splits:
+        split.status = TicketSplitStatus.CANCELLED
+        split.closed_at = now
+
+    db.add(
+        AuditEvent(
+            event_type=audit_event("TICKET_SPLITS_CANCELLED"),
+            entity_type="Ticket",
+            entity_id=ticket_id,
+            actor_employee_id=employee_id,
+            cash_shift_id=ticket.cash_shift_id,
+            ticket_id=ticket_id,
+            reason=reason,
+            after_snapshot=json.dumps(
+                {"cancelled_split_ids": split_ids, "reason": reason}
+            ),
+        )
+    )
+    db.flush()
+    return len(active_splits)
+
+
 def _splittable_ticket(db: Session, ticket_id: int, employee_id: int) -> Ticket:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:

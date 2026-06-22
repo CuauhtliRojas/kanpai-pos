@@ -217,14 +217,29 @@ def test_payment_rejects_open_ticket() -> None:
             create_payment(db, ticket.id, employee.id, cash.id, ticket.total_cents)
 
 
-def test_payment_requires_reference_when_configured() -> None:
+def test_card_payment_does_not_require_reference_despite_legacy_data() -> None:
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
         start_payment(db, ticket.id, employee.id)
         card = _method(db, "Tarjeta")
 
+        payment = create_payment(
+            db, ticket.id, employee.id, card.id, ticket.total_cents
+        )
+
+        assert payment.reference is None
+
+
+def test_transfer_payment_requires_reference() -> None:
+    with SessionLocal() as db:
+        employee, ticket = _payment_context(db)
+        start_payment(db, ticket.id, employee.id)
+        transfer = _method(db, "Transferencia")
+
         with pytest.raises(InvalidBusinessDataError):
-            create_payment(db, ticket.id, employee.id, card.id, ticket.total_cents)
+            create_payment(
+                db, ticket.id, employee.id, transfer.id, ticket.total_cents
+            )
 
 
 def test_cash_payment_calculates_change() -> None:
@@ -314,14 +329,14 @@ def test_payment_endpoints_map_domain_errors() -> None:
     client = TestClient(app)
     with SessionLocal() as db:
         employee, ticket = _payment_context(db)
-        card = _method(db, "Tarjeta")
-        employee_id, ticket_id, card_id = employee.id, ticket.id, card.id
+        transfer = _method(db, "Transferencia")
+        employee_id, ticket_id, transfer_id = employee.id, ticket.id, transfer.id
 
     open_ticket_payment = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/payments",
         json={
             "employee_id": employee_id,
-            "payment_method_id": card_id,
+            "payment_method_id": transfer_id,
             "amount_cents": 100,
         },
     )
@@ -336,7 +351,7 @@ def test_payment_endpoints_map_domain_errors() -> None:
         f"/api/v1/pos/tickets/{ticket_id}/payments",
         json={
             "employee_id": employee_id,
-            "payment_method_id": card_id,
+            "payment_method_id": transfer_id,
             "amount_cents": 100,
         },
     )
