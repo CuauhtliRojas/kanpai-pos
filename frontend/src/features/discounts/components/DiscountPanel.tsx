@@ -4,6 +4,7 @@ import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { formatCentsToPesos } from "../../../shared/lib/money";
 import type { Ticket } from "../../tables/types/tableTypes";
 import { useApplyDiscountMutation } from "../hooks/useApplyDiscountMutation";
+import { useDiscountPresetsQuery } from "../hooks/useDiscountPresetsQuery";
 import { useTicketDiscountsQuery } from "../hooks/useTicketDiscountsQuery";
 import type { DiscountCreateRequest } from "../types/discountTypes";
 import { DiscountDialog } from "./DiscountDialog";
@@ -36,6 +37,7 @@ export function DiscountPanel({ ticket, employeeId, canAuthorize, actionOnly = f
   const [notice, setNotice] = useState<string | null>(null);
   const discountsQuery = useTicketDiscountsQuery(ticket.id);
   const applyMutation = useApplyDiscountMutation();
+  const presetsQuery = useDiscountPresetsQuery(dialogOpen);
   const canApply = ticket.status === "Abierto" && employeeId !== null && canAuthorize;
 
   function handleApply(payload: DiscountCreateRequest) {
@@ -51,6 +53,7 @@ export function DiscountPanel({ ticket, employeeId, canAuthorize, actionOnly = f
       employeeId={employeeId}
       subtotalCents={ticket.subtotal_cents}
       currentDiscountCents={ticket.discount_cents}
+      presets={presetsQuery.data ?? []}
       isSaving={applyMutation.isPending}
       errorMessage={discountError(applyMutation.error)}
       onClose={() => setDialogOpen(false)}

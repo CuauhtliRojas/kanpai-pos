@@ -368,6 +368,23 @@
         "estacion": "station_id",
         "activo": "active"
       }
+    },
+    "DescuentosPredeterminados": {
+      "sqlite_table": "descuentos_predeterminados",
+      "direction": "pull_to_sqlite",
+      "primary_key": "clave_descuento",
+      "fields": {
+        "clave_descuento": "preset_key",
+        "nombre": "name",
+        "tipo_descuento": "discount_type",
+        "monto_centavos": "amount_cents",
+        "porcentaje_bps": "percent_bps",
+        "motivo_sugerido": "reason_template",
+        "requiere_autorizacion": "requires_authorization",
+        "visible_pos": "visible_pos",
+        "orden": "sort_order",
+        "activo": "active"
+      }
     }
   }
 }

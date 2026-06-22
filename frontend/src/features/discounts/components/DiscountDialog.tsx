@@ -2,12 +2,13 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { formatCentsToPesos, parsePesosToCents } from "../../../shared/lib/money";
-import type { DiscountCreateRequest, DiscountType } from "../types/discountTypes";
+import type { DiscountCreateRequest, DiscountPreset, DiscountType } from "../types/discountTypes";
 
 type DiscountDialogProps = {
   employeeId: number;
   subtotalCents: number;
   currentDiscountCents: number;
+  presets: DiscountPreset[];
   isSaving: boolean;
   errorMessage: string | null;
   onClose: () => void;
@@ -18,6 +19,7 @@ export function DiscountDialog({
   employeeId,
   subtotalCents,
   currentDiscountCents,
+  presets,
   isSaving,
   errorMessage,
   onClose,
@@ -38,6 +40,28 @@ export function DiscountDialog({
       ? Math.round(subtotalCents * percent / 100)
       : null;
   const exceedsSubtotal = previewCents !== null && previewCents > availableCents;
+
+  function selectPreset(preset: DiscountPreset) {
+    setDiscountType(preset.discount_type);
+    if (preset.discount_type === "Monto") {
+      setValue(String((preset.amount_cents ?? 0) / 100));
+    } else if (preset.discount_type === "Porcentaje") {
+      setValue(String((preset.percent_bps ?? 0) / 100));
+    } else {
+      setValue("");
+    }
+    setReason(preset.reason_template ?? "");
+  }
+
+  function presetDescription(preset: DiscountPreset): string {
+    if (preset.discount_type === "Monto") {
+      return `-${formatCentsToPesos(preset.amount_cents ?? 0)}`;
+    }
+    if (preset.discount_type === "Porcentaje") {
+      return `${(preset.percent_bps ?? 0) / 100}%`;
+    }
+    return "Cortesía";
+  }
 
   function buildPayload(): DiscountCreateRequest | null {
     const cleanReason = reason.trim();
@@ -76,6 +100,27 @@ export function DiscountDialog({
         </header>
 
         <div className="mt-4 grid gap-3">
+          {presets.length > 0 ? (
+            <section>
+              <p className="mb-2 font-black uppercase">Descuentos rápidos</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {presets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => selectPreset(preset)}
+                    className="min-h-16 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-2 text-left active:translate-x-[2px] active:translate-y-[2px]"
+                  >
+                    <span className="block font-black">{preset.name}</span>
+                    <span className="block text-sm font-bold text-[var(--kp-muted)]">
+                      {presetDescription(preset)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
           <div className="grid grid-cols-3 gap-2" role="group" aria-label="Tipo de descuento">
             {(["Monto", "Porcentaje", "Cortesia"] as const).map((type) => (
               <button
@@ -106,7 +151,7 @@ export function DiscountDialog({
             </label>
           ) : null}
           <label className="grid gap-2 font-black">
-            {isCourtesy ? "Motivo de cortesía" : "Motivo para auditoría"}
+            Motivo
             <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={2} disabled={isSaving} className="resize-none border-4 border-[var(--kp-ink)] bg-[var(--kp-bg)] p-3 font-bold" />
           </label>
         </div>

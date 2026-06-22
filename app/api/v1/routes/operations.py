@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.database import get_db
 from app.api.security import require_admin_read_permission
-from app.domain.constants import TicketStatus
+from app.domain.constants import TableStatus, TicketStatus
 from app.models import DiningTable, Employee, Ticket
 from app.schemas.auth import (
     EmployeeDetailResponse,
@@ -55,13 +55,20 @@ def list_tables(db: Session = Depends(get_db)) -> list[dict]:
     response = []
     for table in tables:
         active_ticket = active_ticket_by_table.get(table.id)
+        effective_status = (
+            TableStatus.IN_PAYMENT
+            if active_ticket and active_ticket.status == TicketStatus.IN_PAYMENT
+            else TableStatus.OCCUPIED
+            if active_ticket
+            else TableStatus.FREE
+        )
         response.append(
             {
                 "id": table.id,
                 "table_code": table.table_code,
                 "display_name": table.display_name,
                 "buzzer_number": table.buzzer_number,
-                "status": table.status_cache,
+                "status": effective_status,
                 "active": table.active,
                 "active_ticket_id": active_ticket.id if active_ticket else None,
                 "active_ticket_folio": active_ticket.folio if active_ticket else None,

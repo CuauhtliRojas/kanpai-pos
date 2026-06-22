@@ -1,5 +1,19 @@
 export type DiscountType = "Monto" | "Porcentaje" | "Cortesia";
 
+export type DiscountPreset = {
+  id: number;
+  preset_key: string;
+  name: string;
+  discount_type: DiscountType;
+  amount_cents: number | null;
+  percent_bps: number | null;
+  reason_template: string | null;
+  requires_authorization: boolean;
+  active: boolean;
+  visible_pos: boolean;
+  sort_order: number;
+};
+
 export type DiscountCreateRequest = {
   employee_id: number;
   discount_type: DiscountType;

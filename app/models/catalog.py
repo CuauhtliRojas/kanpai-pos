@@ -4,6 +4,7 @@ from typing import Optional
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
@@ -12,7 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.config import get_settings
 from app.core.database import Base
@@ -57,9 +58,7 @@ class MenuCategory(RemoteCatalogMixin, TimestampMixin, Base):
 
     id: Mapped[int] = db_column("id", Integer, primary_key=True)
     name: Mapped[str] = db_column("name", String(120), nullable=False)
-    sort_order: Mapped[int] = db_column(
-        "sort_order", Integer, default=0, nullable=False
-    )
+    sort_order: Mapped[int] = db_column("sort_order", Integer, default=0, nullable=False)
     active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
 
     products: Mapped[list["Product"]] = relationship(back_populates="category")
@@ -74,9 +73,7 @@ class ProductionStation(RemoteCatalogMixin, TimestampMixin, Base):
     )
     name: Mapped[str] = db_column("name", String(120), nullable=False)
     printer_key: Mapped[Optional[str]] = db_column("printer_key", String(64))
-    sort_order: Mapped[int] = db_column(
-        "sort_order", Integer, default=0, nullable=False
-    )
+    sort_order: Mapped[int] = db_column("sort_order", Integer, default=0, nullable=False)
     active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
 
     product_assignments: Mapped[list["ProductStationAssignment"]] = relationship(
@@ -181,6 +178,43 @@ class ProductVariantOption(TimestampMixin, Base):
     product: Mapped[Optional["Product"]] = relationship(foreign_keys=[product_id])
 
 
+class DiscountPreset(RemoteCatalogMixin, TimestampMixin, Base):
+    __tablename__ = "descuentos_predeterminados"
+    __table_args__ = (
+        CheckConstraint(
+            "(tipo_descuento = 'Monto' AND monto_centavos > 0 "
+            "AND porcentaje_bps IS NULL) OR "
+            "(tipo_descuento = 'Porcentaje' AND monto_centavos IS NULL "
+            "AND porcentaje_bps > 0 AND porcentaje_bps <= 10000) OR "
+            "(tipo_descuento = 'Cortesia' AND monto_centavos IS NULL "
+            "AND porcentaje_bps = 10000)",
+            name="ck_discount_preset_value",
+        ),
+    )
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    preset_key: Mapped[str] = db_column(
+        "preset_key", String(80), unique=True, nullable=False
+    )
+    name: Mapped[str] = db_column("name", String(120), nullable=False)
+    discount_type: Mapped[str] = db_column(
+        "discount_type", String(32), nullable=False
+    )
+    amount_cents: Mapped[Optional[int]] = mapped_column("monto_centavos", Integer, key="amount_cents")
+    percent_bps: Mapped[Optional[int]] = db_column("percent_bps", Integer)
+    reason_template: Mapped[Optional[str]] = db_column(
+        "reason_template", String(240)
+    )
+    requires_authorization: Mapped[bool] = db_column(
+        "requires_authorization", Boolean, default=True, nullable=False
+    )
+    visible_pos: Mapped[bool] = db_column(
+        "visible_pos", Boolean, default=True, nullable=False
+    )
+    sort_order: Mapped[int] = mapped_column("orden", Integer, default=0, nullable=False, key="sort_order")
+    active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+
+
 class ProductStationAssignment(RemoteCatalogMixin, TimestampMixin, Base):
     __tablename__ = "asignaciones_estacion_producto"
     __table_args__ = (
@@ -260,9 +294,7 @@ class ProductPackageItem(RemoteCatalogMixin, TimestampMixin, Base):
         "component_product_id", ForeignKey("productos.id"), nullable=False
     )
     quantity: Mapped[int] = db_column("quantity", Integer, default=1, nullable=False)
-    sort_order: Mapped[int] = db_column(
-        "sort_order", Integer, default=0, nullable=False
-    )
+    sort_order: Mapped[int] = db_column("sort_order", Integer, default=0, nullable=False)
     station_id_override: Mapped[Optional[int]] = db_column(
         "station_id_override", ForeignKey("estaciones_produccion.id")
     )

@@ -2686,6 +2686,34 @@
       ]
     },
     {
+      "key": "descuentos_predeterminados",
+      "name": "DescuentosPredeterminados",
+      "source_table": "descuentos_predeterminados",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "Presets POS que prellenan el contrato actual de descuentos.",
+      "primary_field": "clave_descuento",
+      "fields": [
+        {"name": "clave_descuento", "type": "singleLineText"},
+        {"name": "nombre", "type": "singleLineText"},
+        {"name": "tipo_descuento", "type": "singleSelect", "options": ["Monto", "Porcentaje", "Cortesia"]},
+        {"name": "monto_centavos", "type": "number", "precision": 0},
+        {"name": "porcentaje_bps", "type": "number", "precision": 0},
+        {"name": "motivo_sugerido", "type": "multilineText"},
+        {"name": "requiere_autorizacion", "type": "checkbox"},
+        {"name": "visible_pos", "type": "checkbox"},
+        {"name": "orden", "type": "number", "precision": 0},
+        {"name": "activo", "type": "checkbox"},
+        {"name": "id_sqlite", "type": "number", "precision": 0, "readonly": true},
+        {"name": "estado_sync", "type": "singleSelect", "options": ["Activo", "Pendiente", "Sincronizado", "Conflicto", "Error"]},
+        {"name": "revision_remota", "type": "singleLineText", "readonly": true},
+        {"name": "actualizado_sqlite_en", "type": "dateTime", "readonly": true},
+        {"name": "actualizado_airtable_en", "type": "dateTime", "readonly": true},
+        {"name": "ultimo_pull_en", "type": "dateTime", "readonly": true},
+        {"name": "ultimo_push_en", "type": "dateTime", "readonly": true},
+        {"name": "error_sync", "type": "multilineText", "readonly": true}
+      ]
+    },
+    {
       "key": "eventos_auditoria",
       "name": "EventosAuditoria",
       "source_table": "eventos_auditoria",

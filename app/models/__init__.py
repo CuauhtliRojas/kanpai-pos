@@ -1,4 +1,5 @@
 from app.models.catalog import (
+    DiscountPreset,
     Employee,
     EmployeeRole,
     InventoryItem,
@@ -64,6 +65,7 @@ __all__ = [
     "CashShift",
     "CommandBatch",
     "DiningTable",
+    "DiscountPreset",
     "Employee",
     "EmployeeRole",
     "EmployeeSession",

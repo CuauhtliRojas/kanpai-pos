@@ -1,6 +1,7 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.constants import TableStatus, audit_event
+from app.domain.constants import TableStatus, TicketStatus, audit_event
 from app.models import DiningTable, TableStatusEvent, Ticket
 from app.services.exceptions import BusinessConflictError, EntityNotFoundError
 
@@ -12,8 +13,17 @@ def get_free_active_table(db: Session, table_id: int) -> DiningTable:
         raise EntityNotFoundError("La mesa no existe.")
     if not table.active:
         raise BusinessConflictError("La mesa está inactiva.")
+    active_ticket = db.scalar(
+        select(Ticket.id).where(
+            Ticket.table_id == table_id,
+            Ticket.status.in_((TicketStatus.OPEN, TicketStatus.IN_PAYMENT)),
+        )
+    )
+    if active_ticket is not None:
+        raise BusinessConflictError("La mesa ya tiene un ticket activo.")
     if table.status_cache != TableStatus.FREE:
-        raise BusinessConflictError("La mesa no está libre.")
+        table.status_cache = TableStatus.FREE
+        db.flush()
     return table
 
 

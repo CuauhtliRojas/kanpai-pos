@@ -19,6 +19,7 @@ from airtable.scripts.pull_airtable_to_sqlite import (
 )
 from app.core.database import Base
 from app.models import (
+    DiscountPreset,
     Employee,
     EmployeeRole,
     InventoryItem,
@@ -259,6 +260,45 @@ def test_variant_groups_and_options_use_product_scoped_natural_keys():
         }
         assert all(group.name == "Preparación" for group in groups)
         assert session.scalar(select(func.count()).select_from(ProductVariantOption)) == 4
+
+
+def test_discount_preset_pull_creates_and_then_is_idempotent():
+    engine = _engine()
+    remote = _empty_remote()
+    remote["DescuentosPredeterminados"] = [
+        {
+            "id": "rec-discount-10",
+            "fields": {
+                "clave_descuento": "DESC_10",
+                "nombre": "10%",
+                "tipo_descuento": "Porcentaje",
+                "monto_centavos": None,
+                "porcentaje_bps": 1000,
+                "motivo_sugerido": "Descuento autorizado 10%",
+                "requiere_autorizacion": True,
+                "visible_pos": True,
+                "orden": 2,
+                "activo": True,
+            },
+        }
+    ]
+    field_map, prepared, issues = _prepare(remote)
+    assert issues == []
+
+    with Session(engine) as session:
+        plan, planning_issues = plan_records(session, prepared, field_map)
+        assert planning_issues == []
+        assert plan["DescuentosPredeterminados"][0].action == "create"
+        apply_plan(session, plan, field_map)
+        session.commit()
+
+    with Session(engine) as session:
+        preset = session.scalar(select(DiscountPreset))
+        assert preset.preset_key == "DESC_10"
+        assert preset.percent_bps == 1000
+        plan, planning_issues = plan_records(session, prepared, field_map)
+        assert planning_issues == []
+        assert plan["DescuentosPredeterminados"][0].action == "unchanged"
 
 
 def test_missing_link_is_controlled_error_and_skipped():

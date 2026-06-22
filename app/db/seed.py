@@ -21,6 +21,7 @@ from app.domain.constants import (
 from app.models import (
     BusinessSetting,
     DiningTable,
+    DiscountPreset,
     Employee,
     EmployeeRole,
     FolioSequence,
@@ -211,7 +212,6 @@ def seed_service_zones_and_tables(session: Session) -> None:
         table.display_name = f"Mesa {number}"
         table.zone_id = salon.id
         table.sort_order = number
-        table.status_cache = TableStatus.FREE
         table.active = True
 
     operational_codes = {f"M{number:02d}" for number in range(1, 18)}
@@ -579,6 +579,40 @@ def seed_development_recipes(session: Session) -> None:
         )
 
 
+def seed_discount_presets(session: Session, records: list[dict]) -> None:
+    """Upsert controlled discount presets without touching operations."""
+    for record in records:
+        preset, _ = get_or_create(
+            session,
+            DiscountPreset,
+            {"preset_key": record["clave_descuento"]},
+            {
+                "name": record["nombre"],
+                "discount_type": record["tipo_descuento"],
+                "amount_cents": record["monto_centavos"],
+                "percent_bps": record["porcentaje_bps"],
+                "reason_template": record["motivo_sugerido"] or None,
+                "requires_authorization": bool(
+                    record["requiere_autorizacion"]
+                ),
+                "visible_pos": bool(record["visible_pos"]),
+                "sort_order": int(record["orden"]),
+                "active": bool(record["activo"]),
+            },
+        )
+        preset.name = record["nombre"]
+        preset.discount_type = record["tipo_descuento"]
+        preset.amount_cents = record["monto_centavos"]
+        preset.percent_bps = record["porcentaje_bps"]
+        preset.reason_template = record["motivo_sugerido"] or None
+        preset.requires_authorization = bool(record["requiere_autorizacion"])
+        preset.visible_pos = bool(record["visible_pos"])
+        preset.sort_order = int(record["orden"])
+        preset.active = bool(record["activo"])
+        preset.sync_status = CatalogStatus.ACTIVE
+    session.flush()
+
+
 def seed_real_catalog(session: Session) -> None:
     """Upsert the normalized Excel catalog without inventing missing recipes."""
     result = build_seed(REAL_CATALOG_EXCEL, REAL_CATALOG_FIXED)
@@ -651,6 +685,8 @@ def seed_real_catalog(session: Session) -> None:
         product.sync_status = CatalogStatus.ACTIVE
         products[product.sku] = product
     session.flush()
+
+    seed_discount_presets(session, result.tables["DescuentosPredeterminados"])
 
     stations = {
         station.station_key: station

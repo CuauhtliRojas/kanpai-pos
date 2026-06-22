@@ -22,6 +22,7 @@
       ["commands", "station-orders", ticketId] as const,
   },
   discounts: {
+    presets: ["discounts", "presets"] as const,
     ticket: (ticketId: number) => ["discounts", "ticket", ticketId] as const,
   },
   payments: {

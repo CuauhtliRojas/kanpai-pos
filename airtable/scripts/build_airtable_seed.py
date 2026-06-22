@@ -41,6 +41,7 @@ TABLE_ORDER = (
     "Mesas",
     "InsumosInventario",
     "Productos",
+    "DescuentosPredeterminados",
     "GruposVarianteProducto",
     "OpcionesVarianteProducto",
     "AsignacionesProductoEstacion",
@@ -59,6 +60,7 @@ NATURAL_KEYS = {
     "Mesas": "codigo_mesa",
     "InsumosInventario": "codigo_insumo",
     "Productos": "sku",
+    "DescuentosPredeterminados": "clave_descuento",
     "GruposVarianteProducto": ("producto", "nombre"),
     "OpcionesVarianteProducto": ("grupo_variante", "nombre"),
     "AsignacionesProductoEstacion": "nombre_registro",
@@ -420,6 +422,7 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
     tables["EstacionesProduccion"] = fixed["EstacionesProduccion"]
     tables["Impresoras"] = fixed["Impresoras"]
     tables["CategoriasMenu"] = fixed["CategoriasMenu"]
+    tables["DescuentosPredeterminados"] = fixed["DescuentosPredeterminados"]
     tables["Mesas"] = [
         {
             **{

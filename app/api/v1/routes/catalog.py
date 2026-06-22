@@ -4,12 +4,28 @@ from sqlalchemy.orm import Session, selectinload
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.database import get_db
-from app.models import MenuCategory, PaymentMethod, Product, ProductVariantGroup, ProductionStation
+from app.models import DiscountPreset, MenuCategory, PaymentMethod, Product, ProductVariantGroup, ProductionStation
 from app.schemas import ProductResponse
+from app.schemas.discount import DiscountPresetResponse
 from app.schemas.variant import VariantGroupResponse
 from app.services.product_service import list_pos_products
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+
+@router.get("/discount-presets", response_model=list[DiscountPresetResponse])
+def list_discount_presets(
+    db: Session = Depends(get_db),
+) -> list[DiscountPresetResponse]:
+    presets = db.scalars(
+        select(DiscountPreset)
+        .where(
+            DiscountPreset.active.is_(True),
+            DiscountPreset.visible_pos.is_(True),
+        )
+        .order_by(DiscountPreset.sort_order, DiscountPreset.name)
+    ).all()
+    return [DiscountPresetResponse.model_validate(preset) for preset in presets]
 
 
 @router.get("/variant-groups", response_model=list[VariantGroupResponse])

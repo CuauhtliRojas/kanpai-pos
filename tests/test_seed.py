@@ -5,6 +5,7 @@ from app.db.seed import run_seed
 from app.models import (
     BusinessSetting,
     DiningTable,
+    DiscountPreset,
     Employee,
     InventoryItem,
     Permission,
@@ -127,6 +128,11 @@ def test_real_operational_seed_matches_catalog_contract() -> None:
         assert session.scalar(select(func.count(Product.id)).where(Product.active.is_(True), Product.visible_pos.is_(True))) == 31
         assert session.scalar(select(func.count(DiningTable.id)).where(DiningTable.active.is_(True))) == 17
         assert set(session.scalars(select(ProductionStation.station_key).where(ProductionStation.active.is_(True)))) == {"COCINA", "BARRA"}
+        assert set(session.scalars(select(DiscountPreset.preset_key))) == {
+            "CORTESIA_TOTAL",
+            "DESC_10",
+            "DESC_50_MXN",
+        }
         assert list(session.scalars(select(Employee.employee_code).where(Employee.active.is_(True)))) == ["ADMIN"]
         assert set(session.scalars(select(Role.role_key).where(Role.active.is_(True)))) >= {"ADMIN", "GERENTE", "CAJERO", "ALMACEN", "SOPORTE"}
 

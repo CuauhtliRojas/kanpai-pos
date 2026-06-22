@@ -65,5 +65,10 @@
   ],
   "Empleados": [
     {"codigo_empleado": "ADMIN", "nombre_completo": "Administrador Kanpai", "alias_pos": "Admin", "rol": "Administrador", "rol_clave": "ADMIN", "activo": true, "pin_activo": true}
+  ],
+  "DescuentosPredeterminados": [
+    {"clave_descuento": "CORTESIA_TOTAL", "nombre": "Cortesía", "tipo_descuento": "Cortesia", "monto_centavos": null, "porcentaje_bps": 10000, "motivo_sugerido": "Cortesía autorizada", "requiere_autorizacion": true, "visible_pos": true, "orden": 1, "activo": true},
+    {"clave_descuento": "DESC_10", "nombre": "10%", "tipo_descuento": "Porcentaje", "monto_centavos": null, "porcentaje_bps": 1000, "motivo_sugerido": "Descuento autorizado 10%", "requiere_autorizacion": true, "visible_pos": true, "orden": 2, "activo": true},
+    {"clave_descuento": "DESC_50_MXN", "nombre": "$50", "tipo_descuento": "Monto", "monto_centavos": 5000, "porcentaje_bps": null, "motivo_sugerido": "Descuento autorizado $50", "requiere_autorizacion": true, "visible_pos": true, "orden": 3, "activo": true}
   ]
 }

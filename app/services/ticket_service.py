@@ -107,15 +107,6 @@ def open_ticket_for_table(
     if guest_count <= 0:
         raise InvalidBusinessDataError("El número de comensales debe ser mayor a cero.")
 
-    active_ticket = db.execute(
-        select(Ticket.id).where(
-            Ticket.table_id == table_id,
-            Ticket.status.in_((TicketStatus.OPEN, TicketStatus.IN_PAYMENT)),
-        )
-    ).scalar_one_or_none()
-    if active_ticket is not None:
-        raise BusinessConflictError("La mesa ya tiene un ticket activo.")
-
     previous_status = table.status_cache
     ticket = Ticket(
         folio=generate_folio(db, "TICKET"),

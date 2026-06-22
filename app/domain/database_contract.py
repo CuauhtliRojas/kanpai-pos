@@ -18,6 +18,7 @@ TABLE_NAMES = {
     "cash_shifts": "cortes_caja",
     "command_batches": "lotes_comanda",
     "dining_tables": "mesas",
+    "discount_presets": "descuentos_predeterminados",
     "employee_roles": "roles_empleado",
     "employees": "empleados",
     "folio_sequences": "secuencias_folio",
@@ -68,6 +69,10 @@ TABLE_NAMES = {
 
 _COLUMN_OVERRIDES = {
     "id": "id",
+    "preset_key": "clave_descuento",
+    "discount_type": "tipo_descuento",
+    "reason_template": "motivo_sugerido",
+    "requires_authorization": "requiere_autorizacion",
     "sku": "sku",
     "pos_alias": "alias_pos",
     "timezone": "zona_horaria",

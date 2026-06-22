@@ -186,19 +186,12 @@ export function PosTablesPage() {
     setTableSelectionError(null);
     openTicketMutation.reset();
 
-    if (table.status === "Libre") {
-      setPendingOpenTable(table);
+    if (table.active_ticket_id != null) {
+      setPendingTicketTable(table);
       return;
     }
 
-    if (table.active_ticket_id == null) {
-      setTableSelectionError(
-        "Esta mesa tiene cuenta abierta, pero no se pudo cargar. Intenta actualizar mesas.",
-      );
-      return;
-    }
-
-    setPendingTicketTable(table);
+    setPendingOpenTable(table);
   }
 
   useEffect(() => {

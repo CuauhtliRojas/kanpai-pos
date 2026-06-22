@@ -16,6 +16,7 @@ from app.models import (
     AuditEvent,
     CashExpense,
     CashShift,
+    DiningTable,
     Employee,
     Payment,
     PaymentMethod,
@@ -212,17 +213,25 @@ def close_cash_shift(
     if declared_cash_cents < 0:
         raise InvalidBusinessDataError("El efectivo declarado no puede ser negativo.")
 
-    blocking_ticket_count = int(
-        db.scalar(
-            select(func.count(Ticket.id)).where(
-                Ticket.cash_shift_id == cash_shift_id,
-                Ticket.status.in_((CashShiftStatus.OPEN, TicketStatus.IN_PAYMENT)),
-            )
+    blocking_tickets = db.execute(
+        select(Ticket, DiningTable)
+        .join(DiningTable, DiningTable.id == Ticket.table_id)
+        .where(
+            Ticket.cash_shift_id == cash_shift_id,
+            Ticket.status.in_((TicketStatus.OPEN, TicketStatus.IN_PAYMENT)),
         )
-        or 0
-    )
-    if blocking_ticket_count:
-        raise BusinessConflictError("El corte tiene tickets abiertos o en cobro.")
+        .order_by(DiningTable.sort_order, Ticket.id)
+    ).all()
+    if blocking_tickets:
+        details = "; ".join(
+            f"{table.display_name} ({ticket.folio}, {ticket.status})"
+            for ticket, table in blocking_tickets
+        )
+        raise BusinessConflictError(
+            "No puedes cerrar caja porque hay cuentas pendientes: "
+            f"{details}. Termina o cobra esas cuentas antes de cerrar. "
+            "Si una cuenta no corresponde, pide ayuda al encargado."
+        )
 
     summary = get_cash_shift_summary(db, cash_shift_id)
     if not allow_pending_print_jobs and summary["pending_print_jobs_count"]:

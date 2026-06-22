@@ -38,6 +38,7 @@ from airtable_records_client import (  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.models import (  # noqa: E402
     BusinessSetting,
+    DiscountPreset,
     DiningTable,
     Employee,
     EmployeeRole,
@@ -139,6 +140,7 @@ TABLE_SPECS = (
         ("product_id", "name"),
         {"producto": LinkSpec("Productos", required=True)},
     ),
+    TableSpec("DescuentosPredeterminados", DiscountPreset, ("preset_key",)),
     TableSpec(
         "OpcionesVarianteProducto",
         ProductVariantOption,

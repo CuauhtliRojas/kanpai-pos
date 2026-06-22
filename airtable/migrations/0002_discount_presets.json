@@ -1,0 +1,40 @@
+{
+  "revision": "0002_discount_presets",
+  "down_revision": "0001_initial_schema",
+  "description": "Agrega catálogo de descuentos predeterminados.",
+  "schema_version": "1.1.0",
+  "base_name": "Kanpai POS",
+  "destructive": false,
+  "sqlite_dependency": {
+    "required": true,
+    "alembic_revision": "d10preset001"
+  },
+  "operations": [
+    {
+      "op": "ensure_table",
+      "table": "DescuentosPredeterminados",
+      "ownership": "AIRTABLE_MASTER",
+      "source_table": "descuentos_predeterminados",
+      "fields": [
+        {"name": "clave_descuento", "type": "singleLineText"},
+        {"name": "nombre", "type": "singleLineText"},
+        {"name": "tipo_descuento", "type": "singleSelect", "options": {"choices": [{"name": "Monto"}, {"name": "Porcentaje"}, {"name": "Cortesia"}]}},
+        {"name": "monto_centavos", "type": "number", "options": {"precision": 0}},
+        {"name": "porcentaje_bps", "type": "number", "options": {"precision": 0}},
+        {"name": "motivo_sugerido", "type": "multilineText"},
+        {"name": "requiere_autorizacion", "type": "checkbox", "options": {"icon": "check", "color": "greenBright"}},
+        {"name": "visible_pos", "type": "checkbox", "options": {"icon": "check", "color": "greenBright"}},
+        {"name": "orden", "type": "number", "options": {"precision": 0}},
+        {"name": "activo", "type": "checkbox", "options": {"icon": "check", "color": "greenBright"}},
+        {"name": "id_sqlite", "type": "number", "options": {"precision": 0}},
+        {"name": "estado_sync", "type": "singleSelect", "options": {"choices": [{"name": "Activo"}, {"name": "Pendiente"}, {"name": "Sincronizado"}, {"name": "Conflicto"}, {"name": "Error"}]}},
+        {"name": "revision_remota", "type": "singleLineText"},
+        {"name": "actualizado_sqlite_en", "type": "dateTime", "options": {"dateFormat": {"name": "iso"}, "timeFormat": {"name": "24hour"}, "timeZone": "America/Mexico_City"}},
+        {"name": "actualizado_airtable_en", "type": "dateTime", "options": {"dateFormat": {"name": "iso"}, "timeFormat": {"name": "24hour"}, "timeZone": "America/Mexico_City"}},
+        {"name": "ultimo_pull_en", "type": "dateTime", "options": {"dateFormat": {"name": "iso"}, "timeFormat": {"name": "24hour"}, "timeZone": "America/Mexico_City"}},
+        {"name": "ultimo_push_en", "type": "dateTime", "options": {"dateFormat": {"name": "iso"}, "timeFormat": {"name": "24hour"}, "timeZone": "America/Mexico_City"}},
+        {"name": "error_sync", "type": "multilineText"}
+      ]
+    }
+  ]
+}

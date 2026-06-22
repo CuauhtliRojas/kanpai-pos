@@ -25,3 +25,19 @@ class DiscountResponse(BaseModel):
     authorized_by_employee_id: int | None
     created_by_employee_id: int
     created_at: datetime
+
+
+class DiscountPresetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    preset_key: str
+    name: str
+    discount_type: str
+    amount_cents: int | None
+    percent_bps: int | None
+    reason_template: str | None
+    requires_authorization: bool
+    active: bool
+    visible_pos: bool
+    sort_order: int
