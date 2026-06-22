@@ -220,7 +220,7 @@ def test_cannot_close_with_active_ticket(ticket_status: str) -> None:
         employee, cash_shift = _open_shift(db)
         _ticket(db, employee, ticket_status)
 
-        with pytest.raises(BusinessConflictError, match="abiertos o en cobro"):
+        with pytest.raises(BusinessConflictError, match="cuentas pendientes"):
             close_cash_shift(db, cash_shift.id, employee.id, 10_000)
 
 
@@ -264,7 +264,8 @@ def test_close_creates_cash_shift_print_job() -> None:
         assert job.printer_key_snapshot == "CAJA"
         assert job.status == "Pendiente"
         assert job.idempotency_key == f"CORTE:{cash_shift.id}"
-        assert "KANPAI\nCORTE" in job.content_snapshot
+        assert "SOMOS KANPAI" in job.content_snapshot
+        assert "CORTE" in job.content_snapshot
         job.content_snapshot.encode("ascii")
 
 

@@ -1,0 +1,10 @@
+﻿{
+  "brand_name": "SOMOS KANPAI",
+  "ticket_message": "ありがとうございました。またお待ちしております。",
+  "ascii_ticket_message": "ARIGATO GOZAIMASHITA\nMATA O-MACHI SHITE ORIMASU",
+  "command_title": "COMANDA",
+  "cancel_title": "CANCELACION",
+  "modification_title": "MODIFICACION",
+  "cash_shift_title": "CORTE",
+  "show_decimals": false
+}

@@ -38,7 +38,7 @@ def request_reprint(
         cash_shift_id=original.cash_shift_id,
         station_order_id=original.station_order_id,
         command_batch_id=original.command_batch_id,
-        content_snapshot=sanitize_print_content(original.content_snapshot),
+        content_snapshot=sanitize_print_content(original.content_snapshot, ascii_only=False),
         status=PrintStatus.PENDING,
         attempts=0,
         idempotency_key=f"REPRINT:{original.id}:{now.isoformat()}",

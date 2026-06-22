@@ -32,7 +32,7 @@ from app.services.exceptions import (
     InvalidBusinessDataError,
 )
 from app.services.folio_service import generate_folio
-from app.services.print_service import get_active_printer, sanitize_print_content
+from app.services.print_service import build_command_content, get_active_printer
 
 SENDABLE_LINE_TYPES = (TicketLineType.SIMPLE, TicketLineType.PACKAGE_COMPONENT)
 SENDABLE_TICKET_STATUSES = (TicketStatus.OPEN, TicketStatus.IN_PAYMENT)
@@ -79,30 +79,6 @@ def _resolve_station(db: Session, line: TicketLine) -> ProductionStation | None:
 
     return None
 
-
-def _command_content(
-    ticket: Ticket,
-    station: ProductionStation,
-    round_number: int,
-    lines: list[TicketLine],
-) -> str:
-    """Construye el snapshot de texto estable para una comanda lógica."""
-    content = [
-        "KANPAI",
-        "COMANDA",
-        f"Ticket: {ticket.folio}",
-        f"Estación: {station.name}",
-        f"Ronda: {round_number}",
-        "Líneas:",
-    ]
-    for line in lines:
-        detail = f"{line.quantity} x {line.product_name_snapshot}"
-        if line.note:
-            detail += f" | Nota: {line.note}"
-        content.append(detail)
-        for selection in line.variant_selections:
-            content.append(f"  - {selection.quantity} x {selection.name_snapshot}")
-    return "\n".join(content)
 
 
 def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
@@ -212,8 +188,8 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
                 ticket_id=ticket.id,
                 station_order_id=station_order.id,
                 command_batch_id=batch.id,
-                content_snapshot=sanitize_print_content(
-                    _command_content(ticket, station, round_number, lines)
+                content_snapshot=build_command_content(
+                    ticket, station, round_number, lines
                 ),
                 status=PrintStatus.PENDING,
                 attempts=0,

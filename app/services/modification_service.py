@@ -39,7 +39,7 @@ from app.services.exceptions import (
 )
 from app.services.folio_service import generate_folio
 from app.services.permission_service import get_active_employee
-from app.services.print_service import get_active_printer, sanitize_print_content
+from app.services.print_service import build_modification_content, get_active_printer
 from app.services.ticket_service import recalculate_ticket_totals
 
 
@@ -249,15 +249,8 @@ def modify_ticket_line(
                     if station is None or not station.printer_key:
                         raise BusinessConflictError("La estacion no tiene impresora configurada.")
                     printer = get_active_printer(db, station.printer_key)
-                    content = "\n".join(
-                        [
-                            "KANPAI",
-                            "MODIFICACION",
-                            f"FOLIO: {ticket.folio}",
-                            f"MESA: {ticket.table.display_name}",
-                            f"PRODUCTO: {line.product_name_snapshot}",
-                            f"NOTA: {note_text}",
-                        ]
+                    content = build_modification_content(
+                        ticket, station, line, note_text
                     )
                     print_job = PrintJob(
                         folio=generate_folio(db, "IMPRESION"),
@@ -267,7 +260,7 @@ def modify_ticket_line(
                         ticket_id=ticket.id,
                         station_order_id=station_order.id,
                         command_batch_id=station_order.command_batch_id,
-                        content_snapshot=sanitize_print_content(content),
+                        content_snapshot=content,
                         status=PrintStatus.PENDING,
                         attempts=0,
                         idempotency_key=f"MODIFICACION:{line.id}:{datetime.utcnow().isoformat()}",
