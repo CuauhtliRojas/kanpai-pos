@@ -1,53 +1,71 @@
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import type { InventoryItem } from "../types/inventoryTypes";
+import { formatInventoryQuantity } from "../lib/inventoryFormatters";
 
 type Props = {
   item: InventoryItem;
   onAdjust?: (item: InventoryItem) => void;
 };
 
-function StatusChip({ status }: { status: string }) {
+type StatusInfo = { label: string; badgeClass: string; iconType: "ok" | "warning" | "danger" };
+
+function getStatusInfo(status: string): StatusInfo {
   const lower = status.toLowerCase();
   if (lower.includes("agotado") || lower.includes("sin stock")) {
-    return (
-      <span className="inline-flex items-center gap-1 border-2 border-[var(--kp-ink)] bg-[var(--kp-danger)] px-2 py-0.5 text-xs font-black uppercase text-[var(--kp-danger-contrast)]">
-        <XCircle className="h-3 w-3" /> Agotado
-      </span>
-    );
+    return {
+      label: "Agotado",
+      badgeClass:
+        "border-[var(--kp-ink)] bg-[var(--kp-danger)] text-[var(--kp-danger-contrast)]",
+      iconType: "danger",
+    };
   }
   if (lower.includes("bajo") || lower.includes("minimo") || lower.includes("mínimo")) {
-    return (
-      <span className="inline-flex items-center gap-1 border-2 border-[var(--kp-ink)] bg-[var(--kp-warning)] px-2 py-0.5 text-xs font-black uppercase text-[var(--kp-warning-contrast)]">
-        <AlertTriangle className="h-3 w-3" /> Bajo stock
-      </span>
-    );
+    return {
+      label: "Bajo stock",
+      badgeClass:
+        "border-[var(--kp-ink)] bg-[var(--kp-warning)] text-[var(--kp-warning-contrast)]",
+      iconType: "warning",
+    };
   }
-  return (
-    <span className="inline-flex items-center gap-1 border-2 border-[var(--kp-ink)] bg-[var(--kp-success)] px-2 py-0.5 text-xs font-black uppercase text-[var(--kp-success-contrast)]">
-      <CheckCircle className="h-3 w-3" /> Disponible
-    </span>
-  );
+  return {
+    label: "Correcto",
+    badgeClass:
+      "border-[var(--kp-ink)] bg-[var(--kp-success)] text-[var(--kp-success-contrast)]",
+    iconType: "ok",
+  };
 }
 
 export function InventoryItemCard({ item, onAdjust }: Props) {
+  const si = getStatusInfo(item.stock_status);
   return (
-    <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard-sm)]">
-      <div className="flex items-start justify-between gap-3">
+    <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate font-black uppercase">{item.name}</p>
+          <p className="truncate font-black uppercase leading-tight">{item.name}</p>
           <p className="mt-0.5 text-xs font-bold text-[var(--kp-muted)]">{item.sku}</p>
         </div>
-        <StatusChip status={item.stock_status} />
+        <span
+          className={`inline-flex shrink-0 items-center gap-1 border-2 px-2 py-0.5 text-xs font-black uppercase ${si.badgeClass}`}
+        >
+          {si.iconType === "danger" && <XCircle className="h-3 w-3" />}
+          {si.iconType === "warning" && <AlertTriangle className="h-3 w-3" />}
+          {si.iconType === "ok" && <CheckCircle className="h-3 w-3" />}
+          {si.label}
+        </span>
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3">
+      <div className="mt-2 flex items-end justify-between gap-2">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--kp-muted)]">Stock</p>
-          <p className="text-2xl font-black leading-none">
-            {item.current_stock}{" "}
-            <span className="text-sm font-bold text-[var(--kp-muted)]">{item.base_unit_name}</span>
+          <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--kp-muted)]">
+            Stock
+          </p>
+          <p className="text-xl font-black leading-none">
+            {formatInventoryQuantity(item.current_stock)}{" "}
+            <span className="text-xs font-bold text-[var(--kp-muted)]">
+              {item.base_unit_name}
+            </span>
           </p>
           <p className="mt-0.5 text-xs font-bold text-[var(--kp-muted)]">
-            Mínimo: {item.stock_minimum} {item.base_unit_name}
+            Min: {formatInventoryQuantity(item.stock_minimum)} {item.base_unit_name}
           </p>
         </div>
         {onAdjust && item.active && (

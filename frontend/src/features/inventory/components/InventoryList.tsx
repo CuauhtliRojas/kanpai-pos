@@ -5,13 +5,16 @@ type Props = {
   items: InventoryItem[];
   canAdjust: boolean;
   onAdjust: (item: InventoryItem) => void;
+  isFiltered?: boolean;
 };
 
-export function InventoryList({ items, canAdjust, onAdjust }: Props) {
+export function InventoryList({ items, canAdjust, onAdjust, isFiltered = false }: Props) {
   if (items.length === 0) {
     return (
       <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-6 text-center font-black uppercase text-[var(--kp-muted)] shadow-[var(--kp-shadow-hard)]">
-        Sin datos de inventario
+        {isFiltered
+          ? "No hay resultados con estos filtros."
+          : "Sin datos de inventario."}
       </p>
     );
   }
