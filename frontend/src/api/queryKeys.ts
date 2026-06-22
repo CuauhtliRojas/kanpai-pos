@@ -67,6 +67,7 @@
   inventory: {
     items: ["inventory", "items"] as const,
     stockAlerts: ["inventory", "stock-alerts"] as const,
+    movements: (params: unknown) => ["inventory", "movements", params] as const,
   },
   security: {
     employees: ["security", "employees"] as const,

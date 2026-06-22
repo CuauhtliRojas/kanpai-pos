@@ -81,6 +81,7 @@ export const navigationItems: readonly NavigationItem[] = [
     group: "Servicio",
     icon: Boxes,
     status: "available",
+    anyPermission: ["INVENTORY_ADJUST"] as const,
   },
   {
     to: "/system",

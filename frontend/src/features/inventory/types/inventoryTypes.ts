@@ -46,3 +46,34 @@ export type InventoryMovementResponse = {
   created_by_employee_id: number;
   created_at: string;
 };
+
+export type InventoryMovementHistoryItem = {
+  id: number;
+  folio: string;
+  inventory_item_id: number;
+  item_name: string;
+  movement_type: string;
+  quantity_base: string;
+  signed_quantity_base: string;
+  stock_before_base: string | null;
+  stock_after_base: string | null;
+  source_type: string | null;
+  source_id: number | null;
+  ticket_line_id: number | null;
+  purchase_receipt_line_id: number | null;
+  cash_expense_id: number | null;
+  registered_by_employee_id: number;
+  employee_name: string | null;
+  reason: string | null;
+  created_at: string;
+};
+
+export type InventoryMovementHistoryParams = {
+  inventory_item_id?: number;
+  movement_type?: string;
+  source_type?: string;
+  created_from?: string;
+  created_to?: string;
+  limit?: number;
+  offset?: number;
+};

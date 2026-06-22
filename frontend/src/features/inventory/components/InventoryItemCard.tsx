@@ -5,6 +5,7 @@ import { formatInventoryQuantity } from "../lib/inventoryFormatters";
 type Props = {
   item: InventoryItem;
   onAdjust?: (item: InventoryItem) => void;
+  onViewMovements?: (item: InventoryItem) => void;
 };
 
 type StatusInfo = { label: string; badgeClass: string; iconType: "ok" | "warning" | "danger" };
@@ -35,8 +36,9 @@ function getStatusInfo(status: string): StatusInfo {
   };
 }
 
-export function InventoryItemCard({ item, onAdjust }: Props) {
+export function InventoryItemCard({ item, onAdjust, onViewMovements }: Props) {
   const si = getStatusInfo(item.stock_status);
+  const hasActions = (onAdjust && item.active) || onViewMovements;
   return (
     <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
       <div className="flex items-start justify-between gap-2">
@@ -68,14 +70,27 @@ export function InventoryItemCard({ item, onAdjust }: Props) {
             Min: {formatInventoryQuantity(item.stock_minimum)} {item.base_unit_name}
           </p>
         </div>
-        {onAdjust && item.active && (
-          <button
-            type="button"
-            onClick={() => onAdjust(item)}
-            className="min-h-[var(--kp-touch-sm)] border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 text-xs font-black uppercase shadow-[var(--kp-shadow-hard-sm)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
-          >
-            Ajustar
-          </button>
+        {hasActions && (
+          <div className="flex shrink-0 gap-2">
+            {onViewMovements && (
+              <button
+                type="button"
+                onClick={() => onViewMovements(item)}
+                className="min-h-[var(--kp-touch-sm)] border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 text-xs font-black uppercase shadow-[var(--kp-shadow-hard-sm)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+              >
+                Movimientos
+              </button>
+            )}
+            {onAdjust && item.active && (
+              <button
+                type="button"
+                onClick={() => onAdjust(item)}
+                className="min-h-[var(--kp-touch-sm)] border-4 border-[var(--kp-ink)] bg-[var(--kp-accent)] px-3 text-xs font-black uppercase text-[var(--kp-accent-contrast)] shadow-[var(--kp-shadow-hard-sm)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+              >
+                Ajustar
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

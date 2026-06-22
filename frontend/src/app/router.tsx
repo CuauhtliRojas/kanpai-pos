@@ -89,7 +89,17 @@ export function AppRouter() {
             <Route path="printing" element={<PrintingPage />} />
             <Route path="reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
             <Route path="audit" element={<AdminRoute><AuditPage /></AdminRoute>} />
-            <Route path="inventory" element={<InventoryPage />} />
+            <Route
+              path="inventory"
+              element={
+                <PermissionGate
+                  anyOf={["INVENTORY_ADJUST"]}
+                  fallback={<AccessDeniedPanel />}
+                >
+                  <InventoryPage />
+                </PermissionGate>
+              }
+            />
             <Route path="security" element={<AdminRoute><SecurityPage /></AdminRoute>} />
             {moduleNavigationItems
               .filter(

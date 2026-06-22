@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { RefreshCw, Search } from "lucide-react";
+import { History, RefreshCw, Search } from "lucide-react";
 import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
@@ -12,6 +12,7 @@ import { useInventoryMovementMutation } from "../hooks/useInventoryMovementMutat
 import { LowStockPanel } from "../components/LowStockPanel";
 import { InventoryList } from "../components/InventoryList";
 import { InventoryAdjustmentDialog } from "../components/InventoryAdjustmentDialog";
+import { InventoryMovementHistoryDialog } from "../components/InventoryMovementHistoryDialog";
 import type { InventoryItem, InventoryMovementCreateRequest } from "../types/inventoryTypes";
 import { usePaymentMethodsQuery } from "../../payments/hooks/usePaymentMethodsQuery";
 import { PurchaseReceiptDialog } from "../../purchases/components/PurchaseReceiptDialog";
@@ -21,37 +22,29 @@ type FilterStatus = "all" | "agotado" | "bajo" | "correcto";
 
 function getApiDetailText(details: unknown): string | null {
   if (typeof details === "string") return details;
-
   if (details !== null && typeof details === "object" && "detail" in details) {
     const detail = (details as { detail?: unknown }).detail;
     return typeof detail === "string" ? detail : null;
   }
-
   return null;
 }
 
 function getPurchaseReceiptErrorMessage(error: unknown): string {
   const prefix = "No se pudo registrar la recepción.";
-
   if (error instanceof ApiError) {
     const detail = getApiDetailText(error.details);
-
     if (detail) {
       if (detail.includes("corte de caja abierto")) {
-        return `${prefix} Para registrar pago necesitas una caja abierta. Abre caja o deja monto pagado en 0 para registrar sólo la entrada de almacén.`;
+        return `${prefix} Para registrar pago necesitas una caja abierta. Abre caja o deja monto pagado en 0 para registrar solo la entrada de almacén.`;
       }
-
       return `${prefix} ${detail}`;
     }
   }
-
   if (error instanceof Error && error.message) {
     return `${prefix} ${error.message}`;
   }
-
   return `${prefix} Revisa los datos e intenta de nuevo.`;
 }
-
 
 export function InventoryPage() {
   const { permissions, employee } = useAuthSession();
@@ -64,6 +57,8 @@ export function InventoryPage() {
   const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItemId, setHistoryItemId] = useState<number | undefined>(undefined);
 
   const itemsQuery = useInventoryItemsQuery();
   const alertsQuery = useStockAlertsQuery();
@@ -156,6 +151,21 @@ export function InventoryPage() {
     }
   }
 
+  function handleViewMovements(item: InventoryItem) {
+    setHistoryItemId(item.id);
+    setHistoryOpen(true);
+  }
+
+  function handleViewAllMovements() {
+    setHistoryItemId(undefined);
+    setHistoryOpen(true);
+  }
+
+  function handleHistoryClose() {
+    setHistoryOpen(false);
+    setHistoryItemId(undefined);
+  }
+
   const isLoading = itemsQuery.isPending || alertsQuery.isPending;
   const isError = itemsQuery.isError || alertsQuery.isError;
 
@@ -179,7 +189,12 @@ export function InventoryPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          {canAdjust ? (
+          {canAdjust && (
+            <BrutalButton onClick={handleViewAllMovements}>
+              <History className="h-5 w-5" /> Ver movimientos
+            </BrutalButton>
+          )}
+          {canAdjust && (
             <BrutalButton
               variant="primary"
               onClick={() => {
@@ -189,7 +204,7 @@ export function InventoryPage() {
             >
               Recibir compra
             </BrutalButton>
-          ) : null}
+          )}
           <BrutalButton
             onClick={() => {
               void itemsQuery.refetch();
@@ -201,12 +216,6 @@ export function InventoryPage() {
           </BrutalButton>
         </div>
       </header>
-
-      {!canAdjust && (
-        <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 text-sm font-bold">
-          Solo lectura. Pide ayuda al encargado para ajustar inventario.
-        </p>
-      )}
 
       {purchaseMessage ? (
         <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-success-bg)] p-3 font-black text-[var(--kp-success-text)]">
@@ -292,6 +301,7 @@ export function InventoryPage() {
             canAdjust={canAdjust}
             onAdjust={handleAdjustRequest}
             isFiltered={isFiltered}
+            onViewMovements={canAdjust ? handleViewMovements : undefined}
           />
         </>
       )}
@@ -340,6 +350,14 @@ export function InventoryPage() {
           }
         />
       ) : null}
+
+      {historyOpen && (
+        <InventoryMovementHistoryDialog
+          items={allItems}
+          initialItemId={historyItemId}
+          onClose={handleHistoryClose}
+        />
+      )}
     </div>
   );
 }
