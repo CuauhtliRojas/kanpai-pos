@@ -339,7 +339,10 @@
     "GruposVarianteProducto": {
       "sqlite_table": "grupos_variante_producto",
       "direction": "pull_to_sqlite",
-      "primary_key": "nombre",
+      "primary_key": [
+        "producto",
+        "nombre"
+      ],
       "fields": {
         "producto": "product_id",
         "nombre": "name",

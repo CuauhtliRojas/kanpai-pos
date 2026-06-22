@@ -118,6 +118,8 @@ def _replace_variant_selections(
         )
         variant_delta += option.price_delta_cents * qty
 
+    db.flush()
+    db.expire(line, ["variant_selections"])
     return product.price_cents + variant_delta
 
 

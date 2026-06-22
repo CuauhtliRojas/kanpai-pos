@@ -151,10 +151,14 @@ def test_admin_permissions_and_yakitori_variants_are_reproducible() -> None:
                 .where(Product.sku.like("YAK-%"))
             )
         )
-        assert len(groups) == 1
-        assert groups[0].name == "BROCHETAS"
+        assert len(groups) == 8
+        groups_by_key = {(group.product.sku, group.name): group for group in groups}
+        combo = groups_by_key[("YAK-COC-MIX", "BROCHETAS")]
+        assert combo.name == "BROCHETAS"
+        assert combo.required is True
+        assert (combo.min_select, combo.max_select) == (3, 3)
 
-        option_skus = {option.sku for group in groups for option in group.options}
+        option_skus = {option.sku for option in combo.options}
         assert option_skus == {
             "YAK-COC-POLL",
             "YAK-COC-PORK",
@@ -164,7 +168,29 @@ def test_admin_permissions_and_yakitori_variants_are_reproducible() -> None:
             "YAK-COC-HONG",
         }
 
-        assert groups[0].product.sku == "YAK-COC-MIX"
+        for sku in {
+            "YAK-COC-POLL",
+            "YAK-COC-PORK",
+            "YAK-COC-PUL",
+            "YAK-COC_CAM",
+            "YAK-COC-VER",
+            "YAK-COC-HONG",
+        }:
+            group = groups_by_key[(sku, "Preparación")]
+            assert group.name == "Preparación"
+            assert group.required is True
+            assert (group.min_select, group.max_select) == (1, 1)
+            assert [option.name for option in group.options] == ["Tempura", "Asada"]
+            assert all(option.active for option in group.options)
+            assert all(option.price_delta_cents == 0 for option in group.options)
+
+        mix_preparation = groups_by_key[("YAK-COC-MIX", "Preparación")]
+        assert mix_preparation.required is True
+        assert (mix_preparation.min_select, mix_preparation.max_select) == (1, 1)
+        assert [option.name for option in mix_preparation.options] == [
+            "Tempura",
+            "Asada",
+        ]
 
 def test_sqlite_catalog_reset_requires_confirmation_and_dry_run_is_read_only() -> None:
     run_seed()

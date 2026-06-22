@@ -1,4 +1,4 @@
-import { Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
 import { formatCentsToPesos } from "../../../shared/lib/money";
 import type { VariantGroup } from "../types/variantTypes";
 
@@ -46,6 +46,13 @@ function getVariantOptionDisplayName(groupName: string, optionName: string): str
 export function VariantGroupSelector({ group, quantities, disabled, onChange }: Props) {
   const options = group.options.filter((option) => option.active);
   const selectedCount = options.reduce((total, option) => total + (quantities[option.id] ?? 0), 0);
+  const isSingleSelection = group.min_select === 1 && group.max_select === 1;
+
+  function selectOnly(optionId: number) {
+    for (const option of options) {
+      onChange(option.id, option.id === optionId ? 1 : 0);
+    }
+  }
 
   return (
     <fieldset className="border-4 border-[var(--kp-ink)] px-2 pb-2 pt-1" disabled={disabled}>
@@ -55,6 +62,41 @@ export function VariantGroupSelector({ group, quantities, disabled, onChange }: 
       </p>
       {options.length === 0 ? (
         <p className="font-black uppercase text-[var(--kp-muted)]">Sin opciones</p>
+      ) : isSingleSelection ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {options.map((option) => {
+            const selected = (quantities[option.id] ?? 0) === 1;
+            const displayName = getVariantOptionDisplayName(group.name, option.name);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => selectOnly(option.id)}
+                className={`flex min-h-14 items-center justify-between gap-3 border-4 border-[var(--kp-ink)] px-3 py-2 text-left font-black active:translate-x-[2px] active:translate-y-[2px] ${
+                  selected
+                    ? "bg-[var(--kp-selected)] text-[var(--kp-selected-contrast)]"
+                    : "bg-[var(--kp-surface-raised)]"
+                }`}
+              >
+                <span>
+                  {displayName}
+                  {option.price_delta_cents !== 0 ? (
+                    <span className="ml-2 text-xs">
+                      {option.price_delta_cents > 0 ? "+" : ""}
+                      {formatCentsToPesos(option.price_delta_cents)}
+                    </span>
+                  ) : null}
+                </span>
+                {selected ? (
+                  <span className="flex items-center gap-1 text-xs uppercase">
+                    <Check className="h-5 w-5" /> Elegido
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
       ) : (
         <div className="grid gap-1.5 sm:grid-cols-2">
           {options.map((option) => {

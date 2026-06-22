@@ -136,7 +136,7 @@ TABLE_SPECS = (
     TableSpec(
         "GruposVarianteProducto",
         ProductVariantGroup,
-        ("name",),
+        ("product_id", "name"),
         {"producto": LinkSpec("Productos", required=True)},
     ),
     TableSpec(
@@ -191,7 +191,7 @@ class PreparedRecord:
     record_id: str
     key: tuple[Any, ...]
     values: dict[str, Any]
-    links: dict[str, tuple[str, ...]]
+    links: dict[str, tuple[Any, ...]]
 
     @property
     def label(self) -> str:
@@ -389,27 +389,53 @@ def fetch_remote_records(
 
 def build_remote_indexes(
     remote: dict[str, list[dict[str, Any]]], field_map: dict[str, Any]
-) -> tuple[dict[str, dict[str, str]], list[Issue]]:
-    indexes: dict[str, dict[str, str]] = {}
+) -> tuple[dict[str, dict[str, Any]], list[Issue]]:
+    indexes: dict[str, dict[str, Any]] = {}
     issues: list[Issue] = []
     for spec in TABLE_SPECS:
-        primary = field_map["tables"][spec.airtable_table]["primary_key"]
-        if not isinstance(primary, str):
-            continue
-        by_id: dict[str, str] = {}
-        seen: dict[str, str] = {}
+        mapping = field_map["tables"][spec.airtable_table]
+        by_id: dict[str, Any] = {}
+        seen: dict[Any, str] = {}
         for record in remote[spec.airtable_table]:
-            value = record.get("fields", {}).get(primary)
-            key = value.strip() if isinstance(value, str) else str(value).strip() if value is not None else ""
-            if not key:
-                issues.append(Issue("error", "missing_natural_key", f"Registro {record.get('id', '?')} sin {primary}.", spec.airtable_table))
-                continue
-            folded = key.casefold()
-            if folded in seen:
-                issues.append(Issue("error", "duplicate_remote_key", f"Clave duplicada {key!r}.", spec.airtable_table, key))
-                continue
-            seen[folded] = record["id"]
-            by_id[record["id"]] = key
+            source = record.get("fields", {})
+            try:
+                key_parts: list[Any] = []
+                for key_attr in spec.key_attrs:
+                    source_field = next(
+                        name
+                        for name, attr in mapping["fields"].items()
+                        if attr == key_attr
+                    )
+                    if source_field in spec.links:
+                        linked = _resolve_link(
+                            source.get(source_field), spec.links[source_field], indexes
+                        )
+                        if len(linked) != 1:
+                            raise ValueError(
+                                f"clave compuesta {source_field} no resuelta"
+                            )
+                        key_parts.append(linked[0])
+                    else:
+                        value = source.get(source_field)
+                        value = value.strip() if isinstance(value, str) else value
+                        if value in (None, ""):
+                            raise ValueError(f"falta clave natural {source_field}")
+                        key_parts.append(value)
+                key = tuple(key_parts)
+                comparable = _comparable_key(key)
+                if comparable in seen:
+                    raise ValueError(f"clave natural duplicada: {key}")
+                seen[comparable] = record["id"]
+                by_id[record["id"]] = key[0] if len(key) == 1 else key
+            except (KeyError, StopIteration, TypeError, ValueError) as error:
+                issues.append(
+                    Issue(
+                        "error",
+                        "invalid_remote_key",
+                        f"Registro {record.get('id', '?')}: {error}",
+                        spec.airtable_table,
+                    )
+                )
         indexes[spec.airtable_table] = by_id
     return indexes, issues
 
@@ -417,8 +443,8 @@ def build_remote_indexes(
 def _resolve_link(
     raw: Any,
     link: LinkSpec,
-    remote_indexes: dict[str, dict[str, str]],
-) -> tuple[str, ...]:
+    remote_indexes: dict[str, dict[str, Any]],
+) -> tuple[Any, ...]:
     if raw in (None, "", []):
         if link.required:
             raise ValueError("link obligatorio vacío")
@@ -437,7 +463,7 @@ def _resolve_link(
 def prepare_records(
     remote: dict[str, list[dict[str, Any]]],
     field_map: dict[str, Any],
-    remote_indexes: dict[str, dict[str, str]],
+    remote_indexes: dict[str, dict[str, Any]],
     *,
     product_image_media_dir: Path | None = None,
 ) -> tuple[dict[str, list[PreparedRecord]], list[Issue]]:
@@ -516,9 +542,7 @@ def prepare_records(
                     else:
                         raise ValueError(f"falta clave natural {key_attr}")
                 key = tuple(key_parts)
-                comparable_key = tuple(
-                    value.casefold() if isinstance(value, str) else value for value in key
-                )
+                comparable_key = _comparable_key(key)
                 if comparable_key in seen:
                     raise ValueError(f"clave natural duplicada: {key}")
                 seen.add(comparable_key)
@@ -548,19 +572,24 @@ def prepare_records(
 
 
 def _local_natural_for_id(
-    session: Session, target_spec: TableSpec, row_id: int | None
-) -> str | None:
+    session: Session,
+    target_spec: TableSpec,
+    row_id: int | None,
+    field_map: dict[str, Any],
+) -> Any:
     if row_id is None:
         return None
     target = session.get(target_spec.model, row_id)
-    if target is None or len(target_spec.key_attrs) != 1:
+    if target is None:
         return None
-    return str(getattr(target, target_spec.key_attrs[0]))
+    key = _local_key(session, target_spec, target, field_map)
+    return key[0] if len(key) == 1 else key
 
 
 def _local_key(
-    session: Session, spec: TableSpec, obj: Any, mapping: dict[str, Any]
+    session: Session, spec: TableSpec, obj: Any, field_map: dict[str, Any]
 ) -> tuple[Any, ...]:
+    mapping = field_map["tables"][spec.airtable_table]
     parts: list[Any] = []
     for key_attr in spec.key_attrs:
         linked_field = next(
@@ -569,10 +598,22 @@ def _local_key(
         )
         if linked_field:
             target = SPEC_BY_TABLE[spec.links[linked_field].target_table]
-            parts.append(_local_natural_for_id(session, target, getattr(obj, key_attr)))
+            parts.append(
+                _local_natural_for_id(
+                    session, target, getattr(obj, key_attr), field_map
+                )
+            )
         else:
             parts.append(getattr(obj, key_attr))
     return tuple(parts)
+
+
+def _comparable_key(value: Any) -> Any:
+    if isinstance(value, str):
+        return value.strip().casefold()
+    if isinstance(value, (tuple, list)):
+        return tuple(_comparable_key(item) for item in value)
+    return value
 
 
 def _same(left: Any, right: Any) -> bool:
@@ -592,8 +633,8 @@ def plan_records(
         mapping = field_map["tables"][spec.airtable_table]
         local_index: dict[tuple[Any, ...], Any] = {}
         for obj in session.scalars(select(spec.model)).all():
-            key = _local_key(session, spec, obj, mapping)
-            comparable = tuple(value.casefold() if isinstance(value, str) else value for value in key)
+            key = _local_key(session, spec, obj, field_map)
+            comparable = _comparable_key(key)
             if comparable in local_index:
                 issues.append(Issue("error", "duplicate_local_key", f"Clave local duplicada: {key}", spec.airtable_table))
             else:
@@ -601,7 +642,7 @@ def plan_records(
 
         table_plan: list[PlannedRecord] = []
         for record in prepared[spec.airtable_table]:
-            comparable = tuple(value.casefold() if isinstance(value, str) else value for value in record.key)
+            comparable = _comparable_key(record.key)
             obj = local_index.get(comparable)
             if obj is None:
                 table_plan.append(PlannedRecord("create", record, tuple(record.values) + tuple(record.links)))
@@ -623,7 +664,9 @@ def plan_records(
                     if set(desired_keys) - existing:
                         changed.append(source_field)
                 else:
-                    current = _local_natural_for_id(session, target_spec, getattr(obj, target_attr))
+                    current = _local_natural_for_id(
+                        session, target_spec, getattr(obj, target_attr), field_map
+                    )
                     desired = desired_keys[0] if desired_keys else None
                     if not _same(current, desired):
                         changed.append(source_field)
@@ -633,13 +676,17 @@ def plan_records(
     return plan, issues
 
 
-def _lookup_target(session: Session, table: str, natural_key: str) -> Any:
+def _lookup_target(
+    session: Session, table: str, natural_key: Any, field_map: dict[str, Any]
+) -> Any:
     spec = SPEC_BY_TABLE[table]
-    attr = getattr(spec.model, spec.key_attrs[0])
-    target = session.scalar(select(spec.model).where(attr == natural_key))
-    if target is None:
-        raise ValueError(f"No existe destino SQLite {table}.{natural_key}")
-    return target
+    desired = _comparable_key(
+        (natural_key,) if len(spec.key_attrs) == 1 else natural_key
+    )
+    for target in session.scalars(select(spec.model)).all():
+        if _comparable_key(_local_key(session, spec, target, field_map)) == desired:
+            return target
+    raise ValueError(f"No existe destino SQLite {table}.{natural_key}")
 
 
 def apply_plan(
@@ -650,14 +697,11 @@ def apply_plan(
         for item in plan[spec.airtable_table]:
             if item.action == "unchanged":
                 continue
-            comparable = tuple(
-                value.casefold() if isinstance(value, str) else value
-                for value in item.prepared.key
-            )
+            comparable = _comparable_key(item.prepared.key)
             obj = None
             for candidate in session.scalars(select(spec.model)).all():
-                key = _local_key(session, spec, candidate, mapping)
-                candidate_key = tuple(value.casefold() if isinstance(value, str) else value for value in key)
+                key = _local_key(session, spec, candidate, field_map)
+                candidate_key = _comparable_key(key)
                 if candidate_key == comparable:
                     obj = candidate
                     break
@@ -665,7 +709,9 @@ def apply_plan(
             for source_field, desired_keys in item.prepared.links.items():
                 link = spec.links[source_field]
                 resolved_links[source_field] = [
-                    _lookup_target(session, link.target_table, natural_key)
+                    _lookup_target(
+                        session, link.target_table, natural_key, field_map
+                    )
                     for natural_key in desired_keys
                 ]
             if obj is None:

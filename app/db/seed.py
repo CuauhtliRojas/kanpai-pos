@@ -73,6 +73,48 @@ def get_or_create(
     return instance, True
 
 
+def upsert_variant_group(
+    session: Session,
+    product: Product,
+    *,
+    name: str,
+    min_select: int,
+    max_select: int,
+    required: bool,
+    options: list[dict],
+) -> ProductVariantGroup:
+    """Upsert one product-scoped variant group without removing local data."""
+    group, _ = get_or_create(
+        session,
+        ProductVariantGroup,
+        {"product_id": product.id, "name": name},
+        {
+            "min_select": min_select,
+            "max_select": max_select,
+            "required": required,
+            "active": True,
+        },
+    )
+    group.min_select = min_select
+    group.max_select = max_select
+    group.required = required
+    group.active = True
+
+    for definition in options:
+        option, _ = get_or_create(
+            session,
+            ProductVariantOption,
+            {"variant_group_id": group.id, "name": definition["name"]},
+            definition,
+        )
+        option.product_id = definition.get("product_id")
+        option.sku = definition.get("sku")
+        option.price_delta_cents = definition.get("price_delta_cents", 0)
+        option.station_id = definition.get("station_id")
+        option.active = definition.get("active", True)
+    return group
+
+
 def seed_business_settings(session: Session) -> None:
     existing = session.execute(select(BusinessSetting).limit(1)).scalar_one_or_none()
 
@@ -467,6 +509,19 @@ def seed_development_products(session: Session) -> None:
         {"product_id": yakitori.id, "station_id": kitchen.id},
         {"is_primary": True, "active": True, "sync_status": CatalogStatus.ACTIVE},
     )
+    upsert_variant_group(
+        session,
+        yakitori,
+        name="BROCHETAS",
+        min_select=3,
+        max_select=3,
+        required=True,
+        options=[
+            {"name": "Pollo", "price_delta_cents": 0, "active": True},
+            {"name": "Pulpo", "price_delta_cents": 0, "active": True},
+            {"name": "Verduras", "price_delta_cents": 0, "active": True},
+        ],
+    )
     package, _ = get_or_create(
         session,
         ProductPackage,
@@ -636,30 +691,30 @@ def seed_real_catalog(session: Session) -> None:
         recipe.sync_status = CatalogStatus.ACTIVE
 
 
-    combo_groups: dict[str, ProductVariantGroup] = {}
+    combo_groups: dict[tuple[str, str], ProductVariantGroup] = {}
     for record in result.tables.get("GruposVarianteProducto", []):
         product = products[record["producto"][0]]
-        group, _ = get_or_create(
+        group = upsert_variant_group(
             session,
-            ProductVariantGroup,
-            {"product_id": product.id, "name": record["nombre"]},
-            {
-                "min_select": int(record["seleccion_minima"]),
-                "max_select": int(record["seleccion_maxima"]),
-                "required": bool(record["requerido"]),
-                "active": bool(record["activo"]),
-            },
+            product,
+            name=record["nombre"],
+            min_select=int(record["seleccion_minima"]),
+            max_select=int(record["seleccion_maxima"]),
+            required=bool(record["requerido"]),
+            options=[],
         )
-        group.min_select = int(record["seleccion_minima"])
-        group.max_select = int(record["seleccion_maxima"])
-        group.required = bool(record["requerido"])
         group.active = bool(record["activo"])
-        combo_groups[record["nombre"]] = group
+        combo_groups[(product.sku, record["nombre"])] = group
 
     for record in result.tables.get("OpcionesVarianteProducto", []):
-        group_name = record["grupo_variante"][0]
-        group = combo_groups[group_name]
-        option_product = products.get(record["producto_opcional"][0])
+        group_reference = record["grupo_variante"][0]
+        if not isinstance(group_reference, (list, tuple)) or len(group_reference) != 2:
+            raise ValueError(
+                "El seed requiere grupo_variante como (producto, nombre)."
+            )
+        group = combo_groups[(group_reference[0], group_reference[1])]
+        option_product_sku = next(iter(record["producto_opcional"]), None)
+        option_product = products.get(option_product_sku)
         option, _ = get_or_create(
             session,
             ProductVariantOption,

@@ -48,6 +48,7 @@ class VariantSelectionResponse(BaseModel):
     id: int
     variant_group_id: int
     variant_option_id: int
+    group_name: str
     quantity: int
     price_delta_cents_snapshot: int
     name_snapshot: str

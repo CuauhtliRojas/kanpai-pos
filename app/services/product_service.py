@@ -1,7 +1,7 @@
 import json
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.domain.constants import (
     PriceMode,
@@ -53,6 +53,11 @@ def get_ticket_lines(db: Session, ticket_id: int) -> list[TicketLine]:
     return list(
         db.execute(
             select(TicketLine)
+            .options(
+                selectinload(TicketLine.variant_selections).selectinload(
+                    TicketLineVariantSelection.variant_group
+                )
+            )
             .where(TicketLine.ticket_id == ticket_id)
             .order_by(TicketLine.id)
         ).scalars()

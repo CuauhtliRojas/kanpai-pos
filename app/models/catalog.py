@@ -159,7 +159,9 @@ class ProductVariantGroup(TimestampMixin, Base):
 
     product: Mapped["Product"] = relationship(back_populates="variant_groups")
     options: Mapped[list["ProductVariantOption"]] = relationship(
-        back_populates="variant_group", cascade="all, delete-orphan"
+        back_populates="variant_group",
+        cascade="all, delete-orphan",
+        order_by="ProductVariantOption.id",
     )
 
 

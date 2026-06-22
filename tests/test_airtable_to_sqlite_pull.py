@@ -24,6 +24,8 @@ from app.models import (
     InventoryItem,
     Product,
     ProductRecipe,
+    ProductVariantGroup,
+    ProductVariantOption,
     Role,
     Unit,
 )
@@ -183,6 +185,80 @@ def test_linked_record_resolves_to_sqlite_foreign_key():
         item = session.scalar(select(InventoryItem).where(InventoryItem.item_code == "INS-1"))
         assert item is not None
         assert item.base_unit.unit_key == "KG"
+
+
+def test_variant_groups_and_options_use_product_scoped_natural_keys():
+    engine = _engine()
+    remote = _empty_remote()
+    remote["Productos"] = [
+        {
+            "id": f"rec-product-{suffix}",
+            "fields": {
+                "sku": sku,
+                "tipo_producto": "Simple",
+                "nombre": f"Yakitori {suffix}",
+                "nombre_visible": f"Yakitori {suffix}",
+                "precio_centavos": 10000,
+                "activo": True,
+                "visible_pos": True,
+            },
+        }
+        for suffix, sku in (("pollo", "YAK-COC-POLL"), ("pulpo", "YAK-COC-PUL"))
+    ]
+    remote["GruposVarianteProducto"] = [
+        {
+            "id": f"rec-group-{suffix}",
+            "fields": {
+                "producto": [f"rec-product-{suffix}"],
+                "nombre": "Preparación",
+                "seleccion_minima": 1,
+                "seleccion_maxima": 1,
+                "requerido": True,
+                "activo": True,
+            },
+        }
+        for suffix in ("pollo", "pulpo")
+    ]
+    remote["OpcionesVarianteProducto"] = [
+        {
+            "id": f"rec-option-{suffix}-{name.casefold()}",
+            "fields": {
+                "grupo_variante": [f"rec-group-{suffix}"],
+                "nombre": name,
+                "diferencia_precio_centavos": 0,
+                "activo": True,
+            },
+        }
+        for suffix in ("pollo", "pulpo")
+        for name in ("Tempura", "Asada")
+    ]
+
+    field_map, prepared, issues = _prepare(remote)
+    assert issues == []
+    assert [record.key for record in prepared["GruposVarianteProducto"]] == [
+        ("YAK-COC-POLL", "Preparación"),
+        ("YAK-COC-PUL", "Preparación"),
+    ]
+
+    with Session(engine) as session:
+        plan, planning_issues = plan_records(session, prepared, field_map)
+        assert planning_issues == []
+        apply_plan(session, plan, field_map)
+        session.commit()
+
+    with Session(engine) as session:
+        groups = list(
+            session.scalars(
+                select(ProductVariantGroup).order_by(ProductVariantGroup.id)
+            )
+        )
+        assert len(groups) == 2
+        assert {group.product.sku for group in groups} == {
+            "YAK-COC-POLL",
+            "YAK-COC-PUL",
+        }
+        assert all(group.name == "Preparación" for group in groups)
+        assert session.scalar(select(func.count()).select_from(ProductVariantOption)) == 4
 
 
 def test_missing_link_is_controlled_error_and_skipped():

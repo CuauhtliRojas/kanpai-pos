@@ -6,7 +6,12 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from airtable_records_client import AirtableRecordsClient, AirtableRecordsError
+from airtable_records_client import (
+    AirtableRecordsClient,
+    AirtableRecordsError,
+    NaturalKey,
+    record_natural_key,
+)
 from build_airtable_seed import (
     DEFAULT_EXCEL,
     DEFAULT_FIXED,
@@ -46,7 +51,7 @@ def dry_run_plan(
     issues: list[SeedIssue],
 ) -> dict[str, dict[str, int]]:
     plan: dict[str, dict[str, int]] = {}
-    indexes: dict[str, dict[str, dict[str, Any]]] = {}
+    indexes: dict[str, dict[NaturalKey, dict[str, Any]]] = {}
     for table in TABLE_ORDER:
         records = result.tables[table]
         if client is None:
@@ -83,6 +88,13 @@ def dry_run_plan(
             excluded_fields=EXCLUDED_SEED_FIELDS.get(table),
             existing=existing,
         )
+        for position, fields in enumerate(upsert["creates"], start=1):
+            key = record_natural_key(fields, NATURAL_KEYS[table])
+            if key is not None:
+                indexes[table][key] = {
+                    "id": f"planned:{table}:{position}",
+                    "fields": fields,
+                }
         plan[table] = {
             "creates": len(upsert["creates"]),
             "updates": len(upsert["updates"]),
@@ -96,7 +108,7 @@ def dry_run_plan(
 def resolve_links(
     table: str,
     records: list[dict[str, Any]],
-    indexes: dict[str, dict[str, dict[str, Any]]],
+    indexes: dict[str, dict[NaturalKey, dict[str, Any]]],
     issues: list[SeedIssue],
 ) -> list[dict[str, Any]]:
     resolved_records = []
@@ -108,13 +120,17 @@ def resolve_links(
             ids = []
             missing = []
             for natural_value in natural_values:
-                target = indexes.get(target_table, {}).get(str(natural_value).strip())
+                lookup_key = _link_lookup_key(
+                    target_table, natural_value, indexes
+                )
+                target = indexes.get(target_table, {}).get(lookup_key)
                 if target:
                     ids.append(target["id"])
                 else:
                     missing.append(str(natural_value))
             if missing:
-                key = source.get(NATURAL_KEYS[table], "")
+                key_fields = NATURAL_KEYS[table]
+                key = record_natural_key(source, key_fields) or ""
                 issues.append(
                     SeedIssue(
                         "warning",
@@ -130,12 +146,27 @@ def resolve_links(
     return resolved_records
 
 
+def _link_lookup_key(
+    target_table: str,
+    natural_value: Any,
+    indexes: dict[str, dict[NaturalKey, dict[str, Any]]],
+) -> NaturalKey:
+    if target_table != "GruposVarianteProducto":
+        return str(natural_value).strip()
+    if not isinstance(natural_value, (list, tuple)) or len(natural_value) != 2:
+        return ((), str(natural_value).strip())
+    product_sku, group_name = natural_value
+    product = indexes.get("Productos", {}).get(str(product_sku).strip())
+    product_id = product["id"] if product else ""
+    return ((product_id,), str(group_name).strip())
+
+
 def execute_seed(
     client: AirtableRecordsClient,
     result: BuildResult,
     issues: list[SeedIssue],
 ) -> dict[str, dict[str, int]]:
-    indexes: dict[str, dict[str, dict[str, Any]]] = {}
+    indexes: dict[str, dict[NaturalKey, dict[str, Any]]] = {}
     summary: dict[str, dict[str, int]] = {}
     for table in TABLE_ORDER:
         resolved = resolve_links(table, result.tables[table], indexes, issues)

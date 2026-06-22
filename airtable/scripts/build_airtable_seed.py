@@ -18,6 +18,15 @@ DEFAULT_EXCEL = Path("airtable/imports/Kanpai.xlsx")
 DEFAULT_FIXED = Path("airtable/seeds/kanpai_fixed_seed.v1.json")
 DEFAULT_OUTPUT = Path("airtable/seeds/kanpai_seed.generated.json")
 DEFAULT_RECIPE_MULTIPLIER = Decimal("1")
+YAKITORI_PREPARATION_SKUS = (
+    "YAK-COC-POLL",
+    "YAK-COC-PORK",
+    "YAK-COC-PUL",
+    "YAK-COC_CAM",
+    "YAK-COC-VER",
+    "YAK-COC-HONG",
+    "YAK-COC-MIX",
+)
 
 TABLE_ORDER = (
     "Roles",
@@ -50,8 +59,8 @@ NATURAL_KEYS = {
     "Mesas": "codigo_mesa",
     "InsumosInventario": "codigo_insumo",
     "Productos": "sku",
-    "GruposVarianteProducto": "nombre",
-    "OpcionesVarianteProducto": "nombre",
+    "GruposVarianteProducto": ("producto", "nombre"),
+    "OpcionesVarianteProducto": ("grupo_variante", "nombre"),
     "AsignacionesProductoEstacion": "nombre_registro",
     "RecetasProducto": "nombre_registro",
 }
@@ -65,7 +74,10 @@ LINK_FIELDS = {
         "producto": ("Productos", "sku"),
     },
     "OpcionesVarianteProducto": {
-        "grupo_variante": ("GruposVarianteProducto", "nombre"),
+        "grupo_variante": (
+            "GruposVarianteProducto",
+            ("producto", "nombre"),
+        ),
         "producto_opcional": ("Productos", "sku"),
         "estacion": ("EstacionesProduccion", "clave_estacion"),
     },
@@ -363,12 +375,16 @@ def _add_incomplete(
 
 
 def _dedupe(
-    records: list[dict[str, Any]], key: str, table: str, issues: list[SeedIssue]
+    records: list[dict[str, Any]],
+    key: str | tuple[str, ...],
+    table: str,
+    issues: list[SeedIssue],
 ) -> list[dict[str, Any]]:
-    seen: set[str] = set()
+    key_fields = (key,) if isinstance(key, str) else key
+    seen: set[tuple[Any, ...]] = set()
     result = []
     for record in records:
-        value = clean_string(record.get(key))
+        value = tuple(_seed_key_part(record.get(field)) for field in key_fields)
         if value in seen:
             issues.append(
                 SeedIssue(
@@ -381,6 +397,12 @@ def _dedupe(
         seen.add(value)
         result.append(record)
     return result
+
+
+def _seed_key_part(value: Any) -> Any:
+    if isinstance(value, (list, tuple)):
+        return tuple(_seed_key_part(item) for item in value)
+    return clean_string(value)
 
 
 def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXED) -> BuildResult:
@@ -677,7 +699,7 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
             continue
         tables["OpcionesVarianteProducto"].append(
             {
-                "grupo_variante": [group_name],
+                "grupo_variante": [(combo_sku, group_name)],
                 "producto_opcional": [option_sku],
                 "nombre": option_name,
                 "sku": option_sku,
@@ -688,6 +710,35 @@ def build_seed(excel_path: Path = DEFAULT_EXCEL, fixed_path: Path = DEFAULT_FIXE
         )
         combo_options_seen.add(option_key)
         stats["combo_options_valid"] += 1
+
+    for sku in YAKITORI_PREPARATION_SKUS:
+        if sku not in product_keys:
+            continue
+        group_key = (sku, "Preparación")
+        if group_key not in combo_groups_seen:
+            tables["GruposVarianteProducto"].append(
+                {
+                    "producto": [sku],
+                    "nombre": "Preparación",
+                    "seleccion_minima": 1,
+                    "seleccion_maxima": 1,
+                    "requerido": True,
+                    "activo": True,
+                }
+            )
+            combo_groups_seen.add(group_key)
+        for option_name in ("Tempura", "Asada"):
+            tables["OpcionesVarianteProducto"].append(
+                {
+                    "grupo_variante": [(sku, "Preparación")],
+                    "producto_opcional": [],
+                    "nombre": option_name,
+                    "sku": "",
+                    "diferencia_precio_centavos": 0,
+                    "estacion": [],
+                    "activo": True,
+                }
+            )
 
     products_with_recipe = {
         record["producto"][0] for record in tables["RecetasProducto"]

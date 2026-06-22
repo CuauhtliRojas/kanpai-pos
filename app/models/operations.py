@@ -434,6 +434,10 @@ class TicketLineVariantSelection(Base):
     variant_group: Mapped["ProductVariantGroup"] = relationship()
     variant_option: Mapped["ProductVariantOption"] = relationship()
 
+    @property
+    def group_name(self) -> str:
+        return self.variant_group.name
+
 
 class TicketLineNote(Base):
     __tablename__ = "notas_linea_ticket"

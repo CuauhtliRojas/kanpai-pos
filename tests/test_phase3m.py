@@ -364,6 +364,128 @@ def test_modify_sent_line_note_creates_print_job_existing_behavior() -> None:
 
 # --- V3-05B variant tests ---
 
+
+def test_yakitori_preparation_can_be_added_modified_and_sent() -> None:
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee = db.scalar(
+            select(Employee).where(Employee.employee_code == "EMP-0001")
+        )
+        table = db.scalar(
+            select(DiningTable)
+            .where(DiningTable.active.is_(True))
+            .order_by(DiningTable.id)
+        )
+        product = db.scalar(
+            select(Product).where(Product.sku == "YAK-COC-POLL")
+        )
+        assert employee and table and product
+        group = db.scalar(
+            select(ProductVariantGroup).where(
+                ProductVariantGroup.product_id == product.id,
+                ProductVariantGroup.name == "Preparación",
+            )
+        )
+        assert group is not None
+        options = {option.name: option for option in group.options}
+        assert set(options) == {"Tempura", "Asada"}
+
+        response = client.get(f"/api/v1/catalog/products/{product.id}/variant-groups")
+        assert response.status_code == 200
+        assert response.json()[0]["name"] == "Preparación"
+        assert [item["name"] for item in response.json()[0]["options"]] == [
+            "Tempura",
+            "Asada",
+        ]
+
+        open_cash_shift(db, employee.id, 0)
+        db.commit()
+        ticket = open_ticket_for_table(db, table.id, employee.id)
+        line = add_product_to_ticket(
+            db,
+            ticket.id,
+            product.id,
+            employee.id,
+            1,
+            variant_selections=[
+                {
+                    "variant_group_id": group.id,
+                    "variant_option_id": options["Tempura"].id,
+                    "quantity": 1,
+                }
+            ],
+        )[0]
+        assert line.variant_selections[0].name_snapshot == "Tempura"
+
+        modification = modify_ticket_line(
+            db,
+            line.id,
+            employee.id,
+            variant_selections=[
+                {
+                    "variant_group_id": group.id,
+                    "variant_option_id": options["Asada"].id,
+                    "quantity": 1,
+                }
+            ],
+        )
+        assert modification.print_job_id is None
+        db.flush()
+        selections = list(
+            db.scalars(
+                select(TicketLineVariantSelection).where(
+                    TicketLineVariantSelection.ticket_line_id == line.id
+                )
+            )
+        )
+        assert [selection.name_snapshot for selection in selections] == ["Asada"]
+
+        batch = send_round(db, ticket.id, employee.id)
+        job = db.scalar(
+            select(PrintJob).where(PrintJob.command_batch_id == batch.id)
+        )
+        assert job is not None
+        assert "Asada" in job.content_snapshot
+        db.commit()
+        ticket_id = ticket.id
+        line_id = line.id
+
+    readonly = client.get(f"/api/v1/pos/tickets/{ticket_id}/readonly")
+    assert readonly.status_code == 200
+    readonly_line = next(
+        item for item in readonly.json()["lines"] if item["id"] == line_id
+    )
+    assert [item["name_snapshot"] for item in readonly_line["variant_selections"]] == [
+        "Asada"
+    ]
+    assert readonly_line["variant_selections"][0]["group_name"] == "Preparación"
+
+    active_lines = client.get(f"/api/v1/pos/tickets/{ticket_id}/lines")
+    assert active_lines.status_code == 200
+    active_selection = active_lines.json()[0]["variant_selections"][0]
+    assert active_selection["group_name"] == "Preparación"
+    assert active_selection["name_snapshot"] == "Asada"
+
+
+def test_yakitori_mix_exposes_brochetas_and_preparation_groups() -> None:
+    client = TestClient(app)
+    with SessionLocal() as db:
+        product = db.scalar(select(Product).where(Product.sku == "YAK-COC-MIX"))
+        assert product is not None
+        product_id = product.id
+
+    response = client.get(f"/api/v1/catalog/products/{product_id}/variant-groups")
+
+    assert response.status_code == 200
+    groups = {group["name"]: group for group in response.json()}
+    assert set(groups) == {"BROCHETAS", "Preparación"}
+    assert (groups["BROCHETAS"]["min_select"], groups["BROCHETAS"]["max_select"]) == (3, 3)
+    assert (groups["Preparación"]["min_select"], groups["Preparación"]["max_select"]) == (1, 1)
+    assert [option["name"] for option in groups["Preparación"]["options"]] == [
+        "Tempura",
+        "Asada",
+    ]
+
 def _clear_dev_chela_variants(db) -> None:
     """Remove any ProductVariantGroup rows added by previous tests for DEV-CHELA."""
     product = db.scalar(select(Product).where(Product.sku == "DEV-CHELA"))

@@ -83,6 +83,28 @@ def _same_value(left: Any, right: Any, *, linked: bool = False) -> bool:
     return left == right
 
 
+KeyField = str | tuple[str, ...]
+NaturalKey = str | tuple[Any, ...]
+
+
+def _key_part(value: Any) -> Any:
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        return tuple(sorted((_key_part(item) for item in value), key=str))
+    return value
+
+
+def record_natural_key(
+    fields: dict[str, Any], key_field: KeyField
+) -> NaturalKey | None:
+    key_fields = (key_field,) if isinstance(key_field, str) else key_field
+    parts = tuple(_key_part(fields.get(field)) for field in key_fields)
+    if any(part in (None, "", ()) for part in parts):
+        return None
+    return parts[0] if isinstance(key_field, str) else parts
+
+
 class AirtableRecordsClient:
     def __init__(self, base_id: str, token: str, *, max_attempts: int = 5) -> None:
         if not base_id or not token:
@@ -196,13 +218,14 @@ class AirtableRecordsClient:
         return updated
 
     def index_by_key(
-        self, table: str, key_field: str, *, fields: list[str] | None = None
-    ) -> dict[str, dict[str, Any]]:
-        requested = list(dict.fromkeys([key_field, *(fields or [])]))
-        result: dict[str, dict[str, Any]] = {}
+        self, table: str, key_field: KeyField, *, fields: list[str] | None = None
+    ) -> dict[NaturalKey, dict[str, Any]]:
+        key_fields = (key_field,) if isinstance(key_field, str) else key_field
+        requested = list(dict.fromkeys([*key_fields, *(fields or [])]))
+        result: dict[NaturalKey, dict[str, Any]] = {}
         for record in self.list_records(table, fields=requested):
-            key = str(record.get("fields", {}).get(key_field, "")).strip()
-            if not key:
+            key = record_natural_key(record.get("fields", {}), key_field)
+            if key is None:
                 continue
             if key in result:
                 raise AirtableRecordsError(
@@ -214,16 +237,17 @@ class AirtableRecordsClient:
     def plan_upsert(
         self,
         table: str,
-        key_field: str,
+        key_field: KeyField,
         records: list[dict[str, Any]],
         *,
         linked_fields: set[str] | None = None,
         excluded_fields: set[str] | None = None,
-        existing: dict[str, dict[str, Any]] | None = None,
+        existing: dict[NaturalKey, dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         linked_fields = linked_fields or set()
         excluded_fields = excluded_fields or set()
-        if key_field in excluded_fields:
+        key_fields = (key_field,) if isinstance(key_field, str) else key_field
+        if set(key_fields) & excluded_fields:
             raise ValueError("La clave natural no puede excluirse del upsert.")
         writable_records = [
             {field: value for field, value in record.items() if field not in excluded_fields}
@@ -237,8 +261,8 @@ class AirtableRecordsClient:
         unchanged: list[dict[str, Any]] = []
 
         for fields in writable_records:
-            key = str(fields.get(key_field, "")).strip()
-            if not key:
+            key = record_natural_key(fields, key_field)
+            if key is None:
                 raise AirtableRecordsError(
                     f"Registro sin clave natural: {table}.{key_field}"
                 )
@@ -269,7 +293,7 @@ class AirtableRecordsClient:
     def upsert_by_key(
         self,
         table: str,
-        key_field: str,
+        key_field: KeyField,
         records: list[dict[str, Any]],
         *,
         linked_fields: set[str] | None = None,
@@ -286,8 +310,8 @@ class AirtableRecordsClient:
         updated = self.update_records(table, plan["updates"])
         final_index = dict(plan["existing"])
         for record in [*created, *updated]:
-            key = str(record.get("fields", {}).get(key_field, "")).strip()
-            if key:
+            key = record_natural_key(record.get("fields", {}), key_field)
+            if key is not None:
                 final_index[key] = record
         return {
             "created": len(created),

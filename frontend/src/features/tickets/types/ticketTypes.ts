@@ -37,7 +37,12 @@ export type TicketLine = {
   variant_selections: Array<{
     variant_group_id: number;
     variant_option_id: number;
+    group_name: string;
     quantity: number;
+    price_delta_cents_snapshot: number;
+    name_snapshot: string;
+    sku_snapshot: string | null;
+    station_id_snapshot: number | null;
   }>;
 };
 

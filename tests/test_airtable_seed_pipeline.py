@@ -129,6 +129,40 @@ def test_link_resolution_uses_ids_and_never_invents_internal_links() -> None:
     assert any(issue.code == "unresolved_link" for issue in issues)
 
 
+def test_variant_group_links_resolve_with_product_scoped_keys() -> None:
+    issues = []
+    indexes = {
+        "Productos": {
+            "YAK-COC-POLL": {"id": "rec-product-poll"},
+            "YAK-COC-PUL": {"id": "rec-product-pul"},
+        },
+        "GruposVarianteProducto": {
+            (("rec-product-poll",), "Preparación"): {"id": "rec-group-poll"},
+            (("rec-product-pul",), "Preparación"): {"id": "rec-group-pul"},
+        },
+    }
+    records = [
+        {
+            "grupo_variante": [("YAK-COC-POLL", "Preparación")],
+            "nombre": "Tempura",
+        },
+        {
+            "grupo_variante": [("YAK-COC-PUL", "Preparación")],
+            "nombre": "Tempura",
+        },
+    ]
+
+    resolved = resolve_links(
+        "OpcionesVarianteProducto", records, indexes, issues
+    )
+
+    assert issues == []
+    assert [record["grupo_variante"] for record in resolved] == [
+        ["rec-group-poll"],
+        ["rec-group-pul"],
+    ]
+
+
 def test_airtable_batches_are_capped_at_ten() -> None:
     groups = list(batched(list(range(23))))
     assert [len(group) for group in groups] == [10, 10, 3]
@@ -342,23 +376,55 @@ def test_real_excel_catalog_counts_and_does_not_invent_links() -> None:
     combo_groups = result.tables["GruposVarianteProducto"]
     combo_options = result.tables["OpcionesVarianteProducto"]
 
-    assert combo_groups == [
-        {
-            "producto": ["YAK-COC-MIX"],
-            "nombre": "BROCHETAS",
-            "seleccion_minima": 3,
-            "seleccion_maxima": 3,
-            "requerido": True,
-            "activo": True,
-        }
-    ]
-
-    assert len(combo_options) == 6
-    assert {option["producto_opcional"][0] for option in combo_options} == {
+    assert len(combo_groups) == 8
+    groups_by_key = {
+        (group["producto"][0], group["nombre"]): group
+        for group in combo_groups
+    }
+    assert groups_by_key[("YAK-COC-MIX", "BROCHETAS")]["seleccion_minima"] == 3
+    assert groups_by_key[("YAK-COC-MIX", "BROCHETAS")]["seleccion_maxima"] == 3
+    for sku in (
         "YAK-COC-POLL",
         "YAK-COC-PORK",
         "YAK-COC-PUL",
         "YAK-COC_CAM",
         "YAK-COC-VER",
         "YAK-COC-HONG",
+        "YAK-COC-MIX",
+    ):
+        preparation = groups_by_key[(sku, "Preparación")]
+        assert preparation["seleccion_minima"] == 1
+        assert preparation["seleccion_maxima"] == 1
+        assert preparation["requerido"] is True
+
+    assert len(combo_options) == 20
+    brocheta_options = [
+        option
+        for option in combo_options
+        if option["grupo_variante"] == [("YAK-COC-MIX", "BROCHETAS")]
+    ]
+    assert {option["producto_opcional"][0] for option in brocheta_options} == {
+        "YAK-COC-POLL",
+        "YAK-COC-PORK",
+        "YAK-COC-PUL",
+        "YAK-COC_CAM",
+        "YAK-COC-VER",
+        "YAK-COC-HONG",
+    }
+    tempura_groups = {
+        tuple(option["grupo_variante"][0])
+        for option in combo_options
+        if option["nombre"] == "Tempura"
+    }
+    assert tempura_groups == {
+        (sku, "Preparación")
+        for sku in (
+            "YAK-COC-POLL",
+            "YAK-COC-PORK",
+            "YAK-COC-PUL",
+            "YAK-COC_CAM",
+            "YAK-COC-VER",
+            "YAK-COC-HONG",
+            "YAK-COC-MIX",
+        )
     }
