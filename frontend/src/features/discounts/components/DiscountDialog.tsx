@@ -1,33 +1,53 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { BrutalButton } from "../../../shared/components/BrutalButton";
-import { parsePesosToCents } from "../../../shared/lib/money";
+import { formatCentsToPesos, parsePesosToCents } from "../../../shared/lib/money";
 import type { DiscountCreateRequest, DiscountType } from "../types/discountTypes";
 
 type DiscountDialogProps = {
   employeeId: number;
+  subtotalCents: number;
+  currentDiscountCents: number;
   isSaving: boolean;
   errorMessage: string | null;
   onClose: () => void;
   onApply: (payload: DiscountCreateRequest) => void;
 };
 
-export function DiscountDialog({ employeeId, isSaving, errorMessage, onClose, onApply }: DiscountDialogProps) {
+export function DiscountDialog({
+  employeeId,
+  subtotalCents,
+  currentDiscountCents,
+  isSaving,
+  errorMessage,
+  onClose,
+  onApply,
+}: DiscountDialogProps) {
   const [discountType, setDiscountType] = useState<DiscountType>("Monto");
   const [value, setValue] = useState("");
   const [reason, setReason] = useState("");
   const isAmount = discountType === "Monto";
+  const isCourtesy = discountType === "Cortesia";
+  const availableCents = Math.max(0, subtotalCents - currentDiscountCents);
+
+  const amountCents = isAmount ? parsePesosToCents(value) : null;
+  const percent = discountType === "Porcentaje" ? Number(value) : isCourtesy ? 100 : null;
+  const previewCents = isAmount
+    ? amountCents
+    : percent !== null && Number.isFinite(percent)
+      ? Math.round(subtotalCents * percent / 100)
+      : null;
+  const exceedsSubtotal = previewCents !== null && previewCents > availableCents;
 
   function buildPayload(): DiscountCreateRequest | null {
     const cleanReason = reason.trim();
     if (!cleanReason) return null;
     if (isAmount) {
-      const amountCents = parsePesosToCents(value);
       if (amountCents === null || amountCents <= 0) return null;
+      if (amountCents > availableCents) return null;
       return { employee_id: employeeId, discount_type: discountType, amount_cents: amountCents, percent_bps: null, reason: cleanReason, is_courtesy: false };
     }
-    const percent = Number(value);
-    if (!Number.isFinite(percent) || percent <= 0 || percent > 100) return null;
+    if (percent === null || !Number.isFinite(percent) || percent <= 0 || percent > 100 || exceedsSubtotal) return null;
     return {
       employee_id: employeeId,
       discount_type: discountType,
@@ -42,7 +62,7 @@ export function DiscountDialog({ employeeId, isSaving, errorMessage, onClose, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.78)] p-4" role="dialog" aria-modal="true" aria-labelledby="discount-title">
       <form
-        className="w-full max-w-lg border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]"
+        className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]"
         onSubmit={(event) => { event.preventDefault(); if (payload) onApply(payload); }}
       >
         <header className="flex items-start justify-between gap-3">
@@ -56,25 +76,51 @@ export function DiscountDialog({ employeeId, isSaving, errorMessage, onClose, on
         </header>
 
         <div className="mt-4 grid gap-3">
+          <div className="grid grid-cols-3 gap-2" role="group" aria-label="Tipo de descuento">
+            {(["Monto", "Porcentaje", "Cortesia"] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                aria-pressed={discountType === type}
+                disabled={isSaving}
+                onClick={() => { setDiscountType(type); setValue(""); }}
+                className={`min-h-[var(--kp-touch-md)] border-4 border-[var(--kp-ink)] px-2 text-sm font-black uppercase ${discountType === type ? "bg-[var(--kp-selected)] text-[var(--kp-selected-contrast)]" : "bg-[var(--kp-surface-raised)]"}`}
+              >
+                {type === "Cortesia" ? "Cortesía" : type}
+              </button>
+            ))}
+          </div>
+          {!isCourtesy ? (
+            <label className="grid gap-2 font-black">
+              {isAmount ? "¿Cuánto descontar?" : "¿Qué porcentaje?"}
+              <div className="flex min-h-[var(--kp-touch-md)] border-4 border-[var(--kp-ink)] bg-[var(--kp-bg)]">
+                <span className="flex items-center px-3 text-lg font-black">{isAmount ? "$" : "%"}</span>
+                <input
+                  value={value}
+                  onChange={(event) => setValue(event.target.value)}
+                  inputMode="decimal"
+                  disabled={isSaving}
+                  className="min-w-0 flex-1 bg-transparent px-2 font-bold outline-none"
+                />
+              </div>
+            </label>
+          ) : null}
           <label className="grid gap-2 font-black">
-            Tipo
-            <select value={discountType} onChange={(event) => { setDiscountType(event.target.value as DiscountType); setValue(""); }} disabled={isSaving} className="min-h-[var(--kp-touch-md)] border-4 border-[var(--kp-ink)] bg-[var(--kp-bg)] px-3 font-bold">
-              <option value="Monto">Monto</option>
-              <option value="Porcentaje">Porcentaje</option>
-              <option value="Cortesia">Cortesía</option>
-            </select>
-          </label>
-          <label className="grid gap-2 font-black">
-            {isAmount ? "Monto" : "Porcentaje"}
-            <input value={value} onChange={(event) => setValue(event.target.value)} inputMode="decimal" disabled={isSaving} className="min-h-[var(--kp-touch-md)] border-4 border-[var(--kp-ink)] bg-[var(--kp-bg)] px-3 font-bold" />
-          </label>
-          <label className="grid gap-2 font-black">
-            Motivo
-            <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} disabled={isSaving} className="resize-none border-4 border-[var(--kp-ink)] bg-[var(--kp-bg)] p-3 font-bold" />
+            {isCourtesy ? "Motivo de cortesía" : "Motivo para auditoría"}
+            <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={2} disabled={isSaving} className="resize-none border-4 border-[var(--kp-ink)] bg-[var(--kp-bg)] p-3 font-bold" />
           </label>
         </div>
+        {previewCents !== null && previewCents > 0 ? (
+          <div className={`mt-3 border-4 border-[var(--kp-ink)] p-3 ${exceedsSubtotal ? "bg-[var(--kp-danger-bg)] text-[var(--kp-danger-text)]" : "bg-[var(--kp-bg-alt)]"}`}>
+            <p className="text-sm font-bold">Se descontará</p>
+            <p className="text-2xl font-black">{formatCentsToPesos(previewCents)}</p>
+            {exceedsSubtotal ? <p className="mt-1 font-bold">El descuento excede el subtotal disponible.</p> : null}
+          </div>
+        ) : null}
         {errorMessage ? <p className="mt-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 font-bold text-[var(--kp-danger-text)]">{errorMessage}</p> : null}
-        <BrutalButton type="submit" fullWidth disabled={isSaving || payload === null} className="mt-4">Aplicar</BrutalButton>
+        <BrutalButton type="submit" variant="primary" fullWidth disabled={isSaving || payload === null} className="mt-4">
+          {isSaving ? "Aplicando..." : "Aplicar descuento"}
+        </BrutalButton>
       </form>
     </div>
   );

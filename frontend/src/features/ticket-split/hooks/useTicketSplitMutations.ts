@@ -11,6 +11,7 @@ function useRefreshSplits() {
       client.invalidateQueries({ queryKey: queryKeys.tickets.detail(ticketId) }),
       client.invalidateQueries({ queryKey: queryKeys.payments.list(ticketId) }),
       client.invalidateQueries({ queryKey: queryKeys.tables.list }),
+      client.invalidateQueries({ queryKey: queryKeys.ticketHistory.all }),
       ...(cashShiftId === undefined ? [] : [client.invalidateQueries({ queryKey: queryKeys.cash.summary(cashShiftId) })]),
     ]);
   };

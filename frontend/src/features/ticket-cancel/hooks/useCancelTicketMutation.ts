@@ -13,6 +13,7 @@ export function useCancelTicketMutation() {
         queryClient.invalidateQueries({ queryKey: queryKeys.tickets.lines(result.ticket.id) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tables.list }),
         queryClient.invalidateQueries({ queryKey: queryKeys.printing.jobs }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.ticketHistory.all }),
       ]);
     },
   });

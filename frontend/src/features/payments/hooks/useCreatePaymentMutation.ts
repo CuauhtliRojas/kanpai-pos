@@ -37,6 +37,7 @@ export function useCreatePaymentMutation() {
           queryKey: queryKeys.cash.summary(variables.cashShiftId),
         }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tables.list }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.ticketHistory.all }),
       ]);
     },
   });

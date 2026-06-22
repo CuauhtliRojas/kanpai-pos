@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ApiError } from "../../../api/http";
 import { formatCentsToPesos } from "../../../shared/lib/money";
 import { BrutalButton } from "../../../shared/components/BrutalButton";
 import type { PaymentMethod } from "../../payments/types/paymentTypes";
@@ -16,9 +17,36 @@ type Props = {
   employeeId: number | null;
   methods: PaymentMethod[];
   onClosed: () => void;
+  actionOnly?: boolean;
+  hideDivideAction?: boolean;
 };
 
-export function TicketSplitPanel({ ticket, lines, splits, employeeId, methods, onClosed }: Props) {
+function getRebuildError(error: unknown): string {
+  if (error instanceof ApiError) {
+    const detail =
+      typeof error.details === "object" &&
+      error.details !== null &&
+      "detail" in error.details &&
+      typeof error.details.detail === "string"
+        ? error.details.detail
+        : null;
+    if (detail?.toLowerCase().includes("pago")) {
+      return "Esta división ya tiene pagos. Termina el cobro o pide ayuda.";
+    }
+  }
+  return "No se pudo rehacer la división. Revisa su estado e intenta de nuevo.";
+}
+
+export function TicketSplitPanel({
+  ticket,
+  lines,
+  splits,
+  employeeId,
+  methods,
+  onClosed,
+  actionOnly = false,
+  hideDivideAction = false,
+}: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -53,18 +81,57 @@ export function TicketSplitPanel({ ticket, lines, splits, employeeId, methods, o
         setConfirmCancel(false);
         setCancelError(null);
       })
-      .catch((err: unknown) => {
-        const detail =
-          err && typeof err === "object" && "message" in err
-            ? String((err as { message: string }).message)
-            : "No se pudo rehacer la división.";
-        setCancelError(detail);
-        setConfirmCancel(false);
+      .catch((error: unknown) => {
+        setCancelError(getRebuildError(error));
       });
   }
 
+  const splitDialog = dialogOpen && employeeId !== null ? (
+    <SplitTicketDialog
+      lines={lines}
+      usedIds={usedIds}
+      allowEqual={activeSplits.length === 0}
+      isSaving={equalMutation.isPending || linesMutation.isPending}
+      errorMessage={splitError}
+      onClose={() => {
+        equalMutation.reset();
+        linesMutation.reset();
+        setDialogOpen(false);
+      }}
+      onEqual={(parts) =>
+        void equalMutation
+          .mutateAsync({ ticketId: ticket.id, payload: { employee_id: employeeId, parts } })
+          .then(() => setDialogOpen(false))
+          .catch(() => undefined)
+      }
+      onLines={(name, ticketLineIds) =>
+        void linesMutation
+          .mutateAsync({ ticketId: ticket.id, payload: { employee_id: employeeId, name, ticket_line_ids: ticketLineIds } })
+          .then(() => setDialogOpen(false))
+          .catch(() => undefined)
+      }
+    />
+  ) : null;
+
+  if (actionOnly) {
+    return (
+      <div className="min-w-0">
+        <BrutalButton
+          type="button"
+          size="md"
+          fullWidth
+          disabled={employeeId === null || !canAddSplit || !ticketActive}
+          onClick={() => setDialogOpen(true)}
+        >
+          Dividir cuenta
+        </BrutalButton>
+        {splitDialog}
+      </div>
+    );
+  }
+
   return (
-    <section className="border-t-2 border-zinc-700 pt-3">
+    <section>
       <div className="flex items-center justify-between gap-2">
         <p className="font-black uppercase">Cuenta dividida</p>
         <div className="flex gap-2">
@@ -73,7 +140,7 @@ export function TicketSplitPanel({ ticket, lines, splits, employeeId, methods, o
               Rehacer división
             </BrutalButton>
           ) : null}
-          {employeeId !== null && canAddSplit && ticketActive ? (
+          {!hideDivideAction && employeeId !== null && canAddSplit && ticketActive ? (
             <BrutalButton type="button" size="sm" onClick={() => setDialogOpen(true)}>
               {activeSplits.length ? "Agregar persona" : "Dividir"}
             </BrutalButton>
@@ -111,66 +178,30 @@ export function TicketSplitPanel({ ticket, lines, splits, employeeId, methods, o
         </div>
       )}
 
-      {cancelError ? (
-        <p className="mt-2 border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 font-bold text-[var(--kp-danger-text)]">
-          {cancelError}
-        </p>
-      ) : null}
-
       {confirmCancel ? (
-        <div className="mt-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3">
-          <p className="font-black">¿Rehacer la división?</p>
-          <p className="mt-1 text-sm font-bold text-[var(--kp-muted)]">
-            Se cancelarán las partes actuales y podrás crear una nueva división.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <BrutalButton
-              type="button"
-              size="sm"
-              variant="danger"
-              disabled={cancelMutation.isPending}
-              onClick={handleCancelSplits}
-            >
-              {cancelMutation.isPending ? "Cancelando..." : "Confirmar"}
-            </BrutalButton>
-            <BrutalButton
-              type="button"
-              size="sm"
-              disabled={cancelMutation.isPending}
-              onClick={() => setConfirmCancel(false)}
-            >
-              Volver
-            </BrutalButton>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(0,0,0,0.78)] p-4" role="dialog" aria-modal="true" aria-labelledby="rebuild-split-title">
+          <div className="w-full max-w-md border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-selected)]">División de cuenta</p>
+            <h2 id="rebuild-split-title" className="mt-1 text-2xl font-black uppercase">Rehacer división</h2>
+            <p className="mt-3 font-bold">Se cancelarán las partes actuales y podrás dividir de nuevo.</p>
+            {cancelError ? (
+              <p className="mt-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 font-bold text-[var(--kp-danger-text)]">
+                {cancelError}
+              </p>
+            ) : null}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <BrutalButton type="button" disabled={cancelMutation.isPending} onClick={() => { setConfirmCancel(false); setCancelError(null); }}>
+                Volver
+              </BrutalButton>
+              <BrutalButton type="button" variant="danger" disabled={cancelMutation.isPending} onClick={handleCancelSplits}>
+                {cancelMutation.isPending ? "Rehaciendo..." : "Rehacer"}
+              </BrutalButton>
+            </div>
           </div>
         </div>
       ) : null}
 
-      {dialogOpen && employeeId !== null ? (
-        <SplitTicketDialog
-          lines={lines}
-          usedIds={usedIds}
-          allowEqual={activeSplits.length === 0}
-          isSaving={equalMutation.isPending || linesMutation.isPending}
-          errorMessage={splitError}
-          onClose={() => {
-            equalMutation.reset();
-            linesMutation.reset();
-            setDialogOpen(false);
-          }}
-          onEqual={(parts) =>
-            void equalMutation
-              .mutateAsync({ ticketId: ticket.id, payload: { employee_id: employeeId, parts } })
-              .then(() => setDialogOpen(false))
-              .catch(() => undefined)
-          }
-          onLines={(name, ticketLineIds) =>
-            void linesMutation
-              .mutateAsync({ ticketId: ticket.id, payload: { employee_id: employeeId, name, ticket_line_ids: ticketLineIds } })
-              .then(() => setDialogOpen(false))
-              .catch(() => undefined)
-          }
-        />
-      ) : null}
+      {splitDialog}
     </section>
   );
 }

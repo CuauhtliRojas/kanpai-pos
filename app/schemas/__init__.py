@@ -60,6 +60,11 @@ from app.schemas.ticket import (
     TicketResponse,
     TicketTotalsResponse,
 )
+from app.schemas.ticket_history import (
+    TicketHistoryItem,
+    TicketHistoryResponse,
+    TicketReadonlyResponse,
+)
 
 __all__ = [
     "BusinessErrorResponse",
@@ -111,4 +116,7 @@ __all__ = [
     "TicketLinesCreatedResponse",
     "TicketResponse",
     "TicketTotalsResponse",
+    "TicketHistoryItem",
+    "TicketHistoryResponse",
+    "TicketReadonlyResponse",
 ]
