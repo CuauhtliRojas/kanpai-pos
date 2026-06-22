@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.database import get_db
 from app.api.security import require_admin_read_permission
-from app.models import DiningTable, Employee
+from app.domain.constants import TicketStatus
+from app.models import DiningTable, Employee, Ticket
 from app.schemas.auth import (
     EmployeeDetailResponse,
     EmployeePermissionsResponse,
@@ -35,17 +36,45 @@ def list_tables(db: Session = Depends(get_db)) -> list[dict]:
         .all()
     )
 
-    return [
-        {
-            "id": table.id,
-            "table_code": table.table_code,
-            "display_name": table.display_name,
-            "buzzer_number": table.buzzer_number,
-            "status": table.status_cache,
-            "active": table.active,
-        }
-        for table in tables
-    ]
+    active_tickets = (
+        db.execute(
+            select(Ticket)
+            .where(
+                Ticket.table_id.in_([table.id for table in tables]),
+                Ticket.status.in_((TicketStatus.OPEN, TicketStatus.IN_PAYMENT)),
+            )
+            .order_by(Ticket.table_id, Ticket.opened_at.desc(), Ticket.id.desc())
+        )
+        .scalars()
+        .all()
+    )
+    active_ticket_by_table: dict[int, Ticket] = {}
+    for ticket in active_tickets:
+        active_ticket_by_table.setdefault(ticket.table_id, ticket)
+
+    response = []
+    for table in tables:
+        active_ticket = active_ticket_by_table.get(table.id)
+        response.append(
+            {
+                "id": table.id,
+                "table_code": table.table_code,
+                "display_name": table.display_name,
+                "buzzer_number": table.buzzer_number,
+                "status": table.status_cache,
+                "active": table.active,
+                "active_ticket_id": active_ticket.id if active_ticket else None,
+                "active_ticket_folio": active_ticket.folio if active_ticket else None,
+                "active_ticket_status": active_ticket.status if active_ticket else None,
+                "active_ticket_total_cents": (
+                    active_ticket.total_cents if active_ticket else None
+                ),
+                "active_ticket_payment_status": (
+                    active_ticket.payment_status if active_ticket else None
+                ),
+            }
+        )
+    return response
 
 
 @router.get("/employees")

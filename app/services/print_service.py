@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from unicodedata import normalize
 
 from app.domain.constants import PrintJobType, PrintStatus
+from app.core.config import get_settings
 from app.models import (
     CashShift,
     Payment,
@@ -46,7 +47,12 @@ def sanitize_print_content(content: str) -> str:
     )
 
 
-def get_active_printer(db: Session, printer_key: str) -> Printer:
+def get_active_printer(
+    db: Session,
+    printer_key: str,
+    *,
+    allow_inactive_in_development: bool = False,
+) -> Printer:
     """Resuelve una impresora lógica activa o reporta un conflicto operativo."""
     printer = db.execute(
         select(Printer).where(Printer.printer_key == printer_key)
@@ -54,7 +60,19 @@ def get_active_printer(db: Session, printer_key: str) -> Printer:
     if printer is None:
         raise EntityNotFoundError(f"No existe la impresora con clave {printer_key}.")
     if not printer.active:
-        raise BusinessConflictError(f"La impresora {printer_key} está inactiva.")
+        settings = get_settings()
+        is_development = settings.app_env.strip().lower() in {
+            "local",
+            "development",
+            "dev",
+        }
+        bypass_enabled = (
+            allow_inactive_in_development
+            and is_development
+            and settings.pos_dev_bypass_printer_active_check
+        )
+        if not bypass_enabled:
+            raise BusinessConflictError(f"La impresora {printer_key} está inactiva.")
     return printer
 
 

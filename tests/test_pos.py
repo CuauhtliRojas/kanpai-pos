@@ -164,6 +164,46 @@ def test_open_ticket_marks_table_as_occupied() -> None:
         assert db.scalar(select(TableStatusEvent.to_status)) == "Ocupada"
 
 
+def test_operations_tables_include_active_ticket_details() -> None:
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee, occupied_table = _employee_and_table(db)
+        free_table = (
+            db.execute(
+                select(DiningTable)
+                .where(
+                    DiningTable.active.is_(True),
+                    DiningTable.id != occupied_table.id,
+                )
+                .order_by(DiningTable.id)
+            )
+            .scalars()
+            .first()
+        )
+        assert free_table is not None
+        open_cash_shift(db, employee.id, 0)
+        db.commit()
+        ticket = open_ticket_for_table(db, occupied_table.id, employee.id)
+        db.commit()
+        occupied_table_id = occupied_table.id
+        free_table_id = free_table.id
+        ticket_id = ticket.id
+        ticket_folio = ticket.folio
+
+    response = client.get("/api/v1/operations/tables")
+
+    assert response.status_code == 200
+    tables_by_id = {table["id"]: table for table in response.json()}
+    assert tables_by_id[free_table_id]["active_ticket_id"] is None
+    assert tables_by_id[occupied_table_id]["active_ticket_id"] == ticket_id
+    assert tables_by_id[occupied_table_id]["active_ticket_folio"] == ticket_folio
+    assert tables_by_id[occupied_table_id]["active_ticket_status"] == "Abierto"
+    assert tables_by_id[occupied_table_id]["active_ticket_total_cents"] == 0
+    assert (
+        tables_by_id[occupied_table_id]["active_ticket_payment_status"] == "Sin pagar"
+    )
+
+
 def test_cannot_open_second_active_ticket_on_same_table() -> None:
     with SessionLocal() as db:
         employee, table = _employee_and_table(db)

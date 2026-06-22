@@ -11,14 +11,15 @@ type TableGridProps = {
 export function TableGrid({ tables, selectedTableId, compact = false, onSelect }: TableGridProps) {
   if (tables.length === 0) {
     return (
-      <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-6 text-center text-2xl font-black uppercase shadow-[var(--kp-shadow-hard)]">
-        Sin mesas disponibles
+      <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-8 text-center shadow-[var(--kp-shadow-hard)]">
+        <p className="text-2xl font-black uppercase">No hay mesas disponibles</p>
+        <p className="mt-2 font-bold text-[var(--kp-muted)]">Intenta de nuevo en un momento.</p>
       </div>
     );
   }
 
   return (
-    <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"}>
+    <div className={compact ? "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" : "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"}>
       {tables.map((table) => (
         <TableCard
           key={table.id}

@@ -8,16 +8,16 @@ type CheckoutSummaryProps = {
 
 export function CheckoutSummary({ ticket, lineCount }: CheckoutSummaryProps) {
   return (
-    <div className="mt-3 grid gap-2 border-2 border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-3 font-bold">
-      <div className="flex justify-between gap-3">
+    <div className="mt-2 grid gap-1 border-2 border-[var(--kp-divider)] bg-[var(--kp-bg-alt)] p-2 font-bold">
+      <div className="flex justify-between gap-2">
         <span>Productos</span>
         <span>{lineCount}</span>
       </div>
-      <div className="flex justify-between gap-3">
+      <div className="flex justify-between gap-2">
         <span>Subtotal</span>
         <span>{formatCentsToPesos(ticket.subtotal_cents)}</span>
       </div>
-      <div className="flex justify-between gap-3 border-t-2 border-[var(--kp-divider)] pt-2 text-xl font-black">
+      <div className="flex justify-between gap-2 border-t-2 border-[var(--kp-divider)] pt-1 text-lg font-black">
         <span>Total</span>
         <span>{formatCentsToPesos(ticket.total_cents)}</span>
       </div>

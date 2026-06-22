@@ -5,6 +5,11 @@ export type DiningTable = {
   buzzer_number: number | null;
   status: string;
   active: boolean;
+  active_ticket_id: number | null;
+  active_ticket_folio: string | null;
+  active_ticket_status: string | null;
+  active_ticket_total_cents: number | null;
+  active_ticket_payment_status: string | null;
 };
 
 export type TicketOpenRequest = {

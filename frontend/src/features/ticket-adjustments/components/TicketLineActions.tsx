@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { ApiError } from "../../../api/http";
-import { BrutalButton } from "../../../shared/components/BrutalButton";
 import type { TicketLine } from "../../tickets/types/ticketTypes";
 import { useCancelTicketLineMutation } from "../hooks/useCancelTicketLineMutation";
 import { useModifyTicketLineMutation } from "../hooks/useModifyTicketLineMutation";
 import { CancelLineDialog } from "./CancelLineDialog";
 import { ModifyLineDialog } from "./ModifyLineDialog";
+import { TicketLineActionsDialog } from "./TicketLineActionsDialog";
 
 type TicketLineActionsProps = {
   ticketId: number;
@@ -34,7 +34,7 @@ export function TicketLineActions({
   employeeId,
   canCancel,
 }: TicketLineActionsProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [dialog, setDialog] = useState<"modify" | "cancel" | null>(null);
   const [note, setNote] = useState(line.note ?? "");
   const [reason, setReason] = useState("");
@@ -45,53 +45,41 @@ export function TicketLineActions({
   const lineIsActive = line.status !== "Cancelado";
   const canCancelThisLine = line.line_type !== "Componente de paquete";
 
-  if (!ticketAllowsAdjustments || !lineIsActive) {
-    return notice ? <p className="mt-2 text-xs font-black uppercase text-[var(--kp-success-text)]">{notice}</p> : null;
-  }
+  const canModify = ticketAllowsAdjustments && lineIsActive;
+  const canCancelLine = canModify && canCancelThisLine && canCancel;
 
   return (
-    <div className="mt-2">
+    <div>
       <button
         type="button"
         aria-label="Acciones del producto"
-        aria-expanded={menuOpen}
-        onClick={() => setMenuOpen((open) => !open)}
+        aria-expanded={actionsOpen}
+        onClick={() => setActionsOpen(true)}
         className="flex min-h-10 w-12 items-center justify-center border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] shadow-[var(--kp-shadow-hard-sm)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
       >
         <MoreHorizontal className="h-6 w-6" />
       </button>
 
-      {menuOpen ? (
-        <div className="mt-3 grid gap-3 border-l-4 border-[var(--kp-selected)] pl-3">
-          <BrutalButton
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setNote(line.note ?? "");
-              modifyMutation.reset();
-              setDialog("modify");
-            }}
-          >
-            Modificar
-          </BrutalButton>
-          {canCancelThisLine && canCancel ? (
-            <BrutalButton
-              type="button"
-              size="sm"
-              variant="danger"
-              onClick={() => {
-                setReason("");
-                cancelMutation.reset();
-                setDialog("cancel");
-              }}
-            >
-              Cancelar producto
-            </BrutalButton>
-          ) : canCancelThisLine ? (
-            <p className="text-xs font-black uppercase text-[var(--kp-warning-text)]">Pide autorización al encargado.</p>
-          ) : null}
-        </div>
+      {actionsOpen ? (
+        <TicketLineActionsDialog
+          line={line}
+          canModify={canModify}
+          canCancel={canCancelLine}
+          requiresAuthorization={canModify && canCancelThisLine && !canCancel}
+          onClose={() => setActionsOpen(false)}
+          onModify={() => {
+            setActionsOpen(false);
+            setNote(line.note ?? "");
+            modifyMutation.reset();
+            setDialog("modify");
+          }}
+          onCancel={() => {
+            setActionsOpen(false);
+            setReason("");
+            cancelMutation.reset();
+            setDialog("cancel");
+          }}
+        />
       ) : null}
 
       {notice ? <p className="mt-2 text-xs font-black uppercase text-[var(--kp-success-text)]">{notice}</p> : null}
@@ -112,7 +100,6 @@ export function TicketLineActions({
             }).then(() => {
               setNotice(line.status === "Capturado" ? "Pendiente de enviar" : "Modificación enviada");
               setDialog(null);
-              setMenuOpen(false);
             }).catch(() => undefined);
           }}
         />
@@ -134,7 +121,6 @@ export function TicketLineActions({
             }).then(() => {
               setNotice("Producto cancelado");
               setDialog(null);
-              setMenuOpen(false);
             }).catch(() => undefined);
           }}
         />

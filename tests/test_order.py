@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.config import get_settings
 from app.db.seed import run_seed
 from app.main import app
 from app.models import (
@@ -15,8 +16,10 @@ from app.models import (
     Employee,
     Payment,
     PrintJob,
+    Printer,
     Product,
     ProductStationAssignment,
+    ProductionStation,
     StationOrder,
     StationOrderLine,
     TableStatusEvent,
@@ -26,7 +29,7 @@ from app.models import (
     TicketLineNote,
 )
 from app.services.cash_shift_service import open_cash_shift
-from app.services.exceptions import InvalidBusinessDataError
+from app.services.exceptions import BusinessConflictError, InvalidBusinessDataError
 from app.services.order_service import send_round
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
@@ -146,6 +149,113 @@ def test_send_simple_line_creates_complete_logical_command() -> None:
             )
             == "Ronda enviada"
         )
+
+
+def test_send_round_uses_current_active_station_when_snapshot_is_inactive() -> None:
+    with SessionLocal() as db:
+        employee, ticket = _open_ticket(db)
+        product = _product(db, "CER-BER-ME2")
+        line = add_product_to_ticket(db, ticket.id, product.id, employee.id, 1)[0]
+        snapshot_station = db.get(ProductionStation, line.station_id_snapshot)
+        assert snapshot_station is not None
+        active_assignment = db.execute(
+            select(ProductStationAssignment)
+            .where(
+                ProductStationAssignment.product_id == product.id,
+                ProductStationAssignment.is_primary.is_(True),
+                ProductStationAssignment.active.is_(True),
+                ProductStationAssignment.station_id == snapshot_station.id,
+            )
+            .order_by(ProductStationAssignment.id)
+        ).scalars().first()
+        assert active_assignment is not None
+        replacement_station = db.execute(
+            select(ProductionStation)
+            .join(Printer, Printer.printer_key == ProductionStation.printer_key)
+            .where(
+                ProductionStation.id != snapshot_station.id,
+                ProductionStation.active.is_(True),
+                Printer.active.is_(True),
+            )
+            .order_by(ProductionStation.id)
+        ).scalars().first()
+        assert replacement_station is not None
+        snapshot_station.active = False
+        active_assignment.station_id = replacement_station.id
+        db.flush()
+
+        batch = send_round(db, ticket.id, employee.id)
+
+        station_order = db.scalar(
+            select(StationOrder).where(StationOrder.command_batch_id == batch.id)
+        )
+        assert station_order is not None
+        assert station_order.station_id == replacement_station.id
+        assert line.status == "Enviado a comanda"
+
+
+@pytest.mark.parametrize(
+    ("app_env", "flag_value"),
+    (("local", "false"), ("production", "true")),
+)
+def test_inactive_printer_blocks_without_local_development_bypass(
+    monkeypatch: pytest.MonkeyPatch,
+    app_env: str,
+    flag_value: str,
+) -> None:
+    monkeypatch.setenv("APP_ENV", app_env)
+    monkeypatch.setenv("POS_DEV_BYPASS_PRINTER_ACTIVE_CHECK", flag_value)
+    get_settings.cache_clear()
+    try:
+        with SessionLocal() as db:
+            employee, ticket = _open_ticket(db)
+            line = add_product_to_ticket(
+                db, ticket.id, _product(db).id, employee.id, 1
+            )[0]
+            station = db.get(ProductionStation, line.station_id_snapshot)
+            assert station is not None
+            printer = db.scalar(
+                select(Printer).where(Printer.printer_key == station.printer_key)
+            )
+            assert printer is not None
+            printer.active = False
+            db.flush()
+
+            with pytest.raises(BusinessConflictError, match="está inactiva"):
+                send_round(db, ticket.id, employee.id)
+    finally:
+        get_settings.cache_clear()
+
+
+def test_local_development_bypass_allows_inactive_command_printer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", "local")
+    monkeypatch.setenv("POS_DEV_BYPASS_PRINTER_ACTIVE_CHECK", "true")
+    get_settings.cache_clear()
+    try:
+        with SessionLocal() as db:
+            employee, ticket = _open_ticket(db)
+            line = add_product_to_ticket(
+                db, ticket.id, _product(db).id, employee.id, 1
+            )[0]
+            station = db.get(ProductionStation, line.station_id_snapshot)
+            assert station is not None
+            printer = db.scalar(
+                select(Printer).where(Printer.printer_key == station.printer_key)
+            )
+            assert printer is not None
+            printer.active = False
+            db.flush()
+
+            batch = send_round(db, ticket.id, employee.id)
+
+            assert db.scalar(
+                select(PrintJob).where(PrintJob.command_batch_id == batch.id)
+            ) is not None
+            assert line.status == "Enviado a comanda"
+    finally:
+        get_settings.cache_clear()
 
 
 def test_second_round_only_sends_new_captured_lines() -> None:

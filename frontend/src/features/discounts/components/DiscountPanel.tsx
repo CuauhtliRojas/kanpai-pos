@@ -40,7 +40,7 @@ export function DiscountPanel({ ticket, employeeId, canAuthorize }: DiscountPane
       <div className="flex items-center justify-between gap-3">
         <p className="font-black uppercase">Descuento</p>
         {canApply ? (
-          <BrutalButton type="button" size="sm" onClick={() => { applyMutation.reset(); setDialogOpen(true); }}>Aplicar</BrutalButton>
+          <BrutalButton type="button" size="sm" onClick={() => { applyMutation.reset(); setDialogOpen(true); }}>Aplicar descuento</BrutalButton>
         ) : ticket.status === "Abierto" && !canAuthorize ? (
           <span className="text-right text-xs font-black uppercase text-[var(--kp-warning-text)]">Pide autorización al encargado.</span>
         ) : null}

@@ -40,25 +40,44 @@ SENDABLE_TICKET_STATUSES = (TicketStatus.OPEN, TicketStatus.IN_PAYMENT)
 
 def _resolve_station(db: Session, line: TicketLine) -> ProductionStation | None:
     """Resuelve el snapshot de estación o la asignación primaria vigente."""
-    station_id = line.station_id_snapshot
-    if station_id is None:
-        station_id = db.execute(
-            select(ProductStationAssignment.station_id)
+    snapshot_station = None
+    if line.station_id_snapshot is not None:
+        snapshot_station = db.get(ProductionStation, line.station_id_snapshot)
+        if snapshot_station is None:
+            raise EntityNotFoundError(
+                f"La estación {line.station_id_snapshot} no existe."
+            )
+        if snapshot_station.active:
+            return snapshot_station
+
+    current_station = (
+        db.execute(
+            select(ProductionStation)
+            .join(
+                ProductStationAssignment,
+                ProductStationAssignment.station_id == ProductionStation.id,
+            )
             .where(
                 ProductStationAssignment.product_id == line.product_id,
                 ProductStationAssignment.is_primary.is_(True),
                 ProductStationAssignment.active.is_(True),
+                ProductionStation.active.is_(True),
             )
-            .order_by(ProductStationAssignment.id)
+            .order_by(ProductStationAssignment.id.desc())
             .limit(1)
-        ).scalar_one_or_none()
-    if station_id is None:
-        return None
+        )
+        .scalars()
+        .one_or_none()
+    )
+    if current_station is not None:
+        return current_station
 
-    station = db.get(ProductionStation, station_id)
-    if station is None:
-        raise EntityNotFoundError(f"La estación {station_id} no existe.")
-    return station
+    if snapshot_station is not None:
+        raise BusinessConflictError(
+            f"La estación {snapshot_station.name} no está disponible."
+        )
+
+    return None
 
 
 def _command_content(
@@ -137,7 +156,11 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
             raise BusinessConflictError(
                 f"La estación {station.name} no tiene impresora configurada."
             )
-        printers[station.id] = get_active_printer(db, station.printer_key)
+        printers[station.id] = get_active_printer(
+            db,
+            station.printer_key,
+            allow_inactive_in_development=True,
+        )
 
     current_round = db.execute(
         select(func.coalesce(func.max(CommandBatch.round_number), 0)).where(

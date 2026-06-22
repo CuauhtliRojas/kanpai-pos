@@ -11,7 +11,7 @@ export function PaymentList({ summary, methods }: PaymentListProps) {
 
   return (
     <section>
-      <div className="grid gap-2 font-bold">
+      <div className="grid gap-1 font-bold">
         <div className="flex justify-between gap-3">
           <span>Pagado</span>
           <span>{formatCentsToPesos(summary.total_paid_cents)}</span>
@@ -23,7 +23,7 @@ export function PaymentList({ summary, methods }: PaymentListProps) {
       </div>
 
       {summary.payments.length > 0 ? (
-        <ul className="mt-3 grid gap-2 border-t-2 border-[var(--kp-divider)] pt-3">
+        <ul className="mt-2 grid gap-1 border-t-2 border-[var(--kp-divider)] pt-2">
           {summary.payments.map((payment) => (
             <li key={payment.id} className="text-sm font-bold">
               <div className="flex justify-between gap-3">

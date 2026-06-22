@@ -89,7 +89,7 @@ export function PaymentForm({
   }
 
   return (
-    <form className="grid gap-3 border-t-2 border-[var(--kp-divider)] pt-4" onSubmit={handleSubmit}>
+    <form className="grid gap-2 border-t-2 border-[var(--kp-divider)] pt-3" onSubmit={handleSubmit}>
       <label className="grid gap-1 font-black">
         Método
         <select
@@ -98,7 +98,7 @@ export function PaymentForm({
             setMethodId(Number(event.target.value));
             setMessage(null);
           }}
-          className="min-h-[var(--kp-touch-md)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-2"
+          className="min-h-[var(--kp-touch-sm)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] px-2 py-1"
         >
           {activeMethods.map((method) => (
             <option key={method.id} value={method.id}>
@@ -114,7 +114,7 @@ export function PaymentForm({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           inputMode="decimal"
-          className="min-h-[var(--kp-touch-md)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-2"
+          className="min-h-[var(--kp-touch-sm)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] px-2 py-1"
         />
       </label>
 
@@ -126,7 +126,7 @@ export function PaymentForm({
               value={received}
               onChange={(event) => setReceived(event.target.value)}
               inputMode="decimal"
-              className="min-h-[var(--kp-touch-md)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-2"
+              className="min-h-[var(--kp-touch-sm)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] px-2 py-1"
             />
           </label>
         </>
@@ -138,7 +138,7 @@ export function PaymentForm({
           <input
             value={reference}
             onChange={(event) => setReference(event.target.value)}
-            className="min-h-[var(--kp-touch-md)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-2"
+            className="min-h-[var(--kp-touch-sm)] border-2 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] px-2 py-1"
           />
         </label>
       ) : null}
@@ -150,7 +150,7 @@ export function PaymentForm({
       <BrutalButton
         type="submit"
         variant="primary"
-        size="lg"
+        size="md"
         fullWidth
         disabled={createMutation.isPending}
       >

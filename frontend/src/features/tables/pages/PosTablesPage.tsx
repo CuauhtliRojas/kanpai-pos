@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../../api/http";
+import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { useAuthSession } from "../../auth/hooks/useAuthSession";
@@ -13,19 +14,21 @@ import { ProductGrid } from "../../products/components/ProductGrid";
 import { useCategoriesQuery } from "../../products/hooks/useCategoriesQuery";
 import { useProductsQuery } from "../../products/hooks/useProductsQuery";
 import type { Product } from "../../products/types/productTypes";
-import { ProductVariantDialog } from "../../variants/components/ProductVariantDialog";
-import { useProductVariantGroupsQuery } from "../../variants/hooks/useProductVariantGroupsQuery";
-import type { VariantSelection } from "../../variants/types/variantTypes";
+import { useCurrentOperation } from "../../operations/hooks/useCurrentOperation";
 import { ActiveTicketLinesPanel } from "../../tickets/components/ActiveTicketLinesPanel";
 import { useAddTicketLineMutation } from "../../tickets/hooks/useAddTicketLineMutation";
 import { useTicketLinesQuery } from "../../tickets/hooks/useTicketLinesQuery";
-import { useCurrentOperation } from "../../operations/hooks/useCurrentOperation";
+import { ProductVariantDialog } from "../../variants/components/ProductVariantDialog";
+import { useProductVariantGroupsQuery } from "../../variants/hooks/useProductVariantGroupsQuery";
+import type { VariantSelection } from "../../variants/types/variantTypes";
 import { ActiveTicketPanel } from "../components/ActiveTicketPanel";
+import { OpenTicketDialog } from "../components/OpenTicketDialog";
 import { PosBlockedByCashPanel } from "../components/PosBlockedByCashPanel";
 import { TableGrid } from "../components/TableGrid";
 import { useOpenTableTicketMutation } from "../hooks/useOpenTableTicketMutation";
 import { useTablesQuery } from "../hooks/useTablesQuery";
 import { useTicketQuery } from "../hooks/useTicketQuery";
+import type { DiningTable, Ticket } from "../types/tableTypes";
 
 function getPosErrorMessage(error: unknown): string | null {
   if (!error) return null;
@@ -35,30 +38,53 @@ function getPosErrorMessage(error: unknown): string | null {
   return "Ocurrió un error inesperado. Intenta de nuevo.";
 }
 
+type PosViewMode = "tables" | "capture";
+
+function ticketIsActive(ticket: Ticket | null): ticket is Ticket {
+  return ticket !== null && ticket.status !== "Cobrado" && ticket.status !== "Cancelado";
+}
+
 export function PosTablesPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [productMessage, setProductMessage] = useState<string | null>(null);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [pendingOpenTable, setPendingOpenTable] = useState<DiningTable | null>(null);
+  const [tableSelectionError, setTableSelectionError] = useState<string | null>(null);
+  const [pendingTicketTable, setPendingTicketTable] = useState<DiningTable | null>(null);
   const { employee, permissions } = useAuthSession();
   const cashQuery = useCurrentCashShiftQuery();
   const hasOpenCash = cashQuery.data !== null && cashQuery.data !== undefined;
-  const tablesQuery = useTablesQuery(hasOpenCash);
-  const categoriesQuery = useCategoriesQuery(hasOpenCash);
-  const productsQuery = useProductsQuery(hasOpenCash);
-  const openTicketMutation = useOpenTableTicketMutation();
-  const addLineMutation = useAddTicketLineMutation();
-  const variantGroupsQuery = useProductVariantGroupsQuery(selectedProduct?.id ?? null);
   const {
     selectedTable,
     activeTicket,
-    selectTable,
     setCurrentOperation,
     clearCurrentOperation,
   } = useCurrentOperation();
-  const ticketQuery = useTicketQuery(activeTicket?.id ?? null);
-  const displayedTicket = ticketQuery.data ?? activeTicket;
-  const linesQuery = useTicketLinesQuery(displayedTicket?.id ?? null);
+  const [viewMode, setViewMode] = useState<PosViewMode>(() =>
+    selectedTable && ticketIsActive(activeTicket) && activeTicket.table_id === selectedTable.id
+      ? "capture"
+      : "tables",
+  );
+  const requestedTicketId = pendingTicketTable?.active_ticket_id ?? activeTicket?.id ?? null;
+  const ticketQuery = useTicketQuery(requestedTicketId);
+  const displayedTicket =
+    activeTicket && ticketQuery.data?.id === activeTicket.id
+      ? ticketQuery.data
+      : activeTicket;
+  const hasActiveTicket =
+    selectedTable !== null &&
+    ticketIsActive(displayedTicket) &&
+    displayedTicket.table_id === selectedTable.id;
+  const isCaptureMode = hasOpenCash && hasActiveTicket && viewMode === "capture";
+  const isChangingTable = hasOpenCash && hasActiveTicket && viewMode === "tables";
+  const tablesQuery = useTablesQuery(hasOpenCash);
+  const categoriesQuery = useCategoriesQuery(isCaptureMode);
+  const productsQuery = useProductsQuery(isCaptureMode);
+  const openTicketMutation = useOpenTableTicketMutation();
+  const addLineMutation = useAddTicketLineMutation();
+  const variantGroupsQuery = useProductVariantGroupsQuery(selectedProduct?.id ?? null);
+  const linesQuery = useTicketLinesQuery(isCaptureMode ? displayedTicket.id : null);
   const pendingLineCount = (linesQuery.data ?? []).filter(
     (line) => line.status === "Capturado",
   ).length;
@@ -76,12 +102,36 @@ export function PosTablesPage() {
     [productsQuery.data, selectedCategoryId],
   );
 
+  useEffect(() => {
+    if (!pendingTicketTable) return;
+
+    if (ticketQuery.isError) {
+      setPendingTicketTable(null);
+      setTableSelectionError("No se pudo abrir la cuenta. Intenta de nuevo.");
+      return;
+    }
+
+    if (
+      ticketQuery.data?.id !== pendingTicketTable.active_ticket_id ||
+      ticketQuery.data.table_id !== pendingTicketTable.id
+    ) {
+      return;
+    }
+
+    setCurrentOperation(pendingTicketTable, ticketQuery.data);
+    setPendingTicketTable(null);
+    setTableSelectionError(null);
+    setProductMessage(null);
+    setCheckoutMessage(null);
+    setViewMode("capture");
+  }, [pendingTicketTable, setCurrentOperation, ticketQuery.data, ticketQuery.isError]);
+
   async function addSelectedProduct(
     product: Product,
     variantSelections: VariantSelection[],
     keepDialogOnError = false,
   ) {
-    if (!displayedTicket || !employee) return;
+    if (!isCaptureMode || !employee) return;
     setProductMessage(null);
     try {
       await addLineMutation.mutateAsync({
@@ -102,17 +152,30 @@ export function PosTablesPage() {
   }
 
   function handleProductSelect(product: Product) {
-    if (!selectedTable) {
-      setProductMessage("Primero elige una mesa.");
-      return;
-    }
-    if (!displayedTicket || displayedTicket.table_id !== selectedTable.id) {
-      setProductMessage("Abre una cuenta para esta mesa.");
-      return;
-    }
+    if (!isCaptureMode) return;
     addLineMutation.reset();
     setProductMessage(null);
     setSelectedProduct(product);
+  }
+
+  function handleTableSelect(table: DiningTable) {
+    if (pendingTicketTable) return;
+    setTableSelectionError(null);
+    openTicketMutation.reset();
+
+    if (table.status === "Libre") {
+      setPendingOpenTable(table);
+      return;
+    }
+
+    if (table.active_ticket_id == null) {
+      setTableSelectionError(
+        "Esta mesa tiene cuenta abierta, pero no se pudo cargar. Intenta actualizar mesas.",
+      );
+      return;
+    }
+
+    setPendingTicketTable(table);
   }
 
   useEffect(() => {
@@ -139,10 +202,33 @@ export function PosTablesPage() {
 
   return (
     <div className="grid gap-4">
-      <header className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--kp-selected)]">Operación diaria</p>
-        <h1 className="mt-1 text-3xl font-black uppercase md:text-4xl">Venta</h1>
-        <p className="mt-2 font-bold text-[var(--kp-muted)]">Elige una mesa, agrega productos y revisa la cuenta activa.</p>
+      <header className="flex flex-wrap items-start justify-between gap-4 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--kp-selected)]">Venta</p>
+          <h1 className="mt-1 text-3xl font-black uppercase md:text-4xl">
+            {isCaptureMode ? "Captura de venta" : isChangingTable ? "Cambiar mesa" : "Elige mesa"}
+          </h1>
+          <p className="mt-2 font-bold text-[var(--kp-muted)]">
+            {isCaptureMode
+              ? "Agrega productos y revisa la cuenta activa."
+              : isChangingTable
+                ? "Elige otra mesa o vuelve a la cuenta actual."
+                : "Selecciona una mesa para abrir o continuar una cuenta."}
+          </p>
+        </div>
+        {isChangingTable ? (
+          <BrutalButton
+            type="button"
+            size="lg"
+            onClick={() => {
+              setTableSelectionError(null);
+              setPendingTicketTable(null);
+              setViewMode("capture");
+            }}
+          >
+            Volver a la cuenta actual
+          </BrutalButton>
+        ) : null}
       </header>
 
       {!hasOpenCash ? (
@@ -154,25 +240,9 @@ export function PosTablesPage() {
           title="No se pudo cargar mesas"
           message={getPosErrorMessage(tablesQuery.error) ?? "Intenta de nuevo."}
         />
-      ) : (
-        <div className="grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
-          <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 shadow-[var(--kp-shadow-hard)]">
-            <h2 className="mb-3 text-xl font-black uppercase">Mesas</h2>
-            <div className="max-h-[520px] overflow-y-auto pr-1">
-              <TableGrid
-                tables={tablesQuery.data}
-                selectedTableId={selectedTable?.id ?? null}
-                compact
-                onSelect={(table) => {
-                  selectTable(table);
-                  setProductMessage(null);
-                  setCheckoutMessage(null);
-                }}
-              />
-            </div>
-          </section>
-
-          <main className="min-w-0 border-4 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-4 shadow-[var(--kp-shadow-hard)]">
+      ) : isCaptureMode ? (
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
+          <main className="order-2 min-w-0 border-4 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-4 shadow-[var(--kp-shadow-hard)] lg:order-1">
             <h2 className="text-xl font-black uppercase">Categorías</h2>
             {categoriesQuery.isError ? (
               <p className="mt-3 font-bold">No se pudo cargar productos</p>
@@ -192,43 +262,45 @@ export function PosTablesPage() {
               </p>
             ) : null}
 
-            <div className="mt-4 max-h-[480px] overflow-y-auto pr-1">
+            <div className="mt-4 max-h-[calc(100vh-15rem)] overflow-y-auto pr-1">
               {productsQuery.isPending ? (
                 <LoadingState />
               ) : productsQuery.isError ? (
                 <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-5 text-center font-black uppercase">
                   No se pudo cargar productos
                 </p>
+              ) : products.length === 0 ? (
+                <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-5 text-center font-black uppercase">
+                  No hay productos en esta categoría
+                </p>
               ) : (
                 <ProductGrid
                   products={products}
-                  disabled={addLineMutation.isPending || variantGroupsQuery.isFetching || displayedTicket?.status === "En cobro"}
+                  disabled={
+                    addLineMutation.isPending ||
+                    variantGroupsQuery.isFetching ||
+                    displayedTicket.status === "En cobro"
+                  }
                   onSelect={handleProductSelect}
                 />
               )}
             </div>
           </main>
 
-          <div className="grid gap-4 lg:sticky lg:top-[calc(var(--kp-topbar-height)+1rem)]">
+          <div className="order-1 grid gap-4 lg:order-2 lg:sticky lg:top-[calc(var(--kp-topbar-height)+1rem)] lg:max-h-[calc(100vh-var(--kp-topbar-height)-2rem)] lg:overflow-y-auto lg:pr-1">
             <ActiveTicketPanel
               table={selectedTable}
               ticket={displayedTicket}
-              isOpening={openTicketMutation.isPending}
-              isLoadingTicket={ticketQuery.isPending && activeTicket !== null}
-              errorMessage={getPosErrorMessage(openTicketMutation.error ?? ticketQuery.error)}
-              onOpen={async (table) => {
-                if (!employee) return;
-                try {
-                  await openTicketMutation.mutateAsync({
-                    table,
-                    payload: { employee_id: employee.id },
-                  });
-                } catch {
-                  // El panel muestra el mensaje de la operación.
-                }
+              onChangeTable={() => {
+                setTableSelectionError(null);
+                setViewMode("tables");
               }}
-              onContinue={(table, ticket) => setCurrentOperation(table, ticket)}
             />
+            {ticketQuery.isError ? (
+              <p className="border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 font-bold text-[var(--kp-danger-text)]">
+                No se pudo actualizar la cuenta. Intenta de nuevo.
+              </p>
+            ) : null}
             <ActiveTicketLinesPanel
               ticket={displayedTicket}
               lines={linesQuery.data ?? []}
@@ -238,14 +310,14 @@ export function PosTablesPage() {
               canCancel={hasPermission(permissions, "TICKET_CANCEL")}
             />
             <SendCommandPanel
-              ticketId={displayedTicket?.id ?? null}
+              ticketId={displayedTicket.id}
               employeeId={employee?.id ?? null}
               pendingLineCount={pendingLineCount}
               isLoadingLines={linesQuery.isPending}
             />
-            <StationOrdersPanel ticketId={displayedTicket?.id ?? null} />
+            <StationOrdersPanel ticketId={displayedTicket.id} />
             <CheckoutPanel
-              hasSelectedTable={selectedTable !== null}
+              hasSelectedTable
               ticket={displayedTicket}
               lineCount={(linesQuery.data ?? []).length}
               lines={linesQuery.data ?? []}
@@ -258,28 +330,98 @@ export function PosTablesPage() {
                 setProductMessage(null);
                 setCheckoutMessage("Cuenta cerrada. Mesa liberada.");
                 clearCurrentOperation();
+                setViewMode("tables");
               }}
               onCancelled={() => {
                 setProductMessage(null);
                 setCheckoutMessage("Cuenta cancelada. Mesa liberada.");
                 clearCurrentOperation();
+                setViewMode("tables");
               }}
             />
           </div>
         </div>
+      ) : (
+        <main className="mx-auto w-full max-w-7xl border-4 border-[var(--kp-ink)] bg-[var(--kp-bg-alt)] p-4 shadow-[var(--kp-shadow-hard)] md:p-6">
+          {tableSelectionError ? (
+            <div className="mb-4 grid gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-danger-bg)] p-3 text-[var(--kp-danger-text)] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <p className="font-bold">{tableSelectionError}</p>
+              <BrutalButton
+                type="button"
+                size="md"
+                onClick={() => {
+                  setTableSelectionError(null);
+                  void tablesQuery.refetch();
+                }}
+              >
+                Actualizar mesas
+              </BrutalButton>
+            </div>
+          ) : null}
+          {pendingTicketTable && ticketQuery.isPending ? (
+            <p className="mb-4 border-4 border-[var(--kp-ink)] bg-[var(--kp-info-bg)] p-3 font-black uppercase">
+              Cargando cuenta...
+            </p>
+          ) : null}
+          <TableGrid
+            tables={tablesQuery.data}
+            selectedTableId={
+              pendingTicketTable?.id ?? pendingOpenTable?.id ?? selectedTable?.id ?? null
+            }
+            onSelect={handleTableSelect}
+          />
+        </main>
       )}
+
+      {pendingOpenTable ? (
+        <OpenTicketDialog
+          table={pendingOpenTable}
+          isOpening={openTicketMutation.isPending}
+          errorMessage={
+            openTicketMutation.error
+              ? "No se pudo abrir la cuenta. Intenta de nuevo."
+              : null
+          }
+          onClose={() => {
+            if (openTicketMutation.isPending) return;
+            openTicketMutation.reset();
+            setPendingOpenTable(null);
+          }}
+          onConfirm={() => {
+            if (!employee || openTicketMutation.isPending) return;
+            void openTicketMutation
+              .mutateAsync({
+                table: pendingOpenTable,
+                payload: { employee_id: employee.id },
+              })
+              .then(() => {
+                setPendingOpenTable(null);
+                setProductMessage(null);
+                setCheckoutMessage(null);
+                setViewMode("capture");
+              })
+              .catch(() => undefined);
+          }}
+        />
+      ) : null}
 
       {selectedProduct && variantGroupsQuery.data?.some((group) => group.active) ? (
         <ProductVariantDialog
           product={selectedProduct}
           groups={variantGroupsQuery.data}
           isSaving={addLineMutation.isPending}
-          errorMessage={addLineMutation.isError ? "No se pudo agregar el producto. Intenta de nuevo." : null}
+          errorMessage={
+            addLineMutation.isError
+              ? "No se pudo agregar el producto. Intenta de nuevo."
+              : null
+          }
           onClose={() => {
             addLineMutation.reset();
             setSelectedProduct(null);
           }}
-          onSubmit={(selections) => void addSelectedProduct(selectedProduct, selections, true)}
+          onSubmit={(selections) =>
+            void addSelectedProduct(selectedProduct, selections, true)
+          }
         />
       ) : null}
     </div>

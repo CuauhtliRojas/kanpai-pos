@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { X } from "lucide-react";
 import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { AdjustmentReasonField } from "./AdjustmentReasonField";
@@ -21,11 +22,20 @@ export function CancelLineDialog({
   onClose,
   onSubmit,
 }: CancelLineDialogProps) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !isSaving) onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSaving, onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.78)] p-4" role="dialog" aria-modal="true" aria-labelledby="cancel-line-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.78)] p-4" onClick={() => { if (!isSaving) onClose(); }} role="dialog" aria-modal="true" aria-labelledby="cancel-line-title">
       <form
         className="w-full max-w-lg border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]"
         onSubmit={(event) => { event.preventDefault(); onSubmit(); }}
+        onClick={(event) => event.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3">
           <div>

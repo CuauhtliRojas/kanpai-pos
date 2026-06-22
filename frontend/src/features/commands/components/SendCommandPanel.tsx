@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ApiError } from "../../../api/http";
 import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { useSendTicketRoundMutation } from "../hooks/useSendTicketRoundMutation";
+import { SendCommandDialog } from "./SendCommandDialog";
 
 type SendCommandPanelProps = {
   ticketId: number | null;
@@ -9,14 +11,42 @@ type SendCommandPanelProps = {
   isLoadingLines: boolean;
 };
 
+function getSendErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const detail =
+      typeof error.details === "object" &&
+      error.details !== null &&
+      "detail" in error.details &&
+      typeof error.details.detail === "string"
+        ? error.details.detail
+        : null;
+
+    if (detail?.includes("No hay líneas capturadas")) {
+      return "No hay productos pendientes por enviar.";
+    }
+    if (detail?.includes("no admite el envío")) {
+      return "La cuenta cambió. Revisa el pedido e intenta de nuevo.";
+    }
+    if (detail?.includes("estación") || detail?.includes("impresora")) {
+      return detail;
+    }
+    if (error.status === 409) {
+      return "La cuenta cambió. Revisa el pedido e intenta de nuevo.";
+    }
+  }
+  return "No se pudo enviar la comanda. Intenta de nuevo.";
+}
+
 export function SendCommandPanel({
   ticketId,
   employeeId,
   pendingLineCount,
   isLoadingLines,
 }: SendCommandPanelProps) {
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const submitLockRef = useRef(false);
   const sendMutation = useSendTicketRoundMutation();
   const canSend =
     ticketId !== null &&
@@ -26,70 +56,49 @@ export function SendCommandPanel({
     !sendMutation.isPending;
 
   useEffect(() => {
-    setIsConfirming(false);
+    setIsDialogOpen(false);
     setMessage(null);
+    setErrorMessage(null);
   }, [ticketId]);
 
   async function handleConfirm() {
-    if (ticketId === null || employeeId === null || pendingLineCount === 0) return;
+    if (!canSend || ticketId === null || employeeId === null || submitLockRef.current) return;
 
-    setMessage(null);
+    submitLockRef.current = true;
+    setErrorMessage(null);
     try {
       await sendMutation.mutateAsync({
         ticketId,
         payload: { employee_id: employeeId },
       });
-      setIsConfirming(false);
+      setIsDialogOpen(false);
       setMessage("Comanda enviada.");
-    } catch {
-      setMessage("No se pudo enviar la comanda.");
+    } catch (error) {
+      setErrorMessage(getSendErrorMessage(error));
+    } finally {
+      submitLockRef.current = false;
     }
   }
 
-  const guidance =
-    ticketId === null
+  const guidance = isLoadingLines
+    ? "Revisando pedido..."
+    : ticketId === null
       ? "Primero abre una cuenta."
-      : !isLoadingLines &&
-          pendingLineCount === 0 &&
-          message !== "Comanda enviada."
-        ? "Agrega productos antes de enviar."
+      : pendingLineCount === 0 && message !== "Comanda enviada."
+        ? "No hay productos pendientes por enviar."
         : null;
-  const visibleMessage =
-    message === "Comanda enviada." && pendingLineCount > 0 ? null : message;
 
   return (
-    <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
-        Productos pendientes
-      </p>
-      <p className="mt-1 text-2xl font-black">{pendingLineCount}</p>
+    <>
+      <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
+          Productos pendientes
+        </p>
+        <p className="mt-1 text-2xl font-black">{pendingLineCount}</p>
 
-      {guidance ? <p className="mt-3 font-bold text-[var(--kp-muted)]">{guidance}</p> : null}
-      {visibleMessage ? <p className="mt-3 font-black">{visibleMessage}</p> : null}
+        {guidance ? <p className="mt-3 font-bold text-[var(--kp-muted)]">{guidance}</p> : null}
+        {message ? <p className="mt-3 font-black">{message}</p> : null}
 
-      {isConfirming ? (
-        <div className="mt-4 grid gap-2">
-          <p className="font-black">¿Confirmar envío?</p>
-          <BrutalButton
-            type="button"
-            variant="warning"
-            size="lg"
-            fullWidth
-            disabled={!canSend}
-            onClick={() => void handleConfirm()}
-          >
-            {sendMutation.isPending ? "Enviando..." : "Confirmar envío"}
-          </BrutalButton>
-          <BrutalButton
-            type="button"
-            variant="ghost"
-            disabled={sendMutation.isPending}
-            onClick={() => setIsConfirming(false)}
-          >
-            Volver
-          </BrutalButton>
-        </div>
-      ) : (
         <BrutalButton
           type="button"
           variant="warning"
@@ -98,13 +107,28 @@ export function SendCommandPanel({
           disabled={!canSend}
           onClick={() => {
             setMessage(null);
-            setIsConfirming(true);
+            setErrorMessage(null);
+            setIsDialogOpen(true);
           }}
           className="mt-4"
         >
           Enviar comanda
         </BrutalButton>
-      )}
-    </section>
+      </section>
+
+      {isDialogOpen ? (
+        <SendCommandDialog
+          pendingLineCount={pendingLineCount}
+          isSending={sendMutation.isPending}
+          errorMessage={errorMessage}
+          onClose={() => {
+            if (sendMutation.isPending) return;
+            setErrorMessage(null);
+            setIsDialogOpen(false);
+          }}
+          onConfirm={() => void handleConfirm()}
+        />
+      ) : null}
+    </>
   );
 }

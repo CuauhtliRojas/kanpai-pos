@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     app_name: str = Field(default="Kanpai POS", alias="APP_NAME")
     app_env: str = Field(default="local", alias="APP_ENV")
     debug: bool = Field(default=True, alias="DEBUG")
+    pos_dev_bypass_printer_active_check: bool = Field(
+        default=False,
+        alias="POS_DEV_BYPASS_PRINTER_ACTIVE_CHECK",
+    )
     database_url: str = Field(
         default="sqlite:///./data/kanpai_pos.db",
         alias="DATABASE_URL",
