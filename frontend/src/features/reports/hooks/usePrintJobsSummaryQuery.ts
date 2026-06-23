@@ -1,7 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../../api/queryKeys";
-import { getDailyPrintJobsSummary } from "../api/reportsApi";
+import { getPrintJobsSummary } from "../api/reportsApi";
+import type { ReportDateRange } from "../types/reportTypes";
 
-export function usePrintJobsSummaryQuery() {
-  return useQuery({ queryKey: queryKeys.reports.printJobs, queryFn: getDailyPrintJobsSummary, retry: false });
+export function usePrintJobsSummaryQuery(range: ReportDateRange) {
+  return useQuery({
+    queryKey: queryKeys.reports.printJobs(range),
+    queryFn: () => getPrintJobsSummary(range),
+    retry: false,
+  });
 }

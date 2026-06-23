@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../../api/queryKeys";
-import { getDailySalesByPaymentMethod } from "../api/reportsApi";
+import { getSalesByPaymentMethod } from "../api/reportsApi";
+import type { ReportDateRange } from "../types/reportTypes";
 
-export function useSalesByPaymentMethodQuery() {
+export function useSalesByPaymentMethodQuery(range: ReportDateRange) {
   return useQuery({
-    queryKey: queryKeys.reports.salesByPaymentMethod,
-    queryFn: getDailySalesByPaymentMethod,
+    queryKey: queryKeys.reports.salesByPaymentMethod(range),
+    queryFn: () => getSalesByPaymentMethod(range),
     retry: false,
   });
 }

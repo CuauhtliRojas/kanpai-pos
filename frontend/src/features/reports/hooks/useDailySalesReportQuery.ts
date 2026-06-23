@@ -1,7 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../../api/queryKeys";
-import { getDailyOperationalSummary } from "../api/reportsApi";
+import { getOperationalSummary } from "../api/reportsApi";
+import type { ReportDateRange } from "../types/reportTypes";
 
-export function useDailySalesReportQuery() {
-  return useQuery({ queryKey: queryKeys.reports.dailySales, queryFn: getDailyOperationalSummary, retry: false });
+export function useDailySalesReportQuery(range: ReportDateRange) {
+  return useQuery({
+    queryKey: queryKeys.reports.summary(range),
+    queryFn: () => getOperationalSummary(range),
+    retry: false,
+  });
 }

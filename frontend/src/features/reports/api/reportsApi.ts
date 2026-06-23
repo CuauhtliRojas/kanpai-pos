@@ -4,36 +4,43 @@ import type {
   OperationalSummary,
   PrintJobsSummary,
   ProductionTimesItem,
+  ReportDateRange,
+  SalesByCategoryItem,
   SalesByPaymentMethodItem,
   SalesByProductItem,
 } from "../types/reportTypes";
 
-function todaySearch(): string {
-  const now = new Date();
-  const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
-  return `?date_from=${date}&date_to=${date}`;
+function rangeSearch(range: ReportDateRange): string {
+  const searchParams = new URLSearchParams();
+  searchParams.set("date_from", range.dateFrom);
+  searchParams.set("date_to", range.dateTo);
+  return `?${searchParams.toString()}`;
 }
 
-export function getDailyOperationalSummary(): Promise<OperationalSummary> {
-  return apiRequest<OperationalSummary>(`/api/v1/reports/operational-summary${todaySearch()}`);
+export function getOperationalSummary(range: ReportDateRange): Promise<OperationalSummary> {
+  return apiRequest<OperationalSummary>(`/api/v1/reports/operational-summary${rangeSearch(range)}`);
 }
 
-export function getDailySalesByProduct(): Promise<SalesByProductItem[]> {
-  return apiRequest<SalesByProductItem[]>(`/api/v1/reports/sales-by-product${todaySearch()}`);
+export function getSalesByProduct(range: ReportDateRange): Promise<SalesByProductItem[]> {
+  return apiRequest<SalesByProductItem[]>(`/api/v1/reports/sales-by-product${rangeSearch(range)}`);
 }
 
-export function getDailySalesByPaymentMethod(): Promise<SalesByPaymentMethodItem[]> {
-  return apiRequest<SalesByPaymentMethodItem[]>(`/api/v1/reports/sales-by-payment-method${todaySearch()}`);
+export function getSalesByPaymentMethod(range: ReportDateRange): Promise<SalesByPaymentMethodItem[]> {
+  return apiRequest<SalesByPaymentMethodItem[]>(`/api/v1/reports/sales-by-payment-method${rangeSearch(range)}`);
 }
 
-export function getDailyInventoryConsumption(): Promise<InventoryConsumptionItem[]> {
-  return apiRequest<InventoryConsumptionItem[]>(`/api/v1/reports/inventory-consumption${todaySearch()}`);
+export function getSalesByCategory(range: ReportDateRange): Promise<SalesByCategoryItem[]> {
+  return apiRequest<SalesByCategoryItem[]>(`/api/v1/reports/sales-by-category${rangeSearch(range)}`);
 }
 
-export function getDailyProductionTimes(): Promise<ProductionTimesItem[]> {
-  return apiRequest<ProductionTimesItem[]>(`/api/v1/reports/production-times${todaySearch()}`);
+export function getInventoryConsumption(range: ReportDateRange): Promise<InventoryConsumptionItem[]> {
+  return apiRequest<InventoryConsumptionItem[]>(`/api/v1/reports/inventory-consumption${rangeSearch(range)}`);
 }
 
-export function getDailyPrintJobsSummary(): Promise<PrintJobsSummary> {
-  return apiRequest<PrintJobsSummary>(`/api/v1/reports/print-jobs-summary${todaySearch()}`);
+export function getProductionTimes(range: ReportDateRange): Promise<ProductionTimesItem[]> {
+  return apiRequest<ProductionTimesItem[]>(`/api/v1/reports/production-times${rangeSearch(range)}`);
+}
+
+export function getPrintJobsSummary(range: ReportDateRange): Promise<PrintJobsSummary> {
+  return apiRequest<PrintJobsSummary>(`/api/v1/reports/print-jobs-summary${rangeSearch(range)}`);
 }

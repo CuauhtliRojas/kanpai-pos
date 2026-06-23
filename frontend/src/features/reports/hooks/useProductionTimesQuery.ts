@@ -1,7 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../../api/queryKeys";
-import { getDailyProductionTimes } from "../api/reportsApi";
+import { getProductionTimes } from "../api/reportsApi";
+import type { ReportDateRange } from "../types/reportTypes";
 
-export function useProductionTimesQuery() {
-  return useQuery({ queryKey: queryKeys.reports.productionTimes, queryFn: getDailyProductionTimes, retry: false });
+export function useProductionTimesQuery(range: ReportDateRange) {
+  return useQuery({
+    queryKey: queryKeys.reports.productionTimes(range),
+    queryFn: () => getProductionTimes(range),
+    retry: false,
+  });
 }

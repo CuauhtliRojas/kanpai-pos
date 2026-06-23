@@ -1,17 +1,39 @@
 import { formatCentsToPesos } from "../../../shared/lib/money";
+import { formatSoldLabel } from "../utils/reportFormatters";
 import type { SalesByProductItem } from "../types/reportTypes";
+import { ReportBarRow } from "./ReportBarRow";
 import { ReportCard } from "./ReportCard";
 
 export function SalesByProductPanel({ items }: { items: SalesByProductItem[] }) {
+  const rankedItems = items.slice(0, 10);
+  const maxValue = Math.max(0, ...rankedItems.map((item) => item.total_cents));
+
   return (
     <ReportCard title="Ventas por producto">
       {items.length === 0 ? <p className="font-bold text-[var(--kp-muted)]">Sin datos</p> : (
-        <div className="grid gap-2">
-          {items.map((item) => (
-            <div key={item.product_id} className="flex items-start justify-between gap-4 border-t-2 border-zinc-700 pt-2 first:border-t-0 first:pt-0">
-              <div><p className="font-black">{item.product_name}</p><p className="text-sm font-bold text-[var(--kp-muted)]">{item.quantity_sold} vendidos</p></div>
-              <p className="shrink-0 font-black">{formatCentsToPesos(item.total_cents)}</p>
-            </div>
+        <div className="grid gap-1">
+          {rankedItems.map((item, index) => (
+            <ReportBarRow
+              key={item.product_id}
+              rank={index + 1}
+              label={item.product_name}
+              value={item.total_cents}
+              maxValue={maxValue}
+              valueLabel={formatCentsToPesos(item.total_cents)}
+              meta={
+                <>
+                  <span>{formatSoldLabel(item.quantity_sold)}</span>
+                  {item.variant_breakdown.length > 0 ? (
+                    <span className="block normal-case tracking-normal text-[var(--kp-muted)]">
+                      {item.variant_breakdown
+                        .map((variant) => `${variant.name}: ${formatSoldLabel(variant.quantity_sold)}`)
+                        .join(" · ")}
+                    </span>
+                  ) : null}
+                </>
+              }
+              tone="success"
+            />
           ))}
         </div>
       )}

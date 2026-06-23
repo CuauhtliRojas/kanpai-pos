@@ -9,6 +9,7 @@ export function SalesSummaryPanel({ summary }: { summary: OperationalSummary }) 
     ["Cancelaciones", String(summary.cancelled_ticket_count)],
     ["Cuentas abiertas", String(summary.open_ticket_count)],
   ];
+
   return (
     <ReportCard title="Ventas del día">
       <div className="grid gap-3 sm:grid-cols-2">

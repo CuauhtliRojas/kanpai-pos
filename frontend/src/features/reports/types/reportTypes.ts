@@ -1,3 +1,8 @@
+export type ReportDateRange = {
+  dateFrom: string;
+  dateTo: string;
+};
+
 export type OperationalSummary = {
   total_sales_cents: number;
   total_paid_cents: number;
@@ -29,6 +34,17 @@ export type SalesByPaymentMethodItem = {
   method_name: string;
   total_cents: number;
   payment_count: number;
+};
+
+export type SalesByCategoryItem = {
+  category_id: number | null;
+  category_name: string;
+  gross_sales_cents: number;
+  net_sales_cents: number;
+  discount_cents: number;
+  quantity_sold: string;
+  ticket_count: number;
+  share_bps: number | null;
 };
 
 export type InventoryConsumptionItem = {

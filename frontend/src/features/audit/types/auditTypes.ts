@@ -1,3 +1,14 @@
+export type AuditEventFilters = {
+  entityType?: string;
+  entityId?: number;
+  eventType?: string;
+  actorEmployeeId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  limit: number;
+  offset: number;
+};
+
 export type AuditEvent = {
   id: number;
   event_type: string;
@@ -21,7 +32,21 @@ export type AuditEventPage = {
 };
 
 export type TicketAudit = {
-  ticket: { folio: string; status: string; payment_status: string; total_cents: number; opened_at: string; paid_at: string | null; cancel_reason: string | null };
+  ticket: {
+    id: number;
+    folio: string;
+    status: string;
+    payment_status: string;
+    subtotal_cents: number;
+    discount_cents: number;
+    tax_cents: number;
+    total_cents: number;
+    opened_at: string;
+    billing_started_at: string | null;
+    paid_at: string | null;
+    cancelled_at: string | null;
+    cancel_reason: string | null;
+  };
   lines: unknown[];
   payments: unknown[];
   discounts: unknown[];
@@ -47,8 +72,27 @@ export type CashShiftAuditExpense = {
 };
 
 export type CashShiftAudit = {
-  cash_shift: { folio: string; status: string; opened_at: string; closed_at: string | null };
-  summary: { total_sales_cents: number; total_paid_cents: number; total_expenses_cents: number; ticket_count: number };
+  cash_shift: {
+    id: number;
+    folio: string;
+    status: string;
+    opened_at: string;
+    closed_at: string | null;
+    opening_cash_cents: number;
+    declared_cash_cents: number | null;
+    expected_cash_cents: number | null;
+    cash_difference_cents: number | null;
+    closing_note: string | null;
+  };
+  summary: {
+    total_sales_cents: number;
+    total_paid_cents: number;
+    total_expenses_cents: number;
+    ticket_count: number;
+    paid_ticket_count: number;
+    cancelled_ticket_count: number;
+    pending_print_jobs_count: number;
+  };
   tickets: unknown[];
   payments: unknown[];
   expenses: CashShiftAuditExpense[];
