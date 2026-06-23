@@ -90,5 +90,8 @@
   system: {
     health: ["system", "health"] as const,
     airtableSyncStatus: ["system", "airtable-sync-status"] as const,
+    databaseStatus: ["system", "database-status"] as const,
+    seedSummary: ["system", "seed-summary"] as const,
+    preflight: ["system", "preflight"] as const,
   },
 };

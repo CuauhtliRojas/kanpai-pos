@@ -86,7 +86,7 @@ export const navigationItems: readonly NavigationItem[] = [
   {
     to: "/system",
     label: "Sistema",
-    description: "Revisar conexión y datos.",
+    description: "Conexión, datos y mantenimiento.",
     group: "Administración",
     icon: DatabaseZap,
     status: "available",

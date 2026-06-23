@@ -1,8 +1,7 @@
-﻿import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
-import { SurfaceCard } from "../../../shared/components/SurfaceCard";
 import { formatNullableDate } from "../../../shared/lib/formatters";
 import { useAuthSession } from "../../auth/hooks/useAuthSession";
 import { hasRole } from "../../auth/lib/permissions";
@@ -10,47 +9,41 @@ import { useAirtableSyncStatusQuery } from "../hooks/useAirtableSyncStatusQuery"
 import { SyncActionPanel } from "./SyncActionPanel";
 
 function syncTone(status: string, running: boolean) {
-  if (running) {
-    return "info";
-  }
-
-  if (status.includes("error") || status.includes("missing")) {
-    return "danger";
-  }
-
-  if (status.includes("disabled") || status.includes("no_directions") || status === "not_started") {
+  if (running) return "info";
+  if (status.includes("error") || status.includes("missing")) return "danger";
+  if (
+    status.includes("disabled") ||
+    status.includes("no_directions") ||
+    status.includes("skipped") ||
+    status === "not_started"
+  ) {
     return "warning";
   }
-
-  if (status.includes("success")) {
-    return "ok";
-  }
-
+  if (status.includes("success")) return "ok";
   return "neutral";
 }
 
-function syncLabel(status: string, running: boolean) {
-  if (running) {
-    return "Actualizando";
+export function syncLabel(status: string, running: boolean) {
+  if (running) return "Actualizando";
+  if (status === "success_pull_skipped_active_operation") {
+    return "Catálogo omitido";
   }
+  if (status.includes("missing")) return "Falta configuración";
+  if (status.includes("error")) return "Error";
+  if (status.includes("success")) return "Datos actualizados";
+  return "Revisar datos";
+}
 
-  if (status.includes("error") || status.includes("missing")) {
-    return "Revisar conexión";
+function lastResultLabel(status: string) {
+  if (status === "success") return "Datos actualizados";
+  if (status === "success_pull_skipped_active_operation") {
+    return "Catálogo omitido por operación activa";
   }
-
-  if (status.includes("disabled") || status.includes("no_directions")) {
-    return "Actualización pendiente";
-  }
-
-  if (status === "not_started") {
-    return "Actualización pendiente";
-  }
-
-  if (status.includes("success")) {
-    return "Datos al día";
-  }
-
-  return "Actualización pendiente";
+  if (status.includes("missing")) return "Falta configuración";
+  if (status.includes("error")) return "Error";
+  if (status === "manual_running" || status === "running") return "Actualizando";
+  if (status === "not_started") return "Aún no se ha realizado";
+  return "Revisar datos";
 }
 
 export function AirtableSyncStatusCard() {
@@ -59,81 +52,107 @@ export function AirtableSyncStatusCard() {
 
   if (syncQuery.isPending) {
     return (
-      <SurfaceCard title="Actualización de datos" eyebrow="Sistema">
+      <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)]">
         <LoadingState />
-      </SurfaceCard>
+      </section>
     );
   }
 
   if (syncQuery.isError) {
     return (
-      <SurfaceCard title="Actualización de datos" eyebrow="Sistema">
+      <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)]">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--kp-warning)]">
+              Sistema
+            </p>
+            <h2 className="mt-1 text-2xl font-black uppercase leading-none">
+              Actualización de datos
+            </h2>
+          </div>
+          <StatusBadge label="Revisar datos" tone="warning" />
+        </div>
         <ErrorState
           title="Revisar sistema"
           message="No se pudo revisar la información. Revisa conexión o pide ayuda."
         />
-      </SurfaceCard>
+      </section>
     );
   }
 
+  const statusLabel = syncLabel(syncQuery.data.last_status, syncQuery.data.running);
+  const statusTone = syncTone(syncQuery.data.last_status, syncQuery.data.running);
+
   return (
-    <SurfaceCard
-      title="Actualización de datos"
-      eyebrow="Sistema"
-      action={
-        <StatusBadge
-          label={syncLabel(syncQuery.data.last_status, syncQuery.data.running)}
-          tone={syncTone(syncQuery.data.last_status, syncQuery.data.running)}
-        />
-      }
-    >
-      <div className="grid gap-4">
-        <div className="flex items-center gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 text-sm font-bold text-[var(--kp-text)]">
-          <RefreshCw className="h-6 w-6 text-[var(--kp-selected)]" />
+    <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)]">
+      <header className="flex flex-col gap-3 border-b-4 border-[var(--kp-ink)] pb-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--kp-warning)]">
+            Sistema
+          </p>
+          <h2 className="mt-1 text-2xl font-black uppercase leading-none">
+            Actualización de datos
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm font-bold leading-5 text-[var(--kp-muted)]">
+            Revisa catálogo, fotos y movimientos pendientes con oficina.
+          </p>
+        </div>
+        <StatusBadge label={statusLabel} tone={statusTone} />
+      </header>
+
+      <div className="mt-3 grid gap-3">
+        <div className="flex items-center gap-3 border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 py-2 text-sm font-bold">
+          <RefreshCw className="h-5 w-5 shrink-0 text-[var(--kp-selected)]" />
           <span>
-            La información se revisa automáticamente cada {syncQuery.data.interval_minutes} minutos.
+            Revisión automática cada {syncQuery.data.interval_minutes} minutos.
           </span>
         </div>
 
-        <SyncActionPanel
-          canRun={hasRole(roles, "ADMIN")}
-          disabled={!syncQuery.data.enabled || syncQuery.data.running}
-        />
-
-        <dl className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-          <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">Recibir catálogo</dt>
-            <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
-              {syncQuery.data.pull_enabled ? "Activa" : "Pausada"}
-            </dd>
-          </div>
-          <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">Enviar movimientos</dt>
-            <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
-              {syncQuery.data.push_enabled ? "Activa" : "Pausada"}
-            </dd>
-          </div>
-          <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">
-              Última revisión iniciada
+        <dl className="grid gap-2 text-sm md:grid-cols-5">
+          <div className="border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 py-2 md:col-span-2">
+            <dt className="text-xs font-black uppercase tracking-[0.1em] text-[var(--kp-muted)]">
+              Última revisión
             </dt>
-            <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
+            <dd className="mt-1 font-black">
               {syncQuery.data.last_started_at
                 ? formatNullableDate(syncQuery.data.last_started_at)
                 : "Aún no se ha realizado"}
             </dd>
           </div>
-          <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3 shadow-[var(--kp-shadow-hard-sm)]">
-            <dt className="font-black uppercase text-[var(--kp-selected)]">
-              Última revisión terminada
+          <div className="border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 py-2 md:col-span-2">
+            <dt className="text-xs font-black uppercase tracking-[0.1em] text-[var(--kp-muted)]">
+              Terminó
             </dt>
-            <dd className="mt-1 text-lg font-black text-[var(--kp-text)]">
+            <dd className="mt-1 font-black">
               {syncQuery.data.last_finished_at
                 ? formatNullableDate(syncQuery.data.last_finished_at)
                 : "Aún no se ha realizado"}
             </dd>
           </div>
+          <div className="border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 py-2">
+            <dt className="text-xs font-black uppercase tracking-[0.1em] text-[var(--kp-muted)]">
+              Resultado
+            </dt>
+            <dd className="mt-1 font-black">{lastResultLabel(syncQuery.data.last_status)}</dd>
+          </div>
         </dl>
+
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex min-h-9 items-center border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 text-xs font-black uppercase tracking-[0.08em]">
+            Recibir catálogo: {syncQuery.data.pull_enabled ? "Activa" : "Desactivada"}
+          </span>
+          <span className="inline-flex min-h-9 items-center border-2 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] px-3 text-xs font-black uppercase tracking-[0.08em]">
+            Enviar movimientos: {syncQuery.data.push_enabled ? "Activa" : "Desactivada"}
+          </span>
+        </div>
+
+        <SyncActionPanel
+          canRun={hasRole(roles, "ADMIN")}
+          syncEnabled={syncQuery.data.enabled}
+          pullEnabled={syncQuery.data.pull_enabled}
+          pushEnabled={syncQuery.data.push_enabled}
+          running={syncQuery.data.running}
+        />
 
         {syncQuery.data.last_error ? (
           <ErrorState
@@ -142,6 +161,6 @@ export function AirtableSyncStatusCard() {
           />
         ) : null}
       </div>
-    </SurfaceCard>
+    </section>
   );
 }

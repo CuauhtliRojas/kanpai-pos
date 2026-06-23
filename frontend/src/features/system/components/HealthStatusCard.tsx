@@ -1,8 +1,5 @@
-﻿import { Activity } from "lucide-react";
-import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
-import { SurfaceCard } from "../../../shared/components/SurfaceCard";
 import { useHealthQuery } from "../hooks/useHealthQuery";
 
 export function HealthStatusCard() {
@@ -10,39 +7,50 @@ export function HealthStatusCard() {
 
   if (healthQuery.isPending) {
     return (
-      <SurfaceCard title="Datos locales" eyebrow="Sistema">
-        <LoadingState />
-      </SurfaceCard>
+      <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)]">
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--kp-selected)]">
+          Conexión local
+        </p>
+        <div className="mt-3">
+          <LoadingState />
+        </div>
+      </section>
     );
   }
 
   if (healthQuery.isError) {
     return (
-      <SurfaceCard title="Datos locales" eyebrow="Sistema">
-        <ErrorState
-          title="Sin conexión"
-          message="Revisa el sistema o pide ayuda."
-        />
-      </SurfaceCard>
+      <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--kp-selected)]">
+              Conexión local
+            </p>
+            <h2 className="mt-1 text-xl font-black uppercase">Sin conexión</h2>
+          </div>
+          <StatusBadge label="Sin conexión" tone="danger" />
+        </div>
+        <p className="mt-3 text-sm font-bold text-[var(--kp-muted)]">
+          No se pudo conectar con el sistema local.
+        </p>
+      </section>
     );
   }
 
   return (
-    <SurfaceCard
-      title="Datos locales"
-      eyebrow="Sistema"
-      action={<StatusBadge label="Conectado" tone="ok" />}
-    >
-      <div className="grid gap-3 text-sm font-bold text-[var(--kp-text)]">
-        <div className="flex items-center gap-3 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-3">
-          <Activity className="h-6 w-6 text-[var(--kp-selected)]" />
-          <span className="font-black uppercase">Listo para operar</span>
+    <section className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-3 text-[var(--kp-text)] shadow-[var(--kp-shadow-hard)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--kp-selected)]">
+            Conexión local
+          </p>
+          <h2 className="mt-1 text-xl font-black uppercase">Conectado</h2>
         </div>
-        <p>La información está disponible en esta computadora.</p>
-        <p className="text-xs text-[var(--kp-muted)]">
-          Si ves “Sin conexión”, revisa el sistema o pide ayuda.
-        </p>
+        <StatusBadge label="Conectado" tone="ok" />
       </div>
-    </SurfaceCard>
+      <p className="mt-3 text-sm font-bold text-[var(--kp-muted)]">
+        El sistema local responde correctamente.
+      </p>
+    </section>
   );
 }

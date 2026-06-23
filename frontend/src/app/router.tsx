@@ -12,6 +12,7 @@ import { ReportsPage } from "../features/reports/pages/ReportsPage";
 import { AuditPage } from "../features/audit/pages/AuditPage";
 import { InventoryPage } from "../features/inventory/pages/InventoryPage";
 import { SecurityPage } from "../features/security/pages/SecurityPage";
+import { HomePage } from "../features/home/pages/HomePage";
 import { hasRole } from "../features/auth/lib/permissions";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
@@ -71,7 +72,7 @@ export function AppRouter() {
         <Route path="login" element={<LoginRoute />} />
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
-            <Route index element={<SystemDashboardPage />} />
+            <Route index element={<HomePage />} />
             <Route path="system" element={<SystemDashboardPage />} />
             <Route
               path="cash"
