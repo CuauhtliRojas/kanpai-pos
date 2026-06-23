@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import json
 import logging
+import sys
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -15,9 +16,23 @@ HttpPost = Callable[[str, dict, str | None], dict]
 Printer = Callable[[PrinterTarget, str], None]
 
 
+def app_base_dir() -> Path:
+    """Devuelve la carpeta base del repo en dev o del EXE en modo empaquetado."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[1]
+
+
+def default_config_path() -> Path:
+    """Devuelve el config por defecto segun modo script o EXE."""
+    if getattr(sys, "frozen", False):
+        return app_base_dir() / "print_worker_config.json"
+    return Path(__file__).with_name("print_worker_config.json")
+
+
 def configure_logging() -> None:
     """Configura log persistente y consola sin depender del directorio actual."""
-    log_dir = Path(__file__).resolve().parents[1] / "logs"
+    log_dir = app_base_dir() / "logs"
     log_dir.mkdir(exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
@@ -218,7 +233,7 @@ def process_once(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Worker fisico de impresion Kanpai POS para Windows")
-    parser.add_argument("--config", default=str(Path(__file__).with_name("print_worker_config.json")))
+    parser.add_argument("--config", default=str(default_config_path()))
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()

@@ -1,0 +1,20 @@
+﻿{
+  "api_base_url": "http://127.0.0.1:8000",
+  "worker_id": "cnc-usb-direct-58mm-01",
+  "worker_key": "CAMBIAR_EN_CNC",
+  "poll_seconds": 2,
+  "printers": {
+    "CAJA": {
+      "mode": "usb_device_path",
+      "target": "\\\\?\\USB#VID_0483&PID_070B#5&90b4785&0&3#{28d78fad-5a12-11d1-ae5b-0000f803a8c2}"
+    },
+    "BARRA": {
+      "mode": "usb_device_path",
+      "target": "\\\\?\\USB#VID_0483&PID_070B#5&90b4785&0&4#{28d78fad-5a12-11d1-ae5b-0000f803a8c2}"
+    },
+    "COCINA": {
+      "mode": "usb_device_path",
+      "target": "\\\\?\\USB#VID_0483&PID_070B#5&90b4785&0&5#{28d78fad-5a12-11d1-ae5b-0000f803a8c2}"
+    }
+  }
+}
