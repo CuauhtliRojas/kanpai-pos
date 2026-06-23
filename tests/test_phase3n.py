@@ -210,6 +210,23 @@ def test_worker_dry_run_marks_printed_and_failure_marks_failed():
     assert calls[-1][0].endswith("/9/failed")
     assert "sin papel" in calls[-1][1]["error_message"]
 
+    calls.clear()
+    printed = []
+    usb_target = {"mode": "usb_device_path", "target": r"\\?\USB#VID_0483&PID_070B#TEST"}
+    usb_config = {
+        "api_base_url": "http://local",
+        "worker_id": "qa",
+        "worker_key": "secret",
+        "printers": {"BARRA": usb_target},
+    }
+
+    def capture_printer(target, content):
+        printed.append((target, content))
+
+    assert module.process_once(usb_config, http_post=http_ok, printer=capture_printer) == 1
+    assert printed == [(usb_target, "KANPAI")]
+    assert calls[-1][0].endswith("/9/printed")
+
 
 def test_worker_example_config_exists():
     assert (Path(__file__).parents[1] / "scripts" / "print_worker_config.example.json").exists()
