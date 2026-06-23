@@ -1,5 +1,5 @@
-import appIcon from "../../assets/brand/app-icon.svg";
-import appLogo from "../../assets/brand/app-logo.svg";
+import appIcon from "../../assets/brand/app-icon.png";
+import appLogo from "../../assets/brand/app-logo.png";
 import productPlaceholder from "../../assets/brand/product-placeholder.svg";
 
 export const brandAssets = {

@@ -166,10 +166,14 @@ export function AppShell() {
           >
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)]">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--kp-muted)] mb-1">
                   Navegación
                 </p>
-                <BrandMark variant="logo" className="mt-1 h-10 w-auto max-w-full" />
+                {/* Aquí está la magia: un contenedor flex con gap para separar las imágenes */}
+                <div className="flex items-center gap-2">
+                  <BrandMark variant="icon" className="h-10 w-auto" />
+                  <BrandMark variant="logo" className="h-10 w-auto max-w-full" />
+                </div>
               </div>
               <button
                 type="button"
