@@ -87,6 +87,11 @@
   },
   security: {
     employees: ["security", "employees"] as const,
+    employeeDetail: (employeeId: number) => ["security", "employees", employeeId] as const,
+    employeePermissions: (employeeId: number) =>
+      ["security", "employees", employeeId, "permissions"] as const,
+    roles: ["security", "roles"] as const,
+    permissions: ["security", "permissions"] as const,
   },
   system: {
     health: ["system", "health"] as const,
