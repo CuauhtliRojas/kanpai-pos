@@ -11,7 +11,9 @@ export type PermissionKey =
   | "INVENTORY_ADJUST"
   | "REPRINT"
   | "SMS_SEND"
-  | "TICKET_CANCEL";
+  | "TICKET_CANCEL"
+  | "ADMIN_READ"
+  | "SUPPORT_ACCESS";
 
 export type EmployeeAuthResponse = {
   id: number;

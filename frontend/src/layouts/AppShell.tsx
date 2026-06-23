@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { LogOut, Menu, X } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
 import { useAirtableSyncStatusQuery } from "../features/system/hooks/useAirtableSyncStatusQuery";
@@ -15,26 +15,11 @@ import {
 
 type MenuItemProps = {
   item: NavigationItem;
-  access: NavigationItemAccess;
+  access: Exclude<NavigationItemAccess, "denied">;
   onNavigate: () => void;
 };
 
 function MenuItem({ item, access, onNavigate }: MenuItemProps) {
-  if (access === "denied") {
-    return (
-      <div className="flex min-h-[var(--kp-touch-md)] items-center gap-3 border-2 border-dashed border-[var(--kp-ink)] bg-[var(--kp-surface-soft)] px-3 text-[var(--kp-muted)]">
-        <item.icon className="h-5 w-5 shrink-0" />
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center justify-between gap-2">
-            <span className="text-xs font-black uppercase tracking-[0.08em]">{item.label}</span>
-            <span className="shrink-0 text-[9px] font-black uppercase">Sin permiso</span>
-          </span>
-          <span className="block truncate text-[11px] font-bold leading-tight">{item.description}</span>
-        </span>
-      </div>
-    );
-  }
-
   return (
     <NavLink
       to={item.to}
@@ -115,6 +100,29 @@ export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout, permissions, roles } = useAuthSession();
   const syncQuery = useAirtableSyncStatusQuery();
+  const visibleNavigationGroups = useMemo(
+    () =>
+      (["Operación", "Servicio", "Administración"] as const)
+        .map((group) => ({
+          group,
+          items: navigationItems
+            .filter((item) => item.group === group)
+            .map((item) => ({
+              item,
+              access: resolveNavigationItemAccess(item, roles, permissions),
+            }))
+            .filter(
+              (
+                entry,
+              ): entry is {
+                item: NavigationItem;
+                access: Exclude<NavigationItemAccess, "denied">;
+              } => entry.access !== "denied",
+            ),
+        }))
+        .filter((entry) => entry.items.length > 0),
+    [permissions, roles],
+  );
 
   const statusSignal = resolveEstadoSignal(
     syncQuery.data?.last_status,
@@ -186,7 +194,7 @@ export function AppShell() {
             </div>
 
             <nav className="grid gap-4" aria-label="Navegación principal">
-              {(["Operación", "Servicio", "Administración"] as const).map((group) => (
+              {visibleNavigationGroups.map(({ group, items }) => (
                 <section key={group} aria-labelledby={`navigation-${group}`}>
                   <h2
                     id={`navigation-${group}`}
@@ -195,16 +203,14 @@ export function AppShell() {
                     {group}
                   </h2>
                   <div className="grid gap-2">
-                    {navigationItems
-                      .filter((item) => item.group === group)
-                      .map((item) => (
-                        <MenuItem
-                          key={item.to}
-                          item={item}
-                          access={resolveNavigationItemAccess(item, roles, permissions)}
-                          onNavigate={() => setMenuOpen(false)}
-                        />
-                      ))}
+                    {items.map(({ item, access }) => (
+                      <MenuItem
+                        key={item.to}
+                        item={item}
+                        access={access}
+                        onNavigate={() => setMenuOpen(false)}
+                      />
+                    ))}
                   </div>
                 </section>
               ))}
@@ -235,6 +241,3 @@ export function AppShell() {
     </div>
   );
 }
-
-
-

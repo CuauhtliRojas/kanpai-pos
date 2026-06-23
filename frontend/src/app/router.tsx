@@ -4,6 +4,7 @@ import { LoginPage } from "../features/auth/pages/LoginPage";
 import { useAuthSession } from "../features/auth/hooks/useAuthSession";
 import { AccessDeniedPanel } from "../features/auth/components/AccessDeniedPanel";
 import { PermissionGate } from "../features/auth/components/PermissionGate";
+import type { PermissionKey } from "../features/auth/types/authTypes";
 import { CashPage } from "../features/cash/pages/CashPage";
 import { PosTablesPage } from "../features/tables/pages/PosTablesPage";
 import { ProductionPage } from "../features/production/pages/ProductionPage";
@@ -13,7 +14,6 @@ import { AuditPage } from "../features/audit/pages/AuditPage";
 import { InventoryPage } from "../features/inventory/pages/InventoryPage";
 import { SecurityPage } from "../features/security/pages/SecurityPage";
 import { HomePage } from "../features/home/pages/HomePage";
-import { hasRole } from "../features/auth/lib/permissions";
 import { SystemDashboardPage } from "../features/system/pages/SystemDashboardPage";
 import { AppShell } from "../layouts/AppShell";
 import { navigationItems, type NavigationItem } from "../layouts/navigationItems";
@@ -25,8 +25,6 @@ const moduleNavigationItems = navigationItems.filter(
 
 function ModulePlaceholder({ item }: { item: NavigationItem }) {
   const page = <ComingSoonPage title={item.label} />;
-  if (item.status === "coming_soon") return page;
-
   return (
     <PermissionGate
       anyOf={item.anyPermission}
@@ -60,9 +58,20 @@ function LoginRoute() {
   return isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />;
 }
 
-function AdminRoute({ children }: { children: ReactNode }) {
-  const { roles } = useAuthSession();
-  return hasRole(roles, "ADMIN") ? children : <AccessDeniedPanel />;
+function PermissionRoute({
+  anyOf,
+  allOf,
+  children,
+}: {
+  anyOf?: readonly PermissionKey[];
+  allOf?: readonly PermissionKey[];
+  children: ReactNode;
+}) {
+  return (
+    <PermissionGate anyOf={anyOf} allOf={allOf} fallback={<AccessDeniedPanel />}>
+      {children}
+    </PermissionGate>
+  );
 }
 
 export function AppRouter() {
@@ -73,35 +82,57 @@ export function AppRouter() {
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
-            <Route path="system" element={<SystemDashboardPage />} />
+            <Route
+              path="system"
+              element={
+                <PermissionRoute anyOf={["SUPPORT_ACCESS", "ADMIN_READ"]}>
+                  <SystemDashboardPage />
+                </PermissionRoute>
+              }
+            />
             <Route
               path="cash"
               element={
-                <PermissionGate
-                  anyOf={["CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE"]}
-                  fallback={<AccessDeniedPanel />}
-                >
+                <PermissionRoute anyOf={["CASH_SHIFT_OPEN", "CASH_SHIFT_CLOSE", "EXPENSE_CREATE"]}>
                   <CashPage />
-                </PermissionGate>
+                </PermissionRoute>
               }
             />
             <Route path="pos" element={<PosTablesPage />} />
             <Route path="production" element={<ProductionPage />} />
             <Route path="printing" element={<PrintingPage />} />
-            <Route path="reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
-            <Route path="audit" element={<AdminRoute><AuditPage /></AdminRoute>} />
+            <Route
+              path="reports"
+              element={
+                <PermissionRoute anyOf={["ADMIN_READ"]}>
+                  <ReportsPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="audit"
+              element={
+                <PermissionRoute anyOf={["ADMIN_READ"]}>
+                  <AuditPage />
+                </PermissionRoute>
+              }
+            />
             <Route
               path="inventory"
               element={
-                <PermissionGate
-                  anyOf={["INVENTORY_ADJUST"]}
-                  fallback={<AccessDeniedPanel />}
-                >
+                <PermissionRoute anyOf={["INVENTORY_ADJUST"]}>
                   <InventoryPage />
-                </PermissionGate>
+                </PermissionRoute>
               }
             />
-            <Route path="security" element={<AdminRoute><SecurityPage /></AdminRoute>} />
+            <Route
+              path="security"
+              element={
+                <PermissionRoute anyOf={["ADMIN_READ"]}>
+                  <SecurityPage />
+                </PermissionRoute>
+              }
+            />
             {moduleNavigationItems
               .filter(
                 (item) =>

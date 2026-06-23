@@ -14,7 +14,6 @@ import {
 import {
   hasAllPermissions,
   hasAnyPermission,
-  hasRole,
 } from "../features/auth/lib/permissions";
 import type { PermissionKey } from "../features/auth/types/authTypes";
 
@@ -90,6 +89,7 @@ export const navigationItems: readonly NavigationItem[] = [
     group: "Administración",
     icon: DatabaseZap,
     status: "available",
+    anyPermission: ["SUPPORT_ACCESS", "ADMIN_READ"],
   },
   {
     to: "/reports",
@@ -98,7 +98,7 @@ export const navigationItems: readonly NavigationItem[] = [
     group: "Administración",
     icon: BarChart3,
     status: "available",
-    adminOnly: true,
+    anyPermission: ["ADMIN_READ"],
   },
   {
     to: "/audit",
@@ -107,7 +107,7 @@ export const navigationItems: readonly NavigationItem[] = [
     group: "Administración",
     icon: ClipboardList,
     status: "available",
-    adminOnly: true,
+    anyPermission: ["ADMIN_READ"],
   },
   {
     to: "/security",
@@ -116,7 +116,7 @@ export const navigationItems: readonly NavigationItem[] = [
     group: "Administración",
     icon: ShieldCheck,
     status: "available",
-    adminOnly: true,
+    anyPermission: ["ADMIN_READ"],
   },
 ];
 
@@ -125,9 +125,9 @@ export function resolveNavigationItemAccess(
   roles: readonly string[],
   permissions: readonly string[],
 ): NavigationItemAccess {
-  if (item.status === "coming_soon") return "coming_soon";
-  if (item.adminOnly && !hasRole(roles, "ADMIN")) return "denied";
+  if (item.adminOnly && !roles.includes("ADMIN")) return "denied";
   if (item.anyPermission && !hasAnyPermission(permissions, item.anyPermission)) return "denied";
   if (item.allPermissions && !hasAllPermissions(permissions, item.allPermissions)) return "denied";
+  if (item.status === "coming_soon") return "coming_soon";
   return "available";
 }
