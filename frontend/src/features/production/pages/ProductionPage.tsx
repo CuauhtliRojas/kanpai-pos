@@ -5,14 +5,23 @@ import { BrutalButton } from "../../../shared/components/BrutalButton";
 import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { useAuthSession } from "../../auth/hooks/useAuthSession";
-import { ProductionOrderCard } from "../components/ProductionOrderCard";
+import { ProductionOrderGrid } from "../components/ProductionOrderGrid";
 import { ProductionStationTabs } from "../components/ProductionStationTabs";
+import { ProductionSummaryBar } from "../components/ProductionSummaryBar";
+import { ProductionViewFilters } from "../components/ProductionViewFilters";
 import { useAcceptProductionOrderMutation } from "../hooks/useAcceptProductionOrderMutation";
 import { useDeliverProductionOrderMutation } from "../hooks/useDeliverProductionOrderMutation";
 import { useFinishProductionOrderMutation } from "../hooks/useFinishProductionOrderMutation";
+import {
+  filterProductionOrders,
+  formatProductionLastUpdated,
+  sortProductionOrders,
+  type ProductionViewFilter,
+} from "../productionFormatters";
 import { useProductionOrdersQuery } from "../hooks/useProductionOrdersQuery";
 import { useProductionStationsQuery } from "../hooks/useProductionStationsQuery";
 import { useStartProductionOrderMutation } from "../hooks/useStartProductionOrderMutation";
+import type { ProductionOrder, ProductionOrderStatus } from "../types/productionTypes";
 
 function getProductionErrorMessage(error: unknown): string | null {
   if (!error) return null;
@@ -26,6 +35,8 @@ export function ProductionPage() {
   const { employee } = useAuthSession();
   const [selectedStationId, setSelectedStationId] = useState<number>();
   const [activeOrderId, setActiveOrderId] = useState<number | null>(null);
+  const [viewFilter, setViewFilter] = useState<ProductionViewFilter>("active");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const stationsQuery = useProductionStationsQuery();
   const stations = useMemo(
     () => (stationsQuery.data ?? []).filter((station) => station.active),
@@ -44,15 +55,29 @@ export function ProductionPage() {
   const finishMutation = useFinishProductionOrderMutation();
   const deliverMutation = useDeliverProductionOrderMutation();
 
-  function getOrderMutationState(status: string) {
+  const orders = ordersQuery.data ?? [];
+  const visibleOrders = useMemo(
+    () => sortProductionOrders(filterProductionOrders(orders, viewFilter)),
+    [orders, viewFilter],
+  );
+  const isUpdating = stationsQuery.isFetching || ordersQuery.isFetching;
+
+  useEffect(() => {
+    const updatedAt = Math.max(stationsQuery.dataUpdatedAt, ordersQuery.dataUpdatedAt);
+    if (updatedAt > 0) setLastUpdatedAt(new Date(updatedAt));
+  }, [ordersQuery.dataUpdatedAt, stationsQuery.dataUpdatedAt]);
+
+  function getOrderMutationState(status: ProductionOrderStatus) {
     const mutation = status === "En cola"
       ? acceptMutation
       : status === "Recibida"
         ? startMutation
         : status === "En preparacion"
           ? finishMutation
-          : deliverMutation;
-    return { isPending: mutation.isPending, error: mutation.error };
+          : status === "Terminada"
+            ? deliverMutation
+            : null;
+    return mutation ? { isPending: mutation.isPending, error: mutation.error } : null;
   }
 
   async function runAction(
@@ -69,21 +94,35 @@ export function ProductionPage() {
     }
   }
 
+  function resetActionState() {
+    setActiveOrderId(null);
+    acceptMutation.reset();
+    startMutation.reset();
+    finishMutation.reset();
+    deliverMutation.reset();
+  }
+
   return (
     <div className="grid gap-4">
       <header className="flex flex-wrap items-center justify-between gap-4 border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-4 shadow-[var(--kp-shadow-hard)]">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--kp-selected)]">Operación</p>
           <h1 className="mt-1 text-3xl font-black uppercase md:text-5xl">Producción</h1>
+          <p className="mt-2 max-w-2xl font-bold text-[var(--kp-muted)]">
+            Controla comandas activas por cocina y barra.
+          </p>
+          <p className="mt-2 text-xs font-black uppercase tracking-[0.08em] text-[var(--kp-muted)]">
+            {isUpdating ? "Actualizando..." : `Última actualización: ${formatProductionLastUpdated(lastUpdatedAt)}`}
+          </p>
         </div>
         <BrutalButton
           onClick={() => void Promise.all([
             stationsQuery.refetch(),
             selectedStationId === undefined ? Promise.resolve() : ordersQuery.refetch(),
           ])}
-          disabled={stationsQuery.isFetching || ordersQuery.isFetching}
+          disabled={isUpdating}
         >
-          <RefreshCw className="h-5 w-5" /> Actualizar
+          <RefreshCw className="h-5 w-5" /> {isUpdating ? "Actualizando..." : "Actualizar"}
         </BrutalButton>
       </header>
 
@@ -98,11 +137,7 @@ export function ProductionPage() {
             selectedStationId={selectedStationId}
             onSelect={(stationId) => {
               setSelectedStationId(stationId);
-              setActiveOrderId(null);
-              acceptMutation.reset();
-              startMutation.reset();
-              finishMutation.reset();
-              deliverMutation.reset();
+              resetActionState();
             }}
           />
           {stations.length === 0 ? (
@@ -113,27 +148,41 @@ export function ProductionPage() {
             <LoadingState />
           ) : ordersQuery.isError ? (
             <ErrorState title="No se pudieron cargar las comandas" message="Intenta de nuevo." />
-          ) : (ordersQuery.data ?? []).length === 0 ? (
-            <div className="border-4 border-[var(--kp-ink)] bg-[var(--kp-surface)] p-8 text-center text-xl font-black uppercase shadow-[var(--kp-shadow-hard)]">
-              Sin comandas pendientes
-            </div>
           ) : (
-            <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {(ordersQuery.data ?? []).map((order) => {
-                const mutationState = getOrderMutationState(order.status);
-                return (
-                  <ProductionOrderCard
-                    key={order.id}
-                    order={order}
-                    isPending={activeOrderId === order.id && mutationState.isPending}
-                    errorMessage={activeOrderId === order.id ? getProductionErrorMessage(mutationState.error) : null}
-                    onAccept={() => void runAction(acceptMutation, order.id, order.station_id)}
-                    onStart={() => void runAction(startMutation, order.id, order.station_id)}
-                    onFinish={() => void runAction(finishMutation, order.id, order.station_id)}
-                    onDeliver={() => void runAction(deliverMutation, order.id, order.station_id)}
-                  />
-                );
-              })}
+            <div className="grid gap-4">
+              <ProductionSummaryBar
+                orders={orders}
+                activeFilter={viewFilter}
+                onFilterSelect={(value) => {
+                  setViewFilter(value);
+                  resetActionState();
+                }}
+              />
+              <ProductionViewFilters
+                value={viewFilter}
+                onChange={(value) => {
+                  setViewFilter(value);
+                  resetActionState();
+                }}
+              />
+              <ProductionOrderGrid
+                orders={visibleOrders}
+                filter={viewFilter}
+                stationId={selectedStationId}
+                activeOrderId={activeOrderId}
+                isOrderPending={(order: ProductionOrder) => {
+                  const mutationState = getOrderMutationState(order.status);
+                  return Boolean(activeOrderId === order.id && mutationState?.isPending);
+                }}
+                getErrorMessage={(order: ProductionOrder) => {
+                  const mutationState = getOrderMutationState(order.status);
+                  return getProductionErrorMessage(mutationState?.error);
+                }}
+                onAccept={(order) => void runAction(acceptMutation, order.id, order.station_id)}
+                onStart={(order) => void runAction(startMutation, order.id, order.station_id)}
+                onFinish={(order) => void runAction(finishMutation, order.id, order.station_id)}
+                onDeliver={(order) => void runAction(deliverMutation, order.id, order.station_id)}
+              />
             </div>
           )}
         </>

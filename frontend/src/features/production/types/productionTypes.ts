@@ -50,3 +50,10 @@ export type ProductionActionInput = {
   stationId: number;
   employeeId: number;
 };
+
+export type ProductionOrdersParams = {
+  stationId?: number;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};

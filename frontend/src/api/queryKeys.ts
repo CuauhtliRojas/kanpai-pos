@@ -30,8 +30,23 @@
   },
   production: {
     stations: ["production", "stations"] as const,
-    orders: (stationId?: number) =>
-      ["production", "orders", stationId ?? "all"] as const,
+    orders: (
+      params?: number | { stationId?: number; status?: string; dateFrom?: string; dateTo?: string },
+    ) => {
+      if (typeof params === "number" || params === undefined) {
+        return ["production", "orders", params ?? "all"] as const;
+      }
+      return [
+        "production",
+        "orders",
+        {
+          stationId: params.stationId ?? "all",
+          status: params.status ?? "all",
+          dateFrom: params.dateFrom ?? "all",
+          dateTo: params.dateTo ?? "all",
+        },
+      ] as const;
+    },
   },
   printing: {
     jobs: ["printing", "jobs"] as const,
