@@ -10,7 +10,7 @@ El flujo validado es:
 - SQLite -> Airtable para operación POS.
 - Sincronización manual por scripts.
 - Sin activación automática en `.env` todavía.
-- Sin deletes automáticos como política general de sincronización.
+- Sin deletes automáticos como política general de sincronización; `Empleados.roles` se reconcilia exactamente desde Airtable reemplazando sólo la relación local `roles_empleado`.
 
 ## Alcance validado
 
@@ -167,6 +167,7 @@ No queda validado como master-master total.
 Pendientes explícitos:
 
 - No hay deletes automáticos generales.
+- No hay deletes de empleados ni roles en el pull; sólo se reemplaza la asignación `roles_empleado` de empleados remotos según Airtable.
 - No se valida edición de productos en SQLite y subida a Airtable como flujo principal.
 - No se activó auto-sync en `.env`.
 - No se cerró QA visual de imagen en frontend.

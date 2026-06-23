@@ -193,7 +193,7 @@ token_sesion
 
 Regla:
 
-Airtable puede editar nombre, alias, activo y roles. El PIN se administra localmente.
+Airtable puede editar nombre, alias, activo y roles. Airtable es fuente de verdad para la asignación de roles de empleados. El pull hacia SQLite reemplaza la relación local `roles_empleado` del empleado remoto para que coincida exactamente con Airtable. El PIN, hash, último acceso y sesiones se administran localmente.
 
 Roles
 
@@ -224,7 +224,7 @@ Airtable puede ver permisos, pero no debe ser fuente libre de permisos críticos
 
 RolesEmpleado
 
-Ownership: BIDIRECTIONAL_CONTROLLED.
+Ownership: AIRTABLE_MASTER para asignación de roles; SQLite conserva la operación local.
 
 Campos:
 

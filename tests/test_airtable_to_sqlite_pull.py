@@ -1,5 +1,7 @@
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import create_engine, func, select
@@ -15,6 +17,7 @@ from airtable.scripts.pull_airtable_to_sqlite import (
     normalize_integer,
     plan_records,
     prepare_records,
+    run_pull,
     validate_field_map,
 )
 from app.core.database import Base
@@ -67,6 +70,28 @@ def _prepare(remote):
     indexes, index_issues = build_remote_indexes(remote, field_map)
     prepared, preparation_issues = prepare_records(remote, field_map, indexes)
     return field_map, prepared, index_issues + preparation_issues
+
+
+class FakeAirtableClient:
+    def __init__(self, remote):
+        self.remote = remote
+
+    def list_records(self, table, fields=None):
+        return self.remote.get(table, [])
+
+
+def _pull_args(database_url, report_path, *, execute=False):
+    return SimpleNamespace(
+        execute=execute,
+        confirm="PULL_AIRTABLE_TO_SQLITE" if execute else "",
+        database_url=database_url,
+        product_image_media_dir=None,
+        field_map=ROOT / "airtable/schema/field_map.v1.json",
+        airtable_schema=ROOT / "airtable/schema/kanpai_airtable_schema.v1.json",
+        report=report_path,
+        max_seed_changes=25,
+        max_seed_change_ratio=0.20,
+    )
 
 
 def test_field_map_matches_airtable_schema_and_orm():
@@ -409,7 +434,7 @@ def test_fractional_inventory_and_recipe_values_are_preserved_without_truncation
         assert recipe.waste_pct == Decimal("0.015000")
 
 
-def test_pull_never_deletes_local_rows_or_employee_roles():
+def test_pull_reconciles_employee_roles_without_deleting_local_rows():
     engine = _engine()
     with Session(engine) as session, session.begin():
         admin = Role(role_key="ADMIN", name="Administrador", active=True)
@@ -441,11 +466,104 @@ def test_pull_never_deletes_local_rows_or_employee_roles():
     with Session(engine) as session:
         plan, planning_issues = plan_records(session, prepared, field_map)
         assert planning_issues == []
-        assert plan["Empleados"][0].action == "unchanged"
+        assert plan["Empleados"][0].action == "update"
+        assert plan["Empleados"][0].changed_fields == ("roles",)
         with session.begin_nested():
             apply_plan(session, plan, field_map)
         session.commit()
     with Session(engine) as session:
         employee = session.scalar(select(Employee).where(Employee.employee_code == "EMP-1"))
-        assert {item.role.role_key for item in employee.roles} == {"ADMIN", "CAJERO"}
+        assert {item.role.role_key for item in employee.roles} == {"ADMIN"}
         assert session.scalar(select(Unit).where(Unit.unit_key == "LOCAL")) is not None
+
+
+def test_pull_rejects_employee_role_reconciliation_without_active_admin(tmp_path):
+    database_path = tmp_path / "pull.db"
+    database_url = f"sqlite+pysqlite:///{database_path}"
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
+    with Session(engine) as session, session.begin():
+        admin = Role(role_key="ADMIN", name="Administrador", active=True)
+        employee = Employee(employee_code="EMP-1", full_name="Uno", active=True)
+        employee.roles.append(EmployeeRole(role=admin))
+        session.add_all([admin, employee])
+
+    remote = _empty_remote()
+    remote["Roles"] = [
+        {"id": "rec-admin", "fields": {"clave_rol": "ADMIN", "nombre": "Administrador", "activo": True}},
+    ]
+    remote["Empleados"] = [
+        {
+            "id": "rec-employee",
+            "fields": {
+                "codigo_empleado": "EMP-1",
+                "nombre_completo": "Uno",
+                "roles": [],
+                "activo": True,
+            },
+        }
+    ]
+
+    args = _pull_args(database_url, tmp_path / "report.md", execute=True)
+    pull_plan = run_pull(
+        args,
+        run_remote_preflight=False,
+        client=FakeAirtableClient(remote),
+    )
+
+    assert ("error", "admin_lockout_risk") in [
+        (issue.level, issue.code) for issue in pull_plan.issues
+    ]
+    with Session(engine) as session:
+        employee = session.scalar(select(Employee).where(Employee.employee_code == "EMP-1"))
+        assert {item.role.role_key for item in employee.roles} == {"ADMIN"}
+
+
+def test_employee_role_reconciliation_preserves_pin_fields():
+    engine = _engine()
+    last_login = datetime(2026, 1, 2, 3, 4, 5)
+    with Session(engine) as session, session.begin():
+        admin = Role(role_key="ADMIN", name="Administrador", active=True)
+        cashier = Role(role_key="CAJERO", name="Cajero", active=True)
+        employee = Employee(
+            employee_code="EMP-1",
+            full_name="Uno",
+            active=True,
+            pin_hash="pbkdf2_sha256$310000$salt$digest",
+            pin_enabled=True,
+            last_login_at=last_login,
+        )
+        employee.roles.append(EmployeeRole(role=admin))
+        employee.roles.append(EmployeeRole(role=cashier))
+        session.add_all([admin, cashier, employee])
+
+    remote = _empty_remote()
+    remote["Roles"] = [
+        {"id": "rec-admin", "fields": {"clave_rol": "ADMIN", "nombre": "Administrador", "activo": True}},
+        {"id": "rec-cashier", "fields": {"clave_rol": "CAJERO", "nombre": "Cajero", "activo": True}},
+    ]
+    remote["Empleados"] = [
+        {
+            "id": "rec-employee",
+            "fields": {
+                "codigo_empleado": "EMP-1",
+                "nombre_completo": "Uno",
+                "roles": ["rec-admin"],
+                "activo": True,
+            },
+        }
+    ]
+    field_map, prepared, issues = _prepare(remote)
+    assert issues == []
+    with Session(engine) as session:
+        plan, planning_issues = plan_records(session, prepared, field_map)
+        assert planning_issues == []
+        apply_plan(session, plan, field_map)
+        session.commit()
+
+    with Session(engine) as session:
+        employee = session.scalar(select(Employee).where(Employee.employee_code == "EMP-1"))
+        assert {item.role.role_key for item in employee.roles} == {"ADMIN"}
+        assert employee.pin_hash == "pbkdf2_sha256$310000$salt$digest"
+        assert employee.pin_enabled is True
+        assert employee.last_login_at == last_login

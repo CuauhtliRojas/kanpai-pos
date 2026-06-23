@@ -624,6 +624,74 @@ def _same(left: Any, right: Any) -> bool:
     return left == right
 
 
+def _employee_role_keys(employee: Employee) -> set[str]:
+    return {
+        str(item.role.role_key)
+        for item in employee.roles
+        if item.role is not None
+    }
+
+
+def _project_admin_role_active(
+    session: Session,
+    plan: dict[str, list[PlannedRecord]],
+) -> bool:
+    admin_role = session.scalar(select(Role).where(Role.role_key == "ADMIN"))
+    admin_active = bool(admin_role and admin_role.active)
+    for item in plan.get("Roles", []):
+        if item.prepared.key != ("ADMIN",):
+            continue
+        admin_active = bool(item.prepared.values.get("active", admin_active))
+    return admin_active
+
+
+def validate_active_admin_projection(
+    session: Session,
+    plan: dict[str, list[PlannedRecord]],
+) -> list[Issue]:
+    projected: dict[str, tuple[bool, set[str]]] = {}
+    for employee in session.scalars(select(Employee)).all():
+        projected[employee.employee_code] = (
+            bool(employee.active),
+            _employee_role_keys(employee),
+        )
+
+    if not projected and not plan.get("Empleados"):
+        return []
+
+    if not _project_admin_role_active(session, plan):
+        return [
+            Issue(
+                "error",
+                "admin_lockout_risk",
+                "El pull dejaría sin empleados ADMIN activos.",
+                "Empleados",
+            )
+        ]
+
+    for item in plan.get("Empleados", []):
+        employee_code = str(item.prepared.key[0])
+        current_active, current_roles = projected.get(employee_code, (False, set()))
+        projected[employee_code] = (
+            bool(item.prepared.values.get("active", current_active)),
+            set(item.prepared.links.get("roles", tuple(current_roles))),
+        )
+
+    has_active_admin = any(
+        active and "ADMIN" in roles for active, roles in projected.values()
+    )
+    if has_active_admin:
+        return []
+    return [
+        Issue(
+            "error",
+            "admin_lockout_risk",
+            "El pull dejaría sin empleados ADMIN activos.",
+            "Empleados",
+        )
+    ]
+
+
 def plan_records(
     session: Session,
     prepared: dict[str, list[PreparedRecord]],
@@ -658,12 +726,9 @@ def plan_records(
                 target_spec = SPEC_BY_TABLE[link.target_table]
                 target_attr = mapping["fields"][source_field]
                 if link.many:
-                    existing = {
-                        str(item.role.role_key)
-                        for item in obj.roles
-                        if item.role is not None
-                    }
-                    if set(desired_keys) - existing:
+                    existing = _employee_role_keys(obj)
+                    desired = set(desired_keys)
+                    if existing != desired:
                         changed.append(source_field)
                 else:
                     current = _local_natural_for_id(
@@ -675,6 +740,7 @@ def plan_records(
             action = "update" if changed else "unchanged"
             table_plan.append(PlannedRecord(action, record, tuple(changed)))
         plan[spec.airtable_table] = table_plan
+    issues.extend(validate_active_admin_projection(session, plan))
     return plan, issues
 
 
@@ -724,15 +790,25 @@ def apply_plan(
             for source_field, desired_keys in item.prepared.links.items():
                 link = spec.links[source_field]
                 if link.many:
-                    existing = {entry.role.role_key for entry in obj.roles if entry.role is not None}
-                    for role_key in desired_keys:
+                    desired_role_keys = set(desired_keys)
+                    obj.roles[:] = [
+                        entry
+                        for entry in obj.roles
+                        if entry.role is not None
+                        and entry.role.role_key in desired_role_keys
+                    ]
+                    existing = {
+                        entry.role.role_key
+                        for entry in obj.roles
+                        if entry.role is not None
+                    }
+                    target_by_key = {
+                        target.role_key: target
+                        for target in resolved_links[source_field]
+                    }
+                    for role_key in dict.fromkeys(desired_keys):
                         if role_key not in existing:
-                            target = next(
-                                target
-                                for target in resolved_links[source_field]
-                                if target.role_key == role_key
-                            )
-                            obj.roles.append(EmployeeRole(role=target))
+                            obj.roles.append(EmployeeRole(role=target_by_key[role_key]))
                     continue
                 target_attr = mapping["fields"][source_field]
                 target = resolved_links[source_field][0] if desired_keys else None
@@ -812,7 +888,7 @@ def render_report(plan: PullPlan, *, mode: str, executed: bool) -> str:
         "",
         f"Modo: {mode}",
         f"Cambios aplicados: {'sí' if executed else 'no'}",
-        "Política: upsert sin deletes; solo campos incluidos en field_map.v1.json.",
+        "Política: upsert sin borrar registros; Empleados.roles se reconcilia exactamente contra Airtable.",
         "",
         "## Pre-flight",
         "",
