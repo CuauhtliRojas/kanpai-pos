@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from airtable.scripts.pull_airtable_to_sqlite import (
     PullPlan,
     TABLE_SPECS,
+    _classify_drift,
     apply_plan,
     build_remote_indexes,
     normalize_bool,
@@ -567,3 +568,79 @@ def test_employee_role_reconciliation_preserves_pin_fields():
         assert employee.pin_hash == "pbkdf2_sha256$310000$salt$digest"
         assert employee.pin_enabled is True
         assert employee.last_login_at == last_login
+
+
+# ---------------------------------------------------------------------------
+# _classify_drift
+# ---------------------------------------------------------------------------
+
+
+def test_classify_drift_warnings_only_is_non_blocking():
+    """Drift with only warnings (campos extra) must NOT produce an error issue."""
+    output = "OK: ...\nWarnings: 5\nErrores: 0\n"
+    checks, issues = _classify_drift(0, 5, 0, output)
+    assert not any(issue.level == "error" for issue in issues)
+    assert any(issue.level == "warning" for issue in issues)
+    assert any("warning" in check.casefold() or "warning" in check.lower() for check in checks)
+
+
+def test_classify_drift_schema_errors_block_pull():
+    """Drift with actual schema errors (exit code 1 or drift_errors > 0) must error."""
+    output = "CAMPO FALTANTE: Tickets.estado\nWarnings: 0\nErrores: 1\n"
+    _, issues = _classify_drift(1, 0, 1, output)
+    assert any(issue.level == "error" and issue.code == "airtable_drift_failed" for issue in issues)
+
+
+def test_classify_drift_exit_code_error_blocks_regardless_of_counts():
+    """Non-zero exit code (network error, missing env) must block even with parsed 0 counts."""
+    output = "Connection refused\nWarnings: 0\nErrores: 0\n"
+    _, issues = _classify_drift(1, 0, 0, output)
+    assert any(issue.level == "error" for issue in issues)
+
+
+def test_classify_drift_clean_is_ok():
+    """Zero warnings, zero errors, exit 0 → OK check, no issues."""
+    output = "AIRTABLE DRIFT CHECK\nWarnings: 0\nErrores: 0\n"
+    checks, issues = _classify_drift(0, 0, 0, output)
+    assert issues == []
+    assert any("OK" in check for check in checks)
+
+
+# ---------------------------------------------------------------------------
+# pull dry-run reports remote counts correctly
+# ---------------------------------------------------------------------------
+
+
+def test_pull_dry_run_reports_remote_counts_with_catalog_records(tmp_path):
+    """run_pull dry-run must report correct remote_counts even when only warnings in drift."""
+    database_path = tmp_path / "pull_counts.db"
+    database_url = f"sqlite+pysqlite:///{database_path}"
+    engine = create_engine(database_url)
+    Base.metadata.create_all(engine)
+
+    remote = _empty_remote()
+    remote["Unidades"] = [
+        {"id": "rec-kg", "fields": {"clave_unidad": "KG", "nombre": "kg", "familia_unidad": "Masa", "activo": True}},
+        {"id": "rec-ml", "fields": {"clave_unidad": "ML", "nombre": "ml", "familia_unidad": "Volumen", "activo": True}},
+        {"id": "rec-pza", "fields": {"clave_unidad": "PZA", "nombre": "pza", "familia_unidad": "Conteo", "activo": True}},
+    ]
+    remote["MetodosPago"] = [
+        {"id": "rec-cash", "fields": {"clave_metodo": "Efectivo", "nombre": "Efectivo", "requiere_referencia": False, "activo": True}},
+        {"id": "rec-card", "fields": {"clave_metodo": "Tarjeta", "nombre": "Tarjeta", "requiere_referencia": True, "activo": True}},
+    ]
+    remote["Roles"] = [
+        {"id": "rec-admin", "fields": {"clave_rol": "ADMIN", "nombre": "Administrador", "activo": True}},
+    ]
+
+    args = _pull_args(database_url, tmp_path / "report.md")
+    plan = run_pull(args, run_remote_preflight=False, client=FakeAirtableClient(remote))
+
+    assert not any(issue.level == "error" for issue in plan.issues), [
+        (i.level, i.code, i.message) for i in plan.issues if i.level == "error"
+    ]
+    assert plan.remote_counts["Unidades"] == 3
+    assert plan.remote_counts["MetodosPago"] == 2
+    assert plan.remote_counts["Roles"] == 1
+    assert plan.summary("Unidades")["create"] == 3
+    assert plan.summary("MetodosPago")["create"] == 2
+    assert plan.summary("Roles")["create"] == 1

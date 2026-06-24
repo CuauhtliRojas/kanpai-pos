@@ -829,6 +829,36 @@ def _run_preflight_command(arguments: list[str]) -> tuple[int, str]:
     return result.returncode, f"{result.stdout}\n{result.stderr}".strip()
 
 
+def _classify_drift(
+    drift_code: int, drift_warnings: int, drift_errors: int, drift_output: str
+) -> tuple[list[str], list[Issue]]:
+    """Classify drift check output into checks and issues.
+
+    Warnings (extra/unmapped fields in Airtable) are non-blocking — they are
+    audit findings, not schema breakage. Only real errors (missing required
+    fields, type mismatches, or script failure) block the pull.
+    """
+    checks: list[str] = []
+    issues: list[Issue] = []
+    if drift_code != 0 or drift_errors > 0:
+        issues.append(Issue("error", "airtable_drift_failed", drift_output[-2000:]))
+    elif drift_warnings > 0:
+        checks.append(
+            f"Drift Airtable: {drift_warnings} warning(s) — campos extra sin mapeo, 0 errores."
+        )
+        issues.append(
+            Issue(
+                "warning",
+                "airtable_drift_warnings",
+                f"{drift_warnings} campo(s) extra en Airtable no mapeados. "
+                "Ejecutar audit_airtable_columns.py para clasificar.",
+            )
+        )
+    else:
+        checks.append("Drift Airtable: OK, 0 warnings, 0 errores.")
+    return checks, issues
+
+
 def run_preflight(*, max_seed_changes: int, max_seed_ratio: float) -> tuple[list[str], list[Issue]]:
     checks: list[str] = []
     issues: list[Issue] = []
@@ -837,10 +867,9 @@ def run_preflight(*, max_seed_changes: int, max_seed_ratio: float) -> tuple[list
     errors_match = re.search(r"Errores:\s*(\d+)", drift_output)
     drift_warnings = int(warnings_match.group(1)) if warnings_match else -1
     drift_errors = int(errors_match.group(1)) if errors_match else -1
-    if drift_code or drift_warnings != 0 or drift_errors != 0:
-        issues.append(Issue("error", "airtable_drift_failed", drift_output[-2000:]))
-    else:
-        checks.append("Drift Airtable: OK, 0 warnings, 0 errores.")
+    drift_checks, drift_issues = _classify_drift(drift_code, drift_warnings, drift_errors, drift_output)
+    checks.extend(drift_checks)
+    issues.extend(drift_issues)
 
     seed_code, seed_output = _run_preflight_command(
         ["airtable/scripts/seed_airtable_from_excel.py", "--dry-run"]
