@@ -247,7 +247,6 @@ def required_remote_fields(field_map: dict[str, Any]) -> dict[str, set[str]]:
         result.setdefault(spec.airtable_table, set()).update(
             field_map["tables"][spec.airtable_table]["fields"]
         )
-        result[spec.airtable_table].add("estado_sync")
         for link in spec.links.values():
             result.setdefault(link.target_table, set()).add(link.target_remote_key)
     return result

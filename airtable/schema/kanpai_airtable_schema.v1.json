@@ -55,53 +55,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -129,53 +82,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -204,53 +110,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -299,53 +158,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -378,53 +190,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -474,53 +239,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -544,53 +262,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -614,53 +285,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -704,53 +328,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -775,53 +352,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -894,53 +424,6 @@
         {
           "name": "imagen_path",
           "type": "singleLineText"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -975,53 +458,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1068,53 +504,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1169,53 +558,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1253,53 +595,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1342,53 +637,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1421,53 +669,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1503,53 +704,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1604,53 +758,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1691,53 +798,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1761,53 +821,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1866,53 +879,6 @@
         {
           "name": "activo",
           "type": "checkbox"
-        },
-        {
-          "name": "id_sqlite",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
         }
       ]
     },
@@ -1997,51 +963,30 @@
           "readonly": true
         },
         {
-          "name": "id_sqlite",
           "type": "number",
-          "precision": 0,
-          "readonly": true
+          "options": {
+            "precision": 0
+          },
+          "id": "fldWMVx4EPApj9khq",
+          "name": "id_sqlite",
+          "description": "SQLite id usado como llave idempotente del espejo operativo."
         },
         {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso",
+              "format": "YYYY-MM-DD"
+            },
+            "timeFormat": {
+              "name": "24hour",
+              "format": "HH:mm"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "id": "fldiObjBYWZPqFicD",
           "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
+          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -2116,51 +1061,30 @@
           "readonly": true
         },
         {
-          "name": "id_sqlite",
           "type": "number",
-          "precision": 0,
-          "readonly": true
+          "options": {
+            "precision": 0
+          },
+          "id": "flde0SmtBQkKj27SA",
+          "name": "id_sqlite",
+          "description": "SQLite id usado como llave idempotente del espejo operativo."
         },
         {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso",
+              "format": "YYYY-MM-DD"
+            },
+            "timeFormat": {
+              "name": "24hour",
+              "format": "HH:mm"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "id": "fldCLAtIfk79aQD8u",
           "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
+          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -2234,51 +1158,30 @@
           "readonly": true
         },
         {
-          "name": "id_sqlite",
           "type": "number",
-          "precision": 0,
-          "readonly": true
+          "options": {
+            "precision": 0
+          },
+          "id": "fldiiH26QSIxdBMFp",
+          "name": "id_sqlite",
+          "description": "SQLite id usado como llave idempotente del espejo operativo."
         },
         {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso",
+              "format": "YYYY-MM-DD"
+            },
+            "timeFormat": {
+              "name": "24hour",
+              "format": "HH:mm"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "id": "fldqT6opa89WCcFQE",
           "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
+          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -2369,51 +1272,30 @@
           "readonly": true
         },
         {
-          "name": "id_sqlite",
           "type": "number",
-          "precision": 0,
-          "readonly": true
+          "options": {
+            "precision": 0
+          },
+          "id": "fld9o7vriHZ7o6LU2",
+          "name": "id_sqlite",
+          "description": "SQLite id usado como llave idempotente del espejo operativo."
         },
         {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso",
+              "format": "YYYY-MM-DD"
+            },
+            "timeFormat": {
+              "name": "24hour",
+              "format": "HH:mm"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "id": "fldL8ZxC4rjhfnmZW",
           "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
+          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -2498,51 +1380,30 @@
           "readonly": true
         },
         {
-          "name": "id_sqlite",
           "type": "number",
-          "precision": 0,
-          "readonly": true
+          "options": {
+            "precision": 0
+          },
+          "id": "fldGrBNCBI5du0Y1h",
+          "name": "id_sqlite",
+          "description": "SQLite id usado como llave idempotente del espejo operativo."
         },
         {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso",
+              "format": "YYYY-MM-DD"
+            },
+            "timeFormat": {
+              "name": "24hour",
+              "format": "HH:mm"
+            },
+            "timeZone": "America/Mexico_City"
+          },
+          "id": "fldSM7zzmj0rm3Qk9",
           "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
+          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -2614,51 +1475,13 @@
           "readonly": true
         },
         {
-          "name": "id_sqlite",
           "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
+          "options": {
+            "precision": 0
+          },
+          "id": "fldKAKQvYN6FnVFPt",
+          "name": "id_sqlite",
+          "description": "SQLite id usado como llave idempotente del espejo operativo."
         }
       ]
     },
@@ -2670,24 +1493,54 @@
       "description": "Presets POS que prellenan el contrato actual de descuentos.",
       "primary_field": "clave_descuento",
       "fields": [
-        {"name": "clave_descuento", "type": "singleLineText"},
-        {"name": "nombre", "type": "singleLineText"},
-        {"name": "tipo_descuento", "type": "singleSelect", "options": ["Monto", "Porcentaje", "Cortesia"]},
-        {"name": "monto_centavos", "type": "number", "precision": 0},
-        {"name": "porcentaje_bps", "type": "number", "precision": 0},
-        {"name": "motivo_sugerido", "type": "multilineText"},
-        {"name": "requiere_autorizacion", "type": "checkbox"},
-        {"name": "visible_pos", "type": "checkbox"},
-        {"name": "orden", "type": "number", "precision": 0},
-        {"name": "activo", "type": "checkbox"},
-        {"name": "id_sqlite", "type": "number", "precision": 0, "readonly": true},
-        {"name": "estado_sync", "type": "singleSelect", "options": ["Activo", "Pendiente", "Sincronizado", "Conflicto", "Error"]},
-        {"name": "revision_remota", "type": "singleLineText", "readonly": true},
-        {"name": "actualizado_sqlite_en", "type": "dateTime", "readonly": true},
-        {"name": "actualizado_airtable_en", "type": "dateTime", "readonly": true},
-        {"name": "ultimo_pull_en", "type": "dateTime", "readonly": true},
-        {"name": "ultimo_push_en", "type": "dateTime", "readonly": true},
-        {"name": "error_sync", "type": "multilineText", "readonly": true}
+        {
+          "name": "clave_descuento",
+          "type": "singleLineText"
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "tipo_descuento",
+          "type": "singleSelect",
+          "options": [
+            "Monto",
+            "Porcentaje",
+            "Cortesia"
+          ]
+        },
+        {
+          "name": "monto_centavos",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "porcentaje_bps",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "motivo_sugerido",
+          "type": "multilineText"
+        },
+        {
+          "name": "requiere_autorizacion",
+          "type": "checkbox"
+        },
+        {
+          "name": "visible_pos",
+          "type": "checkbox"
+        },
+        {
+          "name": "orden",
+          "type": "number",
+          "precision": 0
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        }
       ]
     },
     {
@@ -2753,51 +1606,13 @@
           "readonly": true
         },
         {
-          "name": "id_sqlite",
           "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "estado_sync",
-          "type": "singleSelect",
-          "options": [
-            "Activo",
-            "Pendiente",
-            "Sincronizado",
-            "Conflicto",
-            "Error"
-          ]
-        },
-        {
-          "name": "revision_remota",
-          "type": "singleLineText",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_sqlite_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "actualizado_airtable_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_pull_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "ultimo_push_en",
-          "type": "dateTime",
-          "readonly": true
-        },
-        {
-          "name": "error_sync",
-          "type": "multilineText",
-          "readonly": true
+          "options": {
+            "precision": 0
+          },
+          "id": "fldMVt7Y4xWoRv42y",
+          "name": "id_sqlite",
+          "description": "SQLite id usado como llave idempotente del espejo operativo."
         }
       ]
     }
