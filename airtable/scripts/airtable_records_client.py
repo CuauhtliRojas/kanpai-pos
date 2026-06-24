@@ -1,7 +1,8 @@
 """Minimal Airtable Records API client used by the seed pipeline.
 
-The client can list, create and update records. It intentionally exposes no
-delete operation.
+The client can list, create, update and (explicitly) delete records.
+Delete is intentionally not wired into normal push flows; it is only
+accessible via the production-reset script with mandatory confirmation.
 """
 
 from __future__ import annotations
@@ -216,6 +217,19 @@ class AirtableRecordsClient:
             response = self._request("PATCH", table, payload={"records": group})
             updated.extend(response.get("records", []))
         return updated
+
+    def delete_records(self, table: str, record_ids: list[str]) -> int:
+        """Delete records by Airtable ID in batches of ≤10. Returns total deleted count.
+
+        This method is NOT called by normal push flows. Only the explicit
+        production-reset script invokes it after mandatory confirmation.
+        """
+        deleted = 0
+        for group in batched(record_ids):
+            query = [("records[]", rid) for rid in group]
+            response = self._request("DELETE", table, query=query)
+            deleted += len(response.get("records", []))
+        return deleted
 
     def index_by_key(
         self, table: str, key_field: KeyField, *, fields: list[str] | None = None
