@@ -48,6 +48,8 @@ from app.models import (  # noqa: E402
     PaymentMethod,
     Printer,
     Product,
+    ProductPackage,
+    ProductPackageItem,
     ProductRecipe,
     ProductStationAssignment,
     ProductVariantGroup,
@@ -133,6 +135,22 @@ TABLE_SPECS = (
         Product,
         ("sku",),
         {"categoria": LinkSpec("CategoriasMenu")},
+    ),
+    TableSpec(
+        "PaquetesProducto",
+        ProductPackage,
+        ("package_product_id",),
+        {"producto_paquete": LinkSpec("Productos", required=True)},
+    ),
+    TableSpec(
+        "ComponentesPaqueteProducto",
+        ProductPackageItem,
+        ("package_id", "component_product_id"),
+        {
+            "paquete": LinkSpec("PaquetesProducto", required=True),
+            "producto_componente": LinkSpec("Productos", required=True),
+            "estacion_override": LinkSpec("EstacionesProduccion"),
+        },
     ),
     TableSpec(
         "GruposVarianteProducto",

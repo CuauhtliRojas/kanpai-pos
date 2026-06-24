@@ -132,6 +132,33 @@
         "Imagen_POS": "image_path"
       }
     },
+    "PaquetesProducto": {
+      "sqlite_table": "paquetes_producto",
+      "direction": "pull_to_sqlite",
+      "primary_key": "nombre_registro",
+      "fields": {
+        "producto_paquete": "package_product_id",
+        "modo_paquete": "package_mode",
+        "comportamiento_impresion": "print_behavior",
+        "comportamiento_inventario": "inventory_behavior",
+        "activo": "active"
+      }
+    },
+    "ComponentesPaqueteProducto": {
+      "sqlite_table": "componentes_paquete_producto",
+      "direction": "pull_to_sqlite",
+      "primary_key": "nombre_registro",
+      "fields": {
+        "paquete": "package_id",
+        "producto_componente": "component_product_id",
+        "cantidad": "quantity",
+        "orden": "sort_order",
+        "asignacion_precio_centavos": "price_allocation_cents",
+        "estacion_override": "station_id_override",
+        "visible_ticket_cliente": "visible_on_customer_ticket",
+        "activo": "active"
+      }
+    },
     "AsignacionesProductoEstacion": {
       "sqlite_table": "asignaciones_estacion_producto",
       "direction": "pull_to_sqlite",
