@@ -13,6 +13,7 @@ from app.domain.constants import (
     audit_event,
 )
 from app.models import AuditEvent, Payment, PaymentMethod, Ticket, TicketLine
+from app.models import TicketDiscount
 from app.services.exceptions import (
     BusinessConflictError,
     EntityNotFoundError,
@@ -64,6 +65,70 @@ def _active_payment_total(db: Session, ticket_id: int) -> int:
     )
 
 
+def _has_full_courtesy_discount(db: Session, ticket: Ticket) -> bool:
+    """Indica si el total cero proviene de una cortesía autorizada."""
+    if ticket.subtotal_cents <= 0 or ticket.total_cents != 0:
+        return False
+
+    courtesy_total = int(
+        db.scalar(
+            select(func.coalesce(func.sum(TicketDiscount.amount_cents), 0)).where(
+                TicketDiscount.ticket_id == ticket.id,
+                TicketDiscount.is_courtesy.is_(True),
+            )
+        )
+        or 0
+    )
+    return courtesy_total >= ticket.subtotal_cents and ticket.discount_cents >= ticket.subtotal_cents
+
+
+def _close_zero_total_courtesy_ticket(
+    db: Session, ticket: Ticket, employee_id: int
+) -> Ticket:
+    """Cierra un ticket totalmente condonado sin crear pago monetario."""
+    now = datetime.utcnow()
+    previous_status = ticket.status
+    previous_payment_status = ticket.payment_status
+
+    ticket.status = TicketStatus.PAID
+    ticket.payment_status = TicketPaymentStatus.PAID
+    ticket.billing_started_at = ticket.billing_started_at or now
+    ticket.paid_at = now
+    ticket.closed_by_employee_id = employee_id
+
+    consume_inventory_for_paid_ticket(db, ticket.id, employee_id)
+    release_table_for_paid_ticket(db, ticket, employee_id)
+
+    db.add(
+        AuditEvent(
+            event_type=audit_event("TICKET_PAID"),
+            entity_type="Ticket",
+            entity_id=ticket.id,
+            actor_employee_id=employee_id,
+            cash_shift_id=ticket.cash_shift_id,
+            ticket_id=ticket.id,
+            before_snapshot=json.dumps(
+                {
+                    "status": previous_status,
+                    "payment_status": previous_payment_status,
+                    "total_cents": ticket.total_cents,
+                }
+            ),
+            after_snapshot=json.dumps(
+                {
+                    "status": TicketStatus.PAID,
+                    "payment_status": TicketPaymentStatus.PAID,
+                    "total_paid_cents": 0,
+                    "closed_by": "courtesy",
+                }
+            ),
+        )
+    )
+    create_ticket_print_job(db, ticket, [])
+    db.flush()
+    return ticket
+
+
 def start_payment(db: Session, ticket_id: int, employee_id: int) -> Ticket:
     """Inicia el cobro de un ticket listo sin confirmar la transacción.
 
@@ -86,10 +151,12 @@ def start_payment(db: Session, ticket_id: int, employee_id: int) -> Ticket:
     )
     if not active_line_count:
         raise InvalidBusinessDataError("El ticket no tiene líneas activas.")
-    if ticket.total_cents <= 0:
-        raise InvalidBusinessDataError("El ticket debe tener un total mayor a cero.")
     if _has_captured_lines(db, ticket_id):
         raise InvalidBusinessDataError("El ticket tiene líneas capturadas pendientes.")
+    if ticket.total_cents <= 0:
+        if _has_full_courtesy_discount(db, ticket):
+            return _close_zero_total_courtesy_ticket(db, ticket, employee_id)
+        raise InvalidBusinessDataError("El ticket debe tener un total mayor a cero.")
 
     ticket.status = TicketStatus.IN_PAYMENT
     ticket.billing_started_at = datetime.utcnow()

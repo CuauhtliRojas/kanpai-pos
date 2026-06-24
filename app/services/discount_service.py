@@ -51,9 +51,13 @@ def apply_discount(
         raise InvalidBusinessDataError("discount_type no es valido.")
 
     existing = ticket.discount_cents
+    courtesy = is_courtesy or discount_type == DiscountType.COURTESY
     if applied <= 0 or existing + applied > ticket.subtotal_cents:
         raise InvalidBusinessDataError("El descuento excede el subtotal disponible.")
-    courtesy = is_courtesy or discount_type == DiscountType.COURTESY
+    if not courtesy and existing + applied >= ticket.subtotal_cents:
+        raise InvalidBusinessDataError(
+            "El descuento normal debe dejar al menos $1.00 por cobrar."
+        )
     discount = TicketDiscount(
         ticket_id=ticket.id,
         discount_source=discount_type,

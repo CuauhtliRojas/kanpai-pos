@@ -74,8 +74,8 @@ export function AccountCheckoutDialog({
   const blockingMessage =
     pendingLineCount > 0
       ? "Envía la comanda pendiente antes de cobrar."
-      : ticket.total_cents <= 0
-        ? "La cuenta debe tener un total mayor a cero."
+      : ticket.total_cents < 0
+        ? "La cuenta puede cerrarse en $0.00 si tiene cortesía autorizada."
         : lineCount === 0
           ? "Agrega productos antes de cobrar."
           : null;

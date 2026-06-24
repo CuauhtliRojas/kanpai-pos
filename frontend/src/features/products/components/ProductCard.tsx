@@ -31,6 +31,11 @@ export function ProductCard({ product, disabled, onSelect }: ProductCardProps) {
         </span>
         <span className="flex items-end justify-between gap-2">
           <span className="text-lg font-black">{formatCentsToPesos(product.price_cents)}</span>
+          {product.product_type === "Paquete" && !unavailable ? (
+            <span className="border-2 border-[var(--kp-ink)] bg-[var(--kp-warning)] px-1.5 py-0.5 text-xs font-black uppercase tracking-wide text-[var(--kp-warning-contrast)]">
+              Promo
+            </span>
+          ) : null}
           {unavailable ? (
             <span className="text-xs font-black uppercase">No disponible</span>
           ) : null}

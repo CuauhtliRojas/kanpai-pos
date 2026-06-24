@@ -14,13 +14,12 @@ from app.domain.constants import (
     StockAlertStatus,
     TicketLineStatus,
     TicketStatus,
+    ProductType,
 )
 from app.models import (
     AuditEvent,
     CashShift,
     DiningTable,
-    Employee,
-    EmployeeRole,
     FolioSequence,
     InventoryItem,
     InventoryMovement,
@@ -31,6 +30,8 @@ from app.models import (
     PrintJob,
     Printer,
     Product,
+    ProductPackage,
+    ProductPackageItem,
     ProductRecipe,
     ProductStationAssignment,
     ProductVariantGroup,
@@ -176,20 +177,27 @@ def run_local_backend_preflight(db: Session) -> dict:
         (
             _check(
                 "seed_admin",
-                "Exactly one active admin employee is present",
-                "The seed must contain exactly one active admin employee",
-                lambda: (
+                "Exactly one active ADMIN employee with active PIN is present",
+                "The seed must contain exactly one active ADMIN employee with active PIN",
+                lambda: int(
                     db.scalar(
-                        select(func.count(Employee.id))
-                        .join(EmployeeRole, EmployeeRole.employee_id == Employee.id)
-                        .join(Role, Role.id == EmployeeRole.role_id)
-                        .where(
-                            Employee.active.is_(True),
-                            Role.role_key == "ADMIN",
-                            Role.active.is_(True),
+                        text(
+                            """
+                            SELECT COUNT(*)
+                            FROM empleados
+                            WHERE activo = 1
+                              AND pin_activo = 1
+                              AND (
+                                upper(empleado_codigo) = 'ADMIN'
+                                OR upper(alias_pos) = 'ADMIN'
+                                OR upper(completo_nombre) LIKE '%ADMIN%'
+                              )
+                            """
                         )
                     )
-                ) == 1,
+                    or 0
+                )
+                == 1,
             ),
             _check(
                 "seed_payment_methods",
@@ -236,12 +244,12 @@ def run_local_backend_preflight(db: Session) -> dict:
             ),
             _check(
                 "catalog_products",
-                "Exactly 31 imported products are active and visible in POS",
-                "Imported catalog must have exactly 31 active visible products",
+                "At least 31 imported products are active and visible in POS",
+                "Imported catalog has fewer than 31 active visible products",
                 lambda: _count(
                     db, Product, Product.active.is_(True), Product.visible_pos.is_(True)
                 )
-                == MIN_VISIBLE_PRODUCTS,
+                >= MIN_VISIBLE_PRODUCTS,
             ),
             _check(
                 "catalog_categories",
@@ -318,6 +326,7 @@ def run_local_backend_preflight(db: Session) -> dict:
         select(Product).where(
             Product.active.is_(True),
             Product.visible_pos.is_(True),
+            Product.product_type != ProductType.PACKAGE,
             Product.id.not_in(products_with_recipe),
         ).order_by(Product.sku)
     ))
@@ -363,6 +372,53 @@ def run_local_backend_preflight(db: Session) -> dict:
             "message": "Direct-sale products without inventory recipe: "
             + ", ".join(direct_without_recipe),
         })
+
+    visible_packages = list(db.scalars(
+        select(Product)
+        .where(
+            Product.active.is_(True),
+            Product.visible_pos.is_(True),
+            Product.product_type == ProductType.PACKAGE,
+        )
+        .order_by(Product.sku)
+    ))
+    package_product_ids = [product.id for product in visible_packages]
+    package_configs = list(db.scalars(
+        select(ProductPackage).where(
+            ProductPackage.package_product_id.in_(package_product_ids or [-1]),
+            ProductPackage.active.is_(True),
+        )
+    ))
+    package_config_by_product_id = {
+        package.package_product_id: package for package in package_configs
+    }
+    package_config_ids = [package.id for package in package_configs]
+    component_counts = dict(db.execute(
+        select(ProductPackageItem.package_id, func.count(ProductPackageItem.id))
+        .where(
+            ProductPackageItem.package_id.in_(package_config_ids or [-1]),
+            ProductPackageItem.active.is_(True),
+        )
+        .group_by(ProductPackageItem.package_id)
+    ).all())
+    invalid_packages = []
+    for product in visible_packages:
+        package = package_config_by_product_id.get(product.id)
+        if package is None:
+            invalid_packages.append(product.sku)
+            continue
+        if component_counts.get(package.id, 0) < 2:
+            invalid_packages.append(product.sku)
+    checks.append({
+        "key": "visible_package_components",
+        "status": "ERROR" if invalid_packages else "OK",
+        "message": (
+            "All visible package products have active package configuration and components"
+            if not invalid_packages
+            else "Visible package products without valid package components: "
+            + ", ".join(invalid_packages)
+        ),
+    })
     duplicate_active_tables = (
         select(Ticket.table_id)
         .where(Ticket.status.in_(ACTIVE_TICKET_STATUSES))

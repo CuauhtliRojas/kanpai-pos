@@ -32,6 +32,20 @@ function variantSummaries(line: TicketLine): string[] {
 
 export function TicketLineItem({ line, actions }: { line: TicketLine; actions?: ReactNode }) {
   const variants = variantSummaries(line);
+
+  if (line.line_type === "Componente de paquete") {
+    return (
+      <li className="border-b border-dashed border-[var(--kp-divider)] py-1.5 pl-4 last:border-b-0">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-bold text-[var(--kp-muted)]">
+            · {line.product_name_snapshot}
+          </p>
+          <span className="text-xs font-bold text-[var(--kp-muted)]">incluido</span>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <li className="border-b-2 border-[var(--kp-divider)] py-3 last:border-b-0">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">

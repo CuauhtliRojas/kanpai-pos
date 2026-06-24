@@ -1,4 +1,4 @@
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends
@@ -136,12 +136,37 @@ def database_status(db: Session = Depends(get_db)) -> dict[str, str]:
     description="Conteos de diagnóstico protegidos por sesión administrativa o de soporte.",
 )
 def seed_summary(db: Session = Depends(get_db)) -> dict[str, int]:
-    business_count = len(db.execute(select(BusinessSetting)).scalars().all())
-    table_count = len(db.execute(select(DiningTable)).scalars().all())
-    category_count = len(db.execute(select(MenuCategory)).scalars().all())
-    station_count = len(db.execute(select(ProductionStation)).scalars().all())
-    payment_method_count = len(db.execute(select(PaymentMethod)).scalars().all())
-    employee_count = len(db.execute(select(Employee)).scalars().all())
+    business_count = int(db.scalar(select(func.count()).select_from(BusinessSetting)) or 0)
+    table_count = int(
+        db.scalar(
+            select(func.count()).select_from(DiningTable).where(DiningTable.active.is_(True))
+        )
+        or 0
+    )
+    category_count = int(
+        db.scalar(
+            select(func.count()).select_from(MenuCategory).where(MenuCategory.active.is_(True))
+        )
+        or 0
+    )
+    station_count = int(
+        db.scalar(
+            select(func.count())
+            .select_from(ProductionStation)
+            .where(ProductionStation.active.is_(True))
+        )
+        or 0
+    )
+    payment_method_count = int(
+        db.scalar(
+            select(func.count()).select_from(PaymentMethod).where(PaymentMethod.active.is_(True))
+        )
+        or 0
+    )
+    employee_count = int(
+        db.scalar(select(func.count()).select_from(Employee).where(Employee.active.is_(True)))
+        or 0
+    )
 
     return {
         "business_settings": business_count,
