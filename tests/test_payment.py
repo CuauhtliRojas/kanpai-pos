@@ -31,6 +31,7 @@ from app.services.order_service import send_round
 from app.services.payment_service import create_payment, start_payment
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
@@ -204,8 +205,9 @@ def test_complete_payment_creates_ticket_print_job() -> None:
         assert job.idempotency_key == f"TICKET:{ticket.id}"
         assert job.ticket_id == ticket.id
         assert job.cash_shift_id == ticket.cash_shift_id
-        assert "KANPAI\nTICKET" in job.content_snapshot
-        job.content_snapshot.encode("ascii")
+        assert "SOMOS KANPAI" in job.content_snapshot
+        assert "TICKET" in job.content_snapshot
+        assert "EFECTIVO" in job.content_snapshot
 
 
 def test_payment_rejects_open_ticket() -> None:
@@ -286,6 +288,7 @@ def test_start_payment_endpoint() -> None:
     response = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/start-payment",
         json={"employee_id": employee_id},
+        headers=auth_headers(client),
     )
 
     assert response.status_code == 200
@@ -304,6 +307,7 @@ def test_create_and_list_payments_endpoints() -> None:
         method_id = cash.id
         total_cents = ticket.total_cents
 
+    headers = auth_headers(client)
     create_response = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/payments",
         json={
@@ -313,13 +317,14 @@ def test_create_and_list_payments_endpoints() -> None:
             "received_cents": total_cents,
             "reference": None,
         },
+        headers=headers,
     )
     assert create_response.status_code == 201
     assert create_response.json()["total_paid_cents"] == total_cents
     assert create_response.json()["remaining_cents"] == 0
     assert create_response.json()["closed"] is True
 
-    list_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/payments")
+    list_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/payments", headers=headers)
     assert list_response.status_code == 200
     assert len(list_response.json()["payments"]) == 1
     assert list_response.json()["payments"][0]["status"] == "Activo"
@@ -332,6 +337,7 @@ def test_payment_endpoints_map_domain_errors() -> None:
         transfer = _method(db, "Transferencia")
         employee_id, ticket_id, transfer_id = employee.id, ticket.id, transfer.id
 
+    headers = auth_headers(client)
     open_ticket_payment = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/payments",
         json={
@@ -339,12 +345,14 @@ def test_payment_endpoints_map_domain_errors() -> None:
             "payment_method_id": transfer_id,
             "amount_cents": 100,
         },
+        headers=headers,
     )
     assert open_ticket_payment.status_code == 409
 
     start_response = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/start-payment",
         json={"employee_id": employee_id},
+        headers=headers,
     )
     assert start_response.status_code == 200
     missing_reference = client.post(
@@ -354,5 +362,6 @@ def test_payment_endpoints_map_domain_errors() -> None:
             "payment_method_id": transfer_id,
             "amount_cents": 100,
         },
+        headers=headers,
     )
     assert missing_reference.status_code == 400

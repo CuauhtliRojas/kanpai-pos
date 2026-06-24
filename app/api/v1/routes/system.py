@@ -38,14 +38,22 @@ def _airtable_sync_response_or_error(result: dict) -> dict:
 
 
 
-@router.get("/airtable-sync")
+@router.get(
+    "/airtable-sync",
+    dependencies=[Depends(require_support_permission)],
+    tags=["system", "admin-support"],
+)
 def airtable_sync_status() -> dict:
     return get_airtable_sync_scheduler().status()
 
 
 
 
-@router.post("/airtable-sync/pull")
+@router.post(
+    "/airtable-sync/pull",
+    dependencies=[Depends(require_support_permission)],
+    tags=["system", "admin-support"],
+)
 async def airtable_sync_pull(request: AirtableSyncRequest | None = None) -> dict:
     payload = request or AirtableSyncRequest()
     result = await get_airtable_sync_scheduler().run_manual(
@@ -58,7 +66,11 @@ async def airtable_sync_pull(request: AirtableSyncRequest | None = None) -> dict
     return _airtable_sync_response_or_error(result)
 
 
-@router.post("/airtable-sync/push")
+@router.post(
+    "/airtable-sync/push",
+    dependencies=[Depends(require_support_permission)],
+    tags=["system", "admin-support"],
+)
 async def airtable_sync_push(request: AirtableSyncRequest | None = None) -> dict:
     payload = request or AirtableSyncRequest()
     result = await get_airtable_sync_scheduler().run_manual(
@@ -71,7 +83,11 @@ async def airtable_sync_push(request: AirtableSyncRequest | None = None) -> dict
     return _airtable_sync_response_or_error(result)
 
 
-@router.post("/airtable-sync/run")
+@router.post(
+    "/airtable-sync/run",
+    dependencies=[Depends(require_support_permission)],
+    tags=["system", "admin-support"],
+)
 async def airtable_sync_run(request: AirtableSyncRequest | None = None) -> dict:
     payload = request or AirtableSyncRequest()
     result = await get_airtable_sync_scheduler().run_manual(

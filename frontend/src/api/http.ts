@@ -1,5 +1,7 @@
 ﻿import { API_BASE_URL } from "./apiConfig";
 
+import { readSession } from "../features/auth/lib/sessionStorage";
+
 type ApiRequestOptions = RequestInit & {
   timeoutMs?: number;
 };
@@ -38,14 +40,19 @@ export async function apiRequest<T>(
   const timeout = window.setTimeout(() => controller.abort(), options.timeoutMs ?? 8_000);
 
   try {
+    const headers = new Headers(options.headers);
+    headers.set("Accept", headers.get("Accept") ?? "application/json");
+    headers.set("Content-Type", headers.get("Content-Type") ?? "application/json");
+
+    const session = readSession();
+    if (session && !headers.has("X-Kanpai-Session")) {
+      headers.set("X-Kanpai-Session", session.sessionToken);
+    }
+
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       signal: controller.signal,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {

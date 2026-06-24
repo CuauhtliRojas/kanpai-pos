@@ -18,7 +18,6 @@ export type AirtableSyncStatus = {
 };
 
 export type AirtableSyncRunRequest = {
-  dry_run: boolean;
   confirm: string;
   force_pull_during_active_shift: boolean;
 };

@@ -37,6 +37,7 @@ from app.services.exceptions import (
 )
 from app.services.expense_service import create_cash_expense
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
@@ -311,6 +312,7 @@ def test_create_expense_endpoint() -> None:
             "payment_method_id": method_id,
             "note": "QA gasto",
         },
+        headers=auth_headers(client),
     )
 
     assert response.status_code == 201
@@ -325,7 +327,10 @@ def test_cash_shift_summary_endpoint() -> None:
         db.commit()
         cash_shift_id = cash_shift.id
 
-    response = client.get(f"/api/v1/pos/cash-shifts/{cash_shift_id}/summary")
+    response = client.get(
+        f"/api/v1/pos/cash-shifts/{cash_shift_id}/summary",
+        headers=auth_headers(client),
+    )
 
     assert response.status_code == 200
     assert response.json()["expected_cash_cents"] == 6_000
@@ -346,6 +351,7 @@ def test_close_cash_shift_endpoint() -> None:
             "note": "Cierre QA",
             "allow_pending_print_jobs": True,
         },
+        headers=auth_headers(client),
     )
 
     assert response.status_code == 200

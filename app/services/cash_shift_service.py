@@ -58,6 +58,7 @@ def open_cash_shift(
         raise EntityNotFoundError("El empleado no existe.")
     if not employee.active:
         raise BusinessConflictError("El empleado está inactivo.")
+    require_employee_permission(db, employee_id, "CASH_SHIFT_OPEN")
     if opening_cash_cents < 0:
         raise InvalidBusinessDataError("El efectivo inicial no puede ser negativo.")
     if get_current_cash_shift(db) is not None:

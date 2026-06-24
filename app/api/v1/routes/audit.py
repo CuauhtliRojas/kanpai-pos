@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.security import require_admin_read_permission
 from app.core.database import get_db
 from app.schemas.audit import (
     AuditEventPage,
@@ -14,7 +15,11 @@ from app.services.audit_query_service import (
 )
 from app.services.exceptions import EntityNotFoundError, InvalidBusinessDataError
 
-router = APIRouter(prefix="/audit", tags=["audit"])
+router = APIRouter(
+    prefix="/audit",
+    tags=["audit"],
+    dependencies=[Depends(require_admin_read_permission)],
+)
 
 
 def _http_error(error: Exception) -> HTTPException:

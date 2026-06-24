@@ -15,6 +15,8 @@ from app.models import (
     PaymentMethod,
     PrintJob,
     Printer,
+    Product,
+    ProductVariantGroup,
     TableStatusEvent,
     Ticket,
     TicketLine,
@@ -22,6 +24,7 @@ from app.models import (
 from app.services.cash_shift_service import open_cash_shift
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean(db: Session) -> None:
@@ -104,7 +107,10 @@ def test_history_defaults_to_open_shift_and_filters_table() -> None:
         table_id = table.id
         table_name = table.display_name
 
-    response = client.get(f"/api/v1/pos/ticket-history?table_id={table_id}")
+    response = client.get(
+        f"/api/v1/pos/ticket-history?table_id={table_id}",
+        headers=auth_headers(client),
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["total"] == 1
@@ -131,7 +137,9 @@ def test_history_searches_partial_ticket_folio_and_has_small_payload() -> None:
             )
         db.commit()
 
-    response = client.get("/api/v1/pos/ticket-history?q=BUSCABLE")
+    response = client.get(
+        "/api/v1/pos/ticket-history?q=BUSCABLE", headers=auth_headers(client)
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["total"] == 1
@@ -145,11 +153,21 @@ def test_readonly_detail_includes_lines_payments_and_print_jobs_without_snapshot
     client = TestClient(app)
     with SessionLocal() as db:
         employee, ticket, table = _context(db)
-        product_id = db.scalar(select(TicketLine.product_id).limit(1))
-        if product_id is None:
-            from app.models import Product
-
-            product_id = db.scalar(select(Product.id).where(Product.active.is_(True)).order_by(Product.id))
+        product_id = db.scalar(
+            select(Product.id)
+            .outerjoin(
+                ProductVariantGroup,
+                (ProductVariantGroup.product_id == Product.id)
+                & (ProductVariantGroup.active.is_(True)),
+            )
+            .where(
+                Product.active.is_(True),
+                Product.visible_pos.is_(True),
+                Product.price_cents > 0,
+                ProductVariantGroup.id.is_(None),
+            )
+            .order_by(Product.id)
+        )
         assert product_id
         add_product_to_ticket(db, ticket.id, product_id, employee.id, 1)
         method = db.scalar(select(PaymentMethod).where(PaymentMethod.active.is_(True)).order_by(PaymentMethod.id))
@@ -171,7 +189,9 @@ def test_readonly_detail_includes_lines_payments_and_print_jobs_without_snapshot
         method_name = method.name
         print_job_id = print_job.id
 
-    response = client.get(f"/api/v1/pos/tickets/{ticket_id}/readonly")
+    response = client.get(
+        f"/api/v1/pos/tickets/{ticket_id}/readonly", headers=auth_headers(client)
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["is_readonly"] is True
@@ -197,5 +217,6 @@ def test_reprint_endpoint_still_requires_reason() -> None:
     response = client.post(
         f"/api/v1/printing/jobs/{job_id}/reprint",
         json={"employee_id": employee_id, "reason": "   "},
+        headers=auth_headers(client),
     )
     assert response.status_code == 400

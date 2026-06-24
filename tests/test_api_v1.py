@@ -4,6 +4,7 @@ from app.db.seed import run_seed
 from app.core.config import get_settings
 from app.api.security import SessionIdentity, require_session
 from app.main import app
+from tests.auth_helpers import auth_headers
 
 
 client = TestClient(app)
@@ -78,7 +79,7 @@ def test_api_v1_catalog_products() -> None:
 def test_api_v1_operations_tables() -> None:
     run_seed(include_development_data=True)
 
-    response = client.get("/api/v1/operations/tables")
+    response = client.get("/api/v1/operations/tables", headers=auth_headers(client))
 
     assert response.status_code == 200
     assert isinstance(response.json(), list)
@@ -87,10 +88,10 @@ def test_api_v1_operations_tables() -> None:
 
 def test_operations_employee_detail_and_permissions_hide_pin_hash() -> None:
     run_seed(include_development_data=True)
-    employees = client.get("/api/v1/operations/employees").json()
+    headers = _admin_headers()
+    employees = client.get("/api/v1/operations/employees", headers=headers).json()
     employee_id = employees[0]["id"]
 
-    headers = _admin_headers()
     detail = client.get(f"/api/v1/operations/employees/{employee_id}", headers=headers)
     permissions = client.get(
         f"/api/v1/operations/employees/{employee_id}/permissions", headers=headers
@@ -135,10 +136,16 @@ def test_security_boundary_routes_reject_missing_session_and_remain_in_openapi()
     protected = {
         "/api/v1/system/db",
         "/api/v1/system/seed-summary",
+        "/api/v1/system/airtable-sync",
         "/api/v1/preflight/local-backend",
         "/api/v1/notifications/sms",
+        "/api/v1/operations/tables",
+        "/api/v1/operations/employees",
         "/api/v1/operations/roles",
         "/api/v1/operations/permissions",
+        "/api/v1/reports/operational-summary",
+        "/api/v1/audit/events",
+        "/api/v1/printing/jobs/pending",
     }
     for path in protected:
         assert client.get(path).status_code == 401
@@ -159,6 +166,46 @@ def test_diagnostic_rejects_session_without_support_permission() -> None:
     finally:
         app.dependency_overrides.pop(require_session, None)
     assert response.status_code == 403
+
+
+def test_admin_read_and_support_boundaries_reject_session_without_permission() -> None:
+    app.dependency_overrides[require_session] = lambda: SessionIdentity(
+        employee=None,  # type: ignore[arg-type]
+        roles=frozenset(),
+        permissions=frozenset(),
+    )
+    try:
+        assert (
+            client.get(
+                "/api/v1/reports/operational-summary",
+                headers={"X-Kanpai-Session": "restricted-session"},
+            ).status_code
+            == 403
+        )
+        assert (
+            client.get(
+                "/api/v1/audit/events",
+                headers={"X-Kanpai-Session": "restricted-session"},
+            ).status_code
+            == 403
+        )
+        assert (
+            client.get(
+                "/api/v1/system/airtable-sync",
+                headers={"X-Kanpai-Session": "restricted-session"},
+            ).status_code
+            == 403
+        )
+        assert (
+            client.post(
+                "/api/v1/pos/cash-shifts/open",
+                json={"employee_id": 1, "opening_cash_cents": 0},
+                headers={"X-Kanpai-Session": "restricted-session"},
+            ).status_code
+            == 403
+        )
+    finally:
+        app.dependency_overrides.pop(require_session, None)
 
 
 def test_openapi_classifies_security_boundaries() -> None:

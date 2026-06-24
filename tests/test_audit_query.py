@@ -34,6 +34,7 @@ from app.models import (
     TicketLine,
     TicketLineNote,
 )
+from tests.auth_helpers import auth_headers
 
 client = TestClient(app)
 sequence = count(1)
@@ -139,11 +140,14 @@ def test_audit_events_lists_with_pagination_and_filter() -> None:
             ]
         )
         db.commit()
-    page = client.get("/api/v1/audit/events?limit=1&offset=0").json()
+    headers = auth_headers(client)
+    page = client.get("/api/v1/audit/events?limit=1&offset=0", headers=headers).json()
     assert page["total"] == 2
     assert len(page["items"]) == 1
     assert page["limit"] == 1
-    filtered = client.get("/api/v1/audit/events?event_type=Ticket%20cobrado").json()
+    filtered = client.get(
+        "/api/v1/audit/events?event_type=Ticket%20cobrado", headers=headers
+    ).json()
     assert filtered["total"] == 1
     assert filtered["items"][0]["event_type"] == "Ticket cobrado"
 
@@ -190,7 +194,9 @@ def test_audit_ticket_returns_complete_cycle() -> None:
         )
         db.commit()
         ticket_id = ticket.id
-    payload = client.get(f"/api/v1/audit/tickets/{ticket_id}").json()
+    payload = client.get(
+        f"/api/v1/audit/tickets/{ticket_id}", headers=auth_headers(client)
+    ).json()
     assert payload["ticket"]["id"] == ticket_id
     assert len(payload["lines"]) == 1
     assert len(payload["payments"]) == 1
@@ -227,7 +233,9 @@ def test_audit_cash_shift_returns_financial_context() -> None:
         )
         db.commit()
         shift_id = shift.id
-    payload = client.get(f"/api/v1/audit/cash-shifts/{shift_id}").json()
+    payload = client.get(
+        f"/api/v1/audit/cash-shifts/{shift_id}", headers=auth_headers(client)
+    ).json()
     assert payload["cash_shift"]["id"] == shift_id
     assert len(payload["tickets"]) == 1
     assert len(payload["payments"]) == 1
@@ -236,9 +244,10 @@ def test_audit_cash_shift_returns_financial_context() -> None:
 
 
 def test_audit_not_found_and_invalid_pagination_are_public_errors() -> None:
-    assert client.get("/api/v1/audit/tickets/999999").status_code == 404
-    assert client.get("/api/v1/audit/cash-shifts/999999").status_code == 404
-    assert client.get("/api/v1/audit/events?limit=invalid").status_code == 400
+    headers = auth_headers(client)
+    assert client.get("/api/v1/audit/tickets/999999", headers=headers).status_code == 404
+    assert client.get("/api/v1/audit/cash-shifts/999999", headers=headers).status_code == 404
+    assert client.get("/api/v1/audit/events?limit=invalid", headers=headers).status_code == 400
 
 
 def test_audit_routes_are_registered_in_openapi() -> None:

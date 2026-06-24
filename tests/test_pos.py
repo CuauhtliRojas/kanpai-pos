@@ -29,6 +29,7 @@ from app.services.exceptions import BusinessConflictError
 from app.services.exceptions import InvalidBusinessDataError
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
@@ -190,7 +191,7 @@ def test_operations_tables_include_active_ticket_details() -> None:
         ticket_id = ticket.id
         ticket_folio = ticket.folio
 
-    response = client.get("/api/v1/operations/tables")
+    response = client.get("/api/v1/operations/tables", headers=auth_headers(client))
 
     assert response.status_code == 200
     tables_by_id = {table["id"]: table for table in response.json()}
@@ -226,35 +227,56 @@ def test_pos_endpoints_with_test_client() -> None:
         employee, table = _employee_and_table(db)
         employee_id = employee.id
         table_id = table.id
+    headers = auth_headers(client)
 
     shift_response = client.post(
         "/api/v1/pos/cash-shifts/open",
         json={"employee_id": employee_id, "opening_cash_cents": 100_00},
+        headers=headers,
     )
     assert shift_response.status_code == 201
     assert shift_response.json()["status"] == "Abierto"
 
-    current_response = client.get("/api/v1/pos/cash-shifts/current")
+    current_response = client.get("/api/v1/pos/cash-shifts/current", headers=headers)
     assert current_response.status_code == 200
     assert current_response.json()["id"] == shift_response.json()["id"]
 
     ticket_response = client.post(
         f"/api/v1/pos/tables/{table_id}/open-ticket",
         json={"employee_id": employee_id, "guest_count": 2},
+        headers=headers,
     )
     assert ticket_response.status_code == 201
     assert ticket_response.json()["table_id"] == table_id
 
     ticket_id = ticket_response.json()["id"]
-    get_response = client.get(f"/api/v1/pos/tickets/{ticket_id}")
+    get_response = client.get(f"/api/v1/pos/tickets/{ticket_id}", headers=headers)
     assert get_response.status_code == 200
     assert get_response.json()["folio"] == ticket_response.json()["folio"]
 
     conflict_response = client.post(
         "/api/v1/pos/cash-shifts/open",
         json={"employee_id": employee_id, "opening_cash_cents": 0},
+        headers=headers,
     )
     assert conflict_response.status_code == 409
+
+
+def test_cash_shift_open_endpoint_uses_session_actor_not_payload_employee_id() -> None:
+    client = TestClient(app)
+    with SessionLocal() as db:
+        employee = db.scalar(select(Employee).where(Employee.employee_code == "EMP-0001"))
+        assert employee is not None
+        expected_employee_id = employee.id
+
+    response = client.post(
+        "/api/v1/pos/cash-shifts/open",
+        json={"employee_id": 999_999, "opening_cash_cents": 0},
+        headers=auth_headers(client),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["opened_by_employee_id"] == expected_employee_id
 
 
 def test_add_simple_product_updates_ticket_and_captured_line() -> None:
@@ -367,6 +389,7 @@ def test_ticket_line_endpoints_add_and_list_product() -> None:
         product_id = product.id
         expected_total = round(product.price_cents * 2 * 1.16)
 
+    headers = auth_headers(client)
     response = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/lines",
         json={
@@ -375,6 +398,7 @@ def test_ticket_line_endpoints_add_and_list_product() -> None:
             "quantity": 2,
             "note": "Tibio",
         },
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -383,7 +407,7 @@ def test_ticket_line_endpoints_add_and_list_product() -> None:
     assert payload["lines_created"][0]["status"] == "Capturado"
     assert payload["ticket_totals"]["total_cents"] == expected_total
 
-    list_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/lines")
+    list_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/lines", headers=headers)
     assert list_response.status_code == 200
     assert len(list_response.json()) == 1
 
@@ -399,13 +423,16 @@ def test_ticket_line_endpoint_maps_business_errors() -> None:
         ticket_id = ticket.id
         product_id = product.id
 
+    headers = auth_headers(client)
     invalid_quantity = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/lines",
         json={"product_id": product_id, "employee_id": employee_id, "quantity": 0},
+        headers=headers,
     )
     missing_product = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/lines",
         json={"product_id": -1, "employee_id": employee_id, "quantity": 1},
+        headers=headers,
     )
 
     assert invalid_quantity.status_code == 400

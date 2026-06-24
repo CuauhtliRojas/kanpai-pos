@@ -33,6 +33,7 @@ from app.services.exceptions import BusinessConflictError, InvalidBusinessDataEr
 from app.services.order_service import send_round
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
@@ -133,7 +134,7 @@ def test_send_simple_line_creates_complete_logical_command() -> None:
         assert print_job is not None
         assert print_job.status == "Pendiente"
         assert print_job.attempts == 0
-        assert "KANPAI\nCOMANDA" in print_job.content_snapshot
+        assert "*** COMANDA ***" in print_job.content_snapshot
         assert ticket.folio in print_job.content_snapshot
         assert "Muy fria" in print_job.content_snapshot
 
@@ -221,7 +222,7 @@ def test_inactive_printer_blocks_without_local_development_bypass(
             printer.active = False
             db.flush()
 
-            with pytest.raises(BusinessConflictError, match="está inactiva"):
+            with pytest.raises(BusinessConflictError, match="esta inactiva"):
                 send_round(db, ticket.id, employee.id)
     finally:
         get_settings.cache_clear()
@@ -375,9 +376,11 @@ def test_send_round_and_query_endpoints() -> None:
         employee_id = employee.id
         ticket_id = ticket.id
 
+    headers = auth_headers(client)
     response = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/send-round",
         json={"employee_id": employee_id},
+        headers=headers,
     )
     assert response.status_code == 201
     assert response.json() == {
@@ -389,12 +392,14 @@ def test_send_round_and_query_endpoints() -> None:
         "lines_sent": 1,
     }
 
-    orders_response = client.get(f"/api/v1/pos/tickets/{ticket_id}/station-orders")
+    orders_response = client.get(
+        f"/api/v1/pos/tickets/{ticket_id}/station-orders", headers=headers
+    )
     assert orders_response.status_code == 200
     assert len(orders_response.json()) == 1
     assert len(orders_response.json()[0]["lines"]) == 1
 
-    jobs_response = client.get("/api/v1/pos/print-jobs/pending")
+    jobs_response = client.get("/api/v1/pos/print-jobs/pending", headers=headers)
     assert jobs_response.status_code == 200
     assert len(jobs_response.json()) == 1
     assert jobs_response.json()[0]["status"] == "Pendiente"

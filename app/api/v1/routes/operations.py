@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.database import get_db
-from app.api.security import require_admin_read_permission
+from app.api.security import require_admin_read_permission, require_session
 from app.domain.constants import TableStatus, TicketStatus
 from app.models import DiningTable, Employee, Ticket
 from app.schemas.auth import (
@@ -24,7 +24,7 @@ from app.services.permission_service import (
 router = APIRouter(prefix="/operations", tags=["operations"])
 
 
-@router.get("/tables")
+@router.get("/tables", dependencies=[Depends(require_session)])
 def list_tables(db: Session = Depends(get_db)) -> list[dict]:
     tables = (
         db.execute(
@@ -84,7 +84,11 @@ def list_tables(db: Session = Depends(get_db)) -> list[dict]:
     return response
 
 
-@router.get("/employees")
+@router.get(
+    "/employees",
+    dependencies=[Depends(require_admin_read_permission)],
+    tags=["operations", "admin-read-only"],
+)
 def list_employees(db: Session = Depends(get_db)) -> list[dict]:
     employees = (
         db.execute(select(Employee).order_by(Employee.employee_code)).scalars().all()

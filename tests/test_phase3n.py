@@ -29,6 +29,7 @@ from app.services.preflight_service import run_local_backend_preflight
 from app.services.sms_service import send_sms
 from app.services.stock_alert_service import evaluate_stock_alert
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean(db) -> None:
@@ -123,13 +124,14 @@ def test_equal_splits_payments_change_and_ticket_closure():
         cash = db.scalar(select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo"))
         db.commit()
         employee_id, ticket_id, cash_id = employee.id, ticket.id, cash.id
-    created = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2})
+    headers = auth_headers(client)
+    created = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2}, headers=headers)
     assert created.status_code == 201
     splits = created.json()
-    first = client.post(f"/api/v1/pos/ticket-splits/{splits[0]['id']}/payments", json={"employee_id": employee_id, "payment_method_id": cash_id, "amount_cents": splits[0]["amount_cents"], "received_cents": splits[0]["amount_cents"] + 500})
+    first = client.post(f"/api/v1/pos/ticket-splits/{splits[0]['id']}/payments", json={"employee_id": employee_id, "payment_method_id": cash_id, "amount_cents": splits[0]["amount_cents"], "received_cents": splits[0]["amount_cents"] + 500}, headers=headers)
     assert first.json()["change_cents"] == 500
     assert first.json()["ticket_closed"] is False
-    second = client.post(f"/api/v1/pos/ticket-splits/{splits[1]['id']}/payments", json={"employee_id": employee_id, "payment_method_id": cash_id, "amount_cents": splits[1]["amount_cents"], "received_cents": splits[1]["amount_cents"]})
+    second = client.post(f"/api/v1/pos/ticket-splits/{splits[1]['id']}/payments", json={"employee_id": employee_id, "payment_method_id": cash_id, "amount_cents": splits[1]["amount_cents"], "received_cents": splits[1]["amount_cents"]}, headers=headers)
     assert second.json()["ticket_closed"] is True
     with SessionLocal() as db:
         assert db.get(Ticket, ticket_id).status == "Cobrado"
@@ -144,7 +146,7 @@ def test_split_by_lines():
         second = add_product_to_ticket(db, ticket.id, product.id, employee.id, 1)[0]
         db.commit()
         ids = employee.id, ticket.id, first.id, second.id
-    response = client.post(f"/api/v1/pos/tickets/{ids[1]}/splits/by-lines", json={"employee_id": ids[0], "name": "Persona 1", "ticket_line_ids": [ids[2], ids[3]]})
+    response = client.post(f"/api/v1/pos/tickets/{ids[1]}/splits/by-lines", json={"employee_id": ids[0], "name": "Persona 1", "ticket_line_ids": [ids[2], ids[3]]}, headers=auth_headers(client))
     assert response.status_code == 201
     assert {line["ticket_line_id"] for line in response.json()["lines"]} == {ids[2], ids[3]}
 
@@ -243,8 +245,9 @@ def test_cancel_open_splits_without_payments():
         start_payment(db, ticket.id, employee.id)
         db.commit()
         employee_id, ticket_id = employee.id, ticket.id
-    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2})
-    response = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id})
+    headers = auth_headers(client)
+    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2}, headers=headers)
+    response = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id}, headers=headers)
     assert response.status_code == 200
     assert response.json()["cancelled_count"] == 2
     with SessionLocal() as db:
@@ -263,13 +266,15 @@ def test_cancel_splits_with_active_payment_is_rejected():
         cash = db.scalar(select(PaymentMethod).where(PaymentMethod.method_key == "Efectivo"))
         db.commit()
         employee_id, ticket_id, cash_id = employee.id, ticket.id, cash.id
-    created = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2})
+    headers = auth_headers(client)
+    created = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2}, headers=headers)
     splits = created.json()
     client.post(
         f"/api/v1/pos/ticket-splits/{splits[0]['id']}/payments",
         json={"employee_id": employee_id, "payment_method_id": cash_id, "amount_cents": splits[0]["amount_cents"]},
+        headers=headers,
     )
-    response = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id})
+    response = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id}, headers=headers)
     assert response.status_code == 409
     assert "pagos" in response.json()["detail"].lower()
 
@@ -283,9 +288,10 @@ def test_can_create_new_split_after_cancelling_previous():
         start_payment(db, ticket.id, employee.id)
         db.commit()
         employee_id, ticket_id = employee.id, ticket.id
-    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2})
-    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id})
-    new_split = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 3})
+    headers = auth_headers(client)
+    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 2}, headers=headers)
+    client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/cancel", json={"employee_id": employee_id}, headers=headers)
+    new_split = client.post(f"/api/v1/pos/tickets/{ticket_id}/splits/equal", json={"employee_id": employee_id, "parts": 3}, headers=headers)
     assert new_split.status_code == 201
     assert len(new_split.json()) == 3
 

@@ -40,6 +40,7 @@ from app.services.payment_service import create_payment, start_payment
 from app.services.product_service import add_product_to_ticket
 from app.services.sales_inventory_service import consume_inventory_for_paid_ticket
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
@@ -265,8 +266,10 @@ def test_inventory_movements_endpoint_lists_ticket_consumption() -> None:
         _pay_ticket(db, ticket)
         ticket_id = ticket.id
         db.commit()
-    response = TestClient(app).get(
-        f"/api/v1/pos/tickets/{ticket_id}/inventory-movements"
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/pos/tickets/{ticket_id}/inventory-movements",
+        headers=auth_headers(client),
     )
     assert response.status_code == 200
     assert len(response.json()) == 1

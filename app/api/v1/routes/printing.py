@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.api.security import require_worker_key
+from app.api.security import (
+    SessionIdentity,
+    require_reprint_or_support_permission,
+    require_session,
+    require_worker_key,
+)
 from app.schemas import (
     BusinessErrorResponse,
     PrintJobClaimRequest,
@@ -36,7 +41,11 @@ from app.services.print_queue_service import (
 router = APIRouter(prefix="/printing", tags=["printing"])
 
 
-@router.get("/printers", response_model=list[PrinterResponse])
+@router.get(
+    "/printers",
+    response_model=list[PrinterResponse],
+    dependencies=[Depends(require_session)],
+)
 def list_printers_endpoint(db: Session = Depends(get_db)) -> list[PrinterResponse]:
     """Lista configuracion logica; no afirma conectividad fisica."""
     return [PrinterResponse.model_validate(item) for item in list_printers(db)]
@@ -68,6 +77,7 @@ def _to_http_exception(error: BusinessError) -> HTTPException:
     "/jobs/pending",
     response_model=list[PrintJobResponse],
     responses=BUSINESS_ERROR_RESPONSES,
+    dependencies=[Depends(require_session)],
 )
 def list_pending_print_jobs_endpoint(
     printer_key: str | None = None,
@@ -88,6 +98,7 @@ def list_pending_print_jobs_endpoint(
     "/jobs",
     response_model=list[PrintJobHistoryItem],
     responses=BUSINESS_ERROR_RESPONSES,
+    dependencies=[Depends(require_session)],
 )
 def list_print_jobs_endpoint(
     status: str | None = None,
@@ -202,6 +213,7 @@ def mark_print_job_failed_endpoint(
     "/jobs/retry-failed",
     response_model=PrintJobRetryResponse,
     responses=BUSINESS_ERROR_RESPONSES,
+    dependencies=[Depends(require_reprint_or_support_permission)],
 )
 def retry_failed_print_jobs_endpoint(
     payload: PrintJobRetryRequest, db: Session = Depends(get_db)
@@ -222,6 +234,7 @@ def retry_failed_print_jobs_endpoint(
     "/jobs/{print_job_id}",
     response_model=PrintJobResponse,
     responses=BUSINESS_ERROR_RESPONSES,
+    dependencies=[Depends(require_session)],
 )
 def get_print_job_endpoint(
     print_job_id: int, db: Session = Depends(get_db)
@@ -242,9 +255,10 @@ def reprint_job_endpoint(
     print_job_id: int,
     payload: ReprintRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_reprint_or_support_permission),
 ) -> PrintJobResponse:
     try:
-        job = request_reprint(db, print_job_id, payload.employee_id, payload.reason)
+        job = request_reprint(db, print_job_id, identity.employee.id, payload.reason)
         response = PrintJobResponse.model_validate(job)
         db.commit()
         return response

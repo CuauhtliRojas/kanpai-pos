@@ -20,7 +20,7 @@ export function getAirtableSyncStatus(): Promise<AirtableSyncStatus> {
 export function runAirtableSync(payload: AirtableSyncRunRequest): Promise<AirtableSyncRunResponse> {
   return apiRequest<AirtableSyncRunResponse>("/api/v1/system/airtable-sync/run", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, dry_run: false }),
     timeoutMs: 120_000,
   });
 }
@@ -30,7 +30,7 @@ export function pullAirtableCatalog(
 ): Promise<AirtableSyncRunResponse> {
   return apiRequest<AirtableSyncRunResponse>("/api/v1/system/airtable-sync/pull", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, dry_run: false }),
     timeoutMs: 120_000,
   });
 }
@@ -40,7 +40,7 @@ export function pushAirtableMovements(
 ): Promise<AirtableSyncRunResponse> {
   return apiRequest<AirtableSyncRunResponse>("/api/v1/system/airtable-sync/push", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, dry_run: false }),
     timeoutMs: 120_000,
   });
 }

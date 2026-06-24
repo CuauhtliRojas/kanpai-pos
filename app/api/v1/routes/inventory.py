@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.security import (
+    SessionIdentity,
+    require_session,
+    require_session_permission,
+)
 from app.core.database import get_db
-from app.domain.constants import InventorySourceType
+from app.domain.constants import InventorySourceType, PermissionKey
 from app.models import InventoryItem, InventoryMovement, PurchaseReceipt
 from app.schemas import (
     BusinessErrorResponse,
@@ -33,7 +38,9 @@ from app.services.inventory_service import (
 )
 from app.services.stock_alert_service import list_active_stock_alerts
 
-router = APIRouter(prefix="/inventory", tags=["inventory"])
+router = APIRouter(
+    prefix="/inventory", tags=["inventory"], dependencies=[Depends(require_session)]
+)
 
 BUSINESS_ERROR_RESPONSES = {
     400: {"model": BusinessErrorResponse},
@@ -173,7 +180,11 @@ def list_inventory_movements_endpoint(
     responses=BUSINESS_ERROR_RESPONSES,
 )
 def create_inventory_movement_endpoint(
-    payload: InventoryMovementCreateRequest, db: Session = Depends(get_db)
+    payload: InventoryMovementCreateRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.INVENTORY_ADJUST)
+    ),
 ) -> InventoryMovementResponse:
     try:
         item = db.get(InventoryItem, payload.inventory_item_id)
@@ -187,7 +198,7 @@ def create_inventory_movement_endpoint(
             inventory_item_id=payload.inventory_item_id,
             movement_type=payload.movement_type,
             quantity_base=quantity_base,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             reason=payload.reason,
             unit_cost_cents=payload.unit_cost_cents,
             source_type=InventorySourceType.MANUAL,
@@ -207,12 +218,16 @@ def create_inventory_movement_endpoint(
     responses=BUSINESS_ERROR_RESPONSES,
 )
 def process_purchase_receipt_endpoint(
-    payload: PurchaseReceiptCreateRequest, db: Session = Depends(get_db)
+    payload: PurchaseReceiptCreateRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.INVENTORY_ADJUST)
+    ),
 ) -> PurchaseReceiptResponse:
     try:
         receipt = process_purchase_receipt(
             db,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             lines=payload.lines,
             supplier_name=payload.supplier_name,
             invoice_reference=payload.invoice_reference,

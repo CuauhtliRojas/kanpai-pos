@@ -43,6 +43,7 @@ from app.services.print_queue_service import (
     mark_print_job_printed,
     retry_failed_print_jobs,
 )
+from tests.auth_helpers import auth_headers
 from app.services.print_service import sanitize_print_content
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
@@ -319,9 +320,11 @@ def test_retry_failed_endpoint() -> None:
     with SessionLocal() as db:
         _job(db, status="Fallido")
         db.commit()
-    response = TestClient(app).post(
+    client = TestClient(app)
+    response = client.post(
         "/api/v1/printing/jobs/retry-failed",
         json={"printer_key": "BARRA_FRIA", "reset_all": True},
+        headers=auth_headers(client),
     )
     assert response.status_code == 200
     assert response.json() == {"jobs_requeued": 1}
@@ -331,7 +334,8 @@ def test_pending_alias_remains_available() -> None:
     with SessionLocal() as db:
         _job(db)
         db.commit()
-    response = TestClient(app).get("/api/v1/pos/print-jobs/pending")
+    client = TestClient(app)
+    response = client.get("/api/v1/pos/print-jobs/pending", headers=auth_headers(client))
     assert response.status_code == 200
     assert len(response.json()) == 1
 
@@ -342,9 +346,11 @@ def test_print_job_history_filters_and_omits_content_snapshot() -> None:
         _job(db, "CAJA", status="Pendiente")
         expected_id = expected.id
         db.commit()
-    response = TestClient(app).get(
+    client = TestClient(app)
+    response = client.get(
         "/api/v1/printing/jobs",
         params={"status": "Fallido", "printer_key": "BARRA_FRIA", "limit": 10},
+        headers=auth_headers(client),
     )
     assert response.status_code == 200
     assert [job["id"] for job in response.json()] == [expected_id]
@@ -357,7 +363,8 @@ def test_printers_contract_includes_logical_queue_counts() -> None:
         _job(db, "BARRA_FRIA", status="Pendiente")
         _job(db, "BARRA_FRIA", status="Fallido")
         db.commit()
-    response = TestClient(app).get("/api/v1/printing/printers")
+    client = TestClient(app)
+    response = client.get("/api/v1/printing/printers", headers=auth_headers(client))
     assert response.status_code == 200
     printer = next(item for item in response.json() if item["key"] == "BARRA_FRIA")
     assert printer["pending_count"] == 1

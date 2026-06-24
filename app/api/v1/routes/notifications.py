@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.api.security import require_session_permission, require_support_permission
+from app.api.security import (
+    SessionIdentity,
+    require_session_permission,
+    require_support_permission,
+)
 from app.domain.constants import PermissionKey
 from app.schemas.sms import SmsNotificationResponse, SmsTestRequest
 from app.services.exceptions import BusinessError, PermissionDeniedError
@@ -32,9 +36,20 @@ def sms_history(db: Session = Depends(get_db)):
     summary="Enviar prueba SMS autorizada (admin/soporte)",
     description="Requiere SMS_SEND y confirm='SEND_SMS_TEST'. Puede contactar al proveedor si SMS_ENABLED=true.",
 )
-def sms_test(payload: SmsTestRequest, db: Session = Depends(get_db)):
+def sms_test(
+    payload: SmsTestRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.SMS_SEND)
+    ),
+):
     try:
-        item = send_sms(db, employee_id=payload.employee_id, msisdn=payload.msisdn, message=payload.message)
+        item = send_sms(
+            db,
+            employee_id=identity.employee.id,
+            msisdn=payload.msisdn,
+            message=payload.message,
+        )
         response = SmsNotificationResponse.model_validate(item)
         db.commit()
         return response

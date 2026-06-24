@@ -91,6 +91,21 @@ def require_admin_read_permission(
     return identity
 
 
+def require_reprint_or_support_permission(
+    identity: SessionIdentity = Depends(require_session),
+) -> SessionIdentity:
+    if (
+        "REPRINT" not in identity.permissions
+        and "SUPPORT_ACCESS" not in identity.permissions
+        and "ADMIN" not in identity.roles
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="La sesión no tiene permiso de reimpresión.",
+        )
+    return identity
+
+
 def require_worker_key(
     supplied_key: Annotated[str | None, Security(worker_key_header)],
 ) -> None:

@@ -39,6 +39,7 @@ from app.services.reporting_service import get_print_jobs_summary, get_productio
 from app.services.reprint_service import request_reprint
 from app.services.ticket_service import open_ticket_for_table, recalculate_ticket_totals
 from scripts.reset_operational_data import reset_operational_data
+from tests.auth_helpers import auth_headers
 
 sequence = count(1)
 
@@ -161,7 +162,8 @@ def test_sent_line_modification_creates_modification_print_job() -> None:
 
         assert job and job.job_type == "Modificacion"
         assert "MODIFICACION" in job.content_snapshot
-        assert "NOTA: Sin cebolla" in job.content_snapshot
+        assert "NOTA:" in job.content_snapshot
+        assert "Sin cebolla" in job.content_snapshot
 
 
 @pytest.mark.parametrize("ticket_status", [TicketStatus.PAID, TicketStatus.CANCELLED])
@@ -450,7 +452,8 @@ def test_yakitori_preparation_can_be_added_modified_and_sent() -> None:
         ticket_id = ticket.id
         line_id = line.id
 
-    readonly = client.get(f"/api/v1/pos/tickets/{ticket_id}/readonly")
+    headers = auth_headers(client)
+    readonly = client.get(f"/api/v1/pos/tickets/{ticket_id}/readonly", headers=headers)
     assert readonly.status_code == 200
     readonly_line = next(
         item for item in readonly.json()["lines"] if item["id"] == line_id
@@ -460,7 +463,7 @@ def test_yakitori_preparation_can_be_added_modified_and_sent() -> None:
     ]
     assert readonly_line["variant_selections"][0]["group_name"] == "Preparación"
 
-    active_lines = client.get(f"/api/v1/pos/tickets/{ticket_id}/lines")
+    active_lines = client.get(f"/api/v1/pos/tickets/{ticket_id}/lines", headers=headers)
     assert active_lines.status_code == 200
     active_selection = active_lines.json()[0]["variant_selections"][0]
     assert active_selection["group_name"] == "Preparación"

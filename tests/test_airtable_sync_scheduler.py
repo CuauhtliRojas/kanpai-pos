@@ -11,7 +11,9 @@ from pydantic import ValidationError
 
 import app.services.airtable_sync_scheduler as scheduler_module
 from app.core.config import Settings
+from app.db.seed import run_seed
 from app.services.airtable_sync_scheduler import AirtableSyncScheduler
+from tests.auth_helpers import auth_headers
 
 
 def _settings(**overrides) -> Settings:
@@ -19,6 +21,8 @@ def _settings(**overrides) -> Settings:
         "AIRTABLE_SYNC_ENABLED": True,
         "AIRTABLE_API_TOKEN": "test-token",
         "AIRTABLE_BASE_ID": "app-test",
+        "AIRTABLE_SYNC_PULL_ENABLED": True,
+        "AIRTABLE_SYNC_PUSH_ENABLED": False,
         "AIRTABLE_SYNC_RUN_ON_STARTUP": False,
     }
     values.update(overrides)
@@ -92,7 +96,7 @@ def test_scheduler_starts_and_stops_without_leaving_a_task() -> None:
 
 
 def test_cycle_skips_pull_during_active_operation_but_runs_push(monkeypatch) -> None:
-    scheduler = AirtableSyncScheduler(_settings())
+    scheduler = AirtableSyncScheduler(_settings(AIRTABLE_SYNC_PUSH_ENABLED=True))
     calls = {"pull": 0, "push": 0}
 
     monkeypatch.setattr(scheduler_module, "has_active_operation", lambda session: True)
@@ -128,9 +132,12 @@ def test_airtable_scheduler_failure_does_not_break_fastapi_startup(monkeypatch) 
 
 def test_airtable_sync_status_endpoint_is_read_only() -> None:
     main_module = importlib.import_module("app.main")
+    run_seed(include_development_data=True)
 
     with TestClient(main_module.app) as client:
-        response = client.get("/api/v1/system/airtable-sync")
+        response = client.get(
+            "/api/v1/system/airtable-sync", headers=auth_headers(client)
+        )
 
     assert response.status_code == 200
     assert set(response.json()) == {
@@ -163,10 +170,12 @@ def test_airtable_sync_manual_endpoint_requires_confirmation():
     from app.main import app
 
     scheduler_module._scheduler = None
+    run_seed(include_development_data=True)
     client = TestClient(app)
     response = client.post(
         "/api/v1/system/airtable-sync/run",
         json={"dry_run": False, "confirm": "WRONG"},
+        headers=auth_headers(client),
     )
 
     assert response.status_code in {400, 409}

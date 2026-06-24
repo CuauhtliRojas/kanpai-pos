@@ -3,8 +3,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.api.security import (
+    SessionIdentity,
+    require_session,
+    require_session_permission,
+)
 from app.domain.constants import (
     ActiveStatus,
+    PermissionKey,
     PrintJobType,
     TableStatus,
     TicketLineStatus,
@@ -77,7 +83,7 @@ from app.services.discount_service import apply_discount, list_ticket_discounts
 from app.services.modification_service import modify_ticket_line
 from app.services.ticket_history_service import get_readonly_ticket, list_ticket_history
 
-router = APIRouter(prefix="/pos", tags=["pos"])
+router = APIRouter(prefix="/pos", tags=["pos"], dependencies=[Depends(require_session)])
 
 BUSINESS_ERROR_RESPONSES = {
     400: {"model": BusinessErrorResponse},
@@ -169,12 +175,16 @@ def get_readonly_ticket_endpoint(
     responses=BUSINESS_ERROR_RESPONSES,
 )
 def open_cash_shift_endpoint(
-    payload: CashShiftOpenRequest, db: Session = Depends(get_db)
+    payload: CashShiftOpenRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.CASH_SHIFT_OPEN)
+    ),
 ) -> CashShiftResponse:
     try:
         cash_shift = open_cash_shift(
             db,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             opening_cash_cents=payload.opening_cash_cents,
         )
         db.commit()
@@ -209,12 +219,16 @@ def get_current_cash_shift_endpoint(
     responses=BUSINESS_ERROR_RESPONSES,
 )
 def create_cash_expense_endpoint(
-    payload: CashExpenseCreateRequest, db: Session = Depends(get_db)
+    payload: CashExpenseCreateRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.EXPENSE_CREATE)
+    ),
 ) -> CashExpenseResponse:
     try:
         expense = create_cash_expense(
             db,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             amount_cents=payload.amount_cents,
             description=payload.description,
             category=payload.category,
@@ -254,12 +268,15 @@ def close_cash_shift_endpoint(
     cash_shift_id: int,
     payload: CashShiftCloseRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.CASH_SHIFT_CLOSE)
+    ),
 ) -> CashShiftCloseResponse:
     try:
         cash_shift = close_cash_shift(
             db,
             cash_shift_id=cash_shift_id,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             declared_cash_cents=payload.declared_cash_cents,
             note=payload.note,
             allow_pending_print_jobs=payload.allow_pending_print_jobs,
@@ -292,12 +309,13 @@ def open_ticket_for_table_endpoint(
     table_id: int,
     payload: TicketOpenRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
 ) -> TicketResponse:
     try:
         ticket = open_ticket_for_table(
             db,
             table_id=table_id,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             guest_count=payload.guest_count,
             waiter_employee_id=payload.waiter_employee_id,
             note=payload.note,
@@ -334,9 +352,10 @@ def start_payment_endpoint(
     ticket_id: int,
     payload: StartPaymentRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
 ) -> TicketResponse:
     try:
-        ticket = start_payment(db, ticket_id, payload.employee_id)
+        ticket = start_payment(db, ticket_id, identity.employee.id)
         db.commit()
         db.refresh(ticket)
         return TicketResponse.model_validate(ticket)
@@ -355,12 +374,13 @@ def create_payment_endpoint(
     ticket_id: int,
     payload: PaymentCreateRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
 ) -> PaymentCreateResponse:
     try:
         payment = create_payment(
             db,
             ticket_id=ticket_id,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             payment_method_id=payload.payment_method_id,
             amount_cents=payload.amount_cents,
             received_cents=payload.received_cents,
@@ -451,13 +471,14 @@ def add_product_to_ticket_endpoint(
     ticket_id: int,
     payload: TicketLineCreateRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
 ) -> TicketLinesCreatedResponse:
     try:
         lines = add_product_to_ticket(
             db,
             ticket_id=ticket_id,
             product_id=payload.product_id,
-            employee_id=payload.employee_id,
+            employee_id=identity.employee.id,
             quantity=payload.quantity,
             note=payload.note,
             variant_selections=[item.model_dump() for item in payload.variant_selections],
@@ -489,9 +510,10 @@ def send_round_endpoint(
     ticket_id: int,
     payload: SendRoundRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
 ) -> SendRoundResponse:
     try:
-        batch = send_round(db, ticket_id, payload.employee_id)
+        batch = send_round(db, ticket_id, identity.employee.id)
         print_jobs_created = db.scalar(
             select(func.count(PrintJob.id)).where(PrintJob.command_batch_id == batch.id)
         )
@@ -552,6 +574,9 @@ def cancel_ticket_line_endpoint(
     line_id: int,
     payload: TicketLineCancelRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.TICKET_CANCEL)
+    ),
 ) -> TicketLineCancelResponse:
     try:
         jobs_before = (
@@ -562,7 +587,7 @@ def cancel_ticket_line_endpoint(
             )
             or 0
         )
-        line = cancel_ticket_line(db, line_id, payload.employee_id, payload.reason)
+        line = cancel_ticket_line(db, line_id, identity.employee.id, payload.reason)
         ticket = get_ticket(db, line.ticket_id)
         jobs_after = (
             db.scalar(
@@ -593,6 +618,9 @@ def cancel_ticket_endpoint(
     ticket_id: int,
     payload: TicketCancelRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.TICKET_CANCEL)
+    ),
 ) -> TicketCancelResponse:
     try:
         jobs_before = (
@@ -615,7 +643,7 @@ def cancel_ticket_endpoint(
                 Payment.status == ActiveStatus.ACTIVE,
             )
         )
-        ticket = cancel_ticket(db, ticket_id, payload.employee_id, payload.reason)
+        ticket = cancel_ticket(db, ticket_id, identity.employee.id, payload.reason)
         jobs_after = (
             db.scalar(
                 select(func.count(PrintJob.id)).where(
@@ -647,6 +675,7 @@ def modify_ticket_line_endpoint(
     line_id: int,
     payload: TicketLineModifyRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
 ) -> TicketLineModificationResponse:
     try:
         var_sels = (
@@ -655,7 +684,7 @@ def modify_ticket_line_endpoint(
             else None
         )
         modification = modify_ticket_line(
-            db, line_id, payload.employee_id, payload.note, payload.quantity, var_sels
+            db, line_id, identity.employee.id, payload.note, payload.quantity, var_sels
         )
         response = TicketLineModificationResponse.model_validate(modification)
         db.commit()
@@ -675,12 +704,15 @@ def apply_discount_endpoint(
     ticket_id: int,
     payload: DiscountCreateRequest,
     db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(
+        require_session_permission(PermissionKey.DISCOUNT_AUTHORIZE)
+    ),
 ) -> DiscountResponse:
     try:
         discount = apply_discount(
             db,
             ticket_id,
-            payload.employee_id,
+            identity.employee.id,
             payload.discount_type,
             payload.amount_cents,
             payload.percent_bps,

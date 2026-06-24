@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.security import require_admin_read_permission
 from app.core.database import get_db
 from app.domain.constants import InventoryMovementType
 from app.schemas.reporting import (
@@ -23,7 +24,11 @@ from app.services.reporting_service import (
     get_sales_by_product,
 )
 
-router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(
+    prefix="/reports",
+    tags=["reports"],
+    dependencies=[Depends(require_admin_read_permission)],
+)
 
 
 def _bad_request(error: InvalidBusinessDataError) -> HTTPException:

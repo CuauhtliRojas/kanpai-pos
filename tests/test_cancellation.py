@@ -33,6 +33,7 @@ from app.services.order_service import send_round
 from app.services.payment_service import create_payment, start_payment
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
+from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
@@ -153,8 +154,9 @@ def test_cancel_sent_line_creates_cancellation_print_job() -> None:
         ).scalar_one()
         assert job.idempotency_key == f"CANCEL_LINE:{line.id}"
         assert job.station_order_id is not None
-        assert "KANPAI\nCANCELACION COMANDA" in job.content_snapshot
-        job.content_snapshot.encode("ascii")
+        assert "*** CANCELACION ***" in job.content_snapshot
+        assert "CANCELAR PRODUCTO" in job.content_snapshot
+        assert "Producto incorrecto" in job.content_snapshot
 
 
 def test_cancel_sent_line_changes_status() -> None:
@@ -342,6 +344,7 @@ def test_cancel_line_endpoint() -> None:
     response = client.post(
         f"/api/v1/pos/ticket-lines/{line_id}/cancel",
         json={"employee_id": employee_id, "reason": "Error de captura"},
+        headers=auth_headers(client),
     )
 
     assert response.status_code == 200
@@ -360,6 +363,7 @@ def test_cancel_ticket_endpoint() -> None:
     response = client.post(
         f"/api/v1/pos/tickets/{ticket_id}/cancel",
         json={"employee_id": employee_id, "reason": "Cliente canceló pedido"},
+        headers=auth_headers(client),
     )
 
     assert response.status_code == 200

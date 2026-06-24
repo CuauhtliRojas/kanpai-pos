@@ -11,6 +11,7 @@ from app.services.cash_shift_service import open_cash_shift
 from app.services.exceptions import BusinessConflictError
 from app.services.ticket_service import open_ticket_for_table
 from scripts.reset_operational_data import reset_operational_data
+from tests.auth_helpers import auth_headers
 
 
 @pytest.fixture(autouse=True)
@@ -53,7 +54,8 @@ def test_table_with_open_ticket_is_exposed_for_continuation_even_with_stale_cach
         ticket_id = ticket.id
         table_id = tables[0].id
 
-    response = TestClient(app).get("/api/v1/operations/tables")
+    client = TestClient(app)
+    response = client.get("/api/v1/operations/tables", headers=auth_headers(client))
     table = next(item for item in response.json() if item["id"] == table_id)
     assert table["status"] == TableStatus.OCCUPIED
     assert table["active_ticket_id"] == ticket_id

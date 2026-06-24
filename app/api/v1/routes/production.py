@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.security import SessionIdentity, require_session
 from app.core.database import get_db
 from app.schemas.production import ProductionActionRequest, ProductionOrderResponse
 from app.services.exceptions import (
@@ -11,7 +12,9 @@ from app.services.exceptions import (
 )
 from app.services.production_service import list_station_orders, transition_station_order
 
-router = APIRouter(prefix="/production", tags=["production"])
+router = APIRouter(
+    prefix="/production", tags=["production"], dependencies=[Depends(require_session)]
+)
 
 
 def _http_error(error: BusinessError) -> HTTPException:
@@ -41,10 +44,10 @@ def station_orders_endpoint(
 
 
 def _transition(
-    station_order_id: int, payload: ProductionActionRequest, action: str, db: Session
+    station_order_id: int, employee_id: int, action: str, db: Session
 ) -> ProductionOrderResponse:
     try:
-        order = transition_station_order(db, station_order_id, payload.employee_id, action)
+        order = transition_station_order(db, station_order_id, employee_id, action)
         response = ProductionOrderResponse.model_validate(order)
         db.commit()
         return response
@@ -54,20 +57,40 @@ def _transition(
 
 
 @router.post("/station-orders/{station_order_id}/receive", response_model=ProductionOrderResponse)
-def receive_order(station_order_id: int, payload: ProductionActionRequest, db: Session = Depends(get_db)):
-    return _transition(station_order_id, payload, "receive", db)
+def receive_order(
+    station_order_id: int,
+    payload: ProductionActionRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
+):
+    return _transition(station_order_id, identity.employee.id, "receive", db)
 
 
 @router.post("/station-orders/{station_order_id}/start", response_model=ProductionOrderResponse)
-def start_order(station_order_id: int, payload: ProductionActionRequest, db: Session = Depends(get_db)):
-    return _transition(station_order_id, payload, "start", db)
+def start_order(
+    station_order_id: int,
+    payload: ProductionActionRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
+):
+    return _transition(station_order_id, identity.employee.id, "start", db)
 
 
 @router.post("/station-orders/{station_order_id}/complete", response_model=ProductionOrderResponse)
-def complete_order(station_order_id: int, payload: ProductionActionRequest, db: Session = Depends(get_db)):
-    return _transition(station_order_id, payload, "complete", db)
+def complete_order(
+    station_order_id: int,
+    payload: ProductionActionRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
+):
+    return _transition(station_order_id, identity.employee.id, "complete", db)
 
 
 @router.post("/station-orders/{station_order_id}/deliver", response_model=ProductionOrderResponse)
-def deliver_order(station_order_id: int, payload: ProductionActionRequest, db: Session = Depends(get_db)):
-    return _transition(station_order_id, payload, "deliver", db)
+def deliver_order(
+    station_order_id: int,
+    payload: ProductionActionRequest,
+    db: Session = Depends(get_db),
+    identity: SessionIdentity = Depends(require_session),
+):
+    return _transition(station_order_id, identity.employee.id, "deliver", db)

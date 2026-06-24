@@ -36,6 +36,7 @@ from app.models import (
     TicketLine,
     TicketLineNote,
 )
+from tests.auth_helpers import auth_headers
 
 client = TestClient(app)
 sequence = count(1)
@@ -160,7 +161,9 @@ def _print_job(db: Session, status: str, job_type: str = "Ticket") -> PrintJob:
 
 
 def test_operational_summary_has_complete_structure() -> None:
-    payload = client.get("/api/v1/reports/operational-summary").json()
+    payload = client.get(
+        "/api/v1/reports/operational-summary", headers=auth_headers(client)
+    ).json()
     assert set(payload) == {
         "total_sales_cents",
         "total_paid_cents",
@@ -184,7 +187,9 @@ def test_operational_summary_counts_paid_and_cancelled_tickets() -> None:
         _ticket(db, shift, "Cobrado", 2500)
         _ticket(db, shift, "Cancelado", 900)
         db.commit()
-    payload = client.get("/api/v1/reports/operational-summary").json()
+    payload = client.get(
+        "/api/v1/reports/operational-summary", headers=auth_headers(client)
+    ).json()
     assert payload["total_sales_cents"] == 2500
     assert payload["paid_ticket_count"] == 1
     assert payload["cancelled_ticket_count"] == 1
@@ -205,7 +210,9 @@ def test_operational_summary_counts_print_jobs_and_stock_alerts() -> None:
             )
         )
         db.commit()
-    payload = client.get("/api/v1/reports/operational-summary").json()
+    payload = client.get(
+        "/api/v1/reports/operational-summary", headers=auth_headers(client)
+    ).json()
     assert payload["pending_print_jobs_count"] == 1
     assert payload["failed_print_jobs_count"] == 1
     assert payload["low_stock_alert_count"] == 1
@@ -235,7 +242,9 @@ def test_sales_by_payment_method_groups_active_methods() -> None:
                 )
             )
         db.commit()
-    payload = client.get("/api/v1/reports/sales-by-payment-method").json()
+    payload = client.get(
+        "/api/v1/reports/sales-by-payment-method", headers=auth_headers(client)
+    ).json()
     assert {item["method_key"] for item in payload} == {
         "Efectivo",
         "Tarjeta",
@@ -251,7 +260,9 @@ def test_sales_by_product_sums_simple_and_ignores_package_components() -> None:
         _line(db, ticket, quantity=2, total=2000)
         _line(db, ticket, line_type="Componente de paquete", total=1000)
         db.commit()
-    payload = client.get("/api/v1/reports/sales-by-product").json()
+    payload = client.get(
+        "/api/v1/reports/sales-by-product", headers=auth_headers(client)
+    ).json()
     assert len(payload) == 1
     assert payload[0]["quantity_sold"] == 2
     assert payload[0]["total_cents"] == 2000
@@ -271,7 +282,9 @@ def test_sales_by_category_groups_category_snapshot_and_allocates_discount() -> 
         category_ids = [category.id for category in categories]
         db.commit()
 
-    payload = client.get("/api/v1/reports/sales-by-category").json()
+    payload = client.get(
+        "/api/v1/reports/sales-by-category", headers=auth_headers(client)
+    ).json()
     by_category = {item["category_id"]: item for item in payload}
     assert by_category[category_ids[0]]["gross_sales_cents"] == 2000
     assert by_category[category_ids[0]]["discount_cents"] == 200
@@ -297,7 +310,9 @@ def test_inventory_consumption_defaults_to_sale_consumption() -> None:
             )
         )
         db.commit()
-    payload = client.get("/api/v1/reports/inventory-consumption").json()
+    payload = client.get(
+        "/api/v1/reports/inventory-consumption", headers=auth_headers(client)
+    ).json()
     assert payload[0]["movement_type"] == "Consumo venta"
     assert Decimal(payload[0]["total_quantity_base"]) == Decimal("2.5")
 
@@ -307,7 +322,9 @@ def test_print_jobs_summary_groups_by_status() -> None:
         for status in ("Pendiente", "Tomado", "Impreso", "Fallido", "Cancelado"):
             _print_job(db, status)
         db.commit()
-    payload = client.get("/api/v1/reports/print-jobs-summary").json()
+    payload = client.get(
+        "/api/v1/reports/print-jobs-summary", headers=auth_headers(client)
+    ).json()
     assert payload["total_print_jobs"] == 5
     assert payload["pending_count"] == payload["failed_count"] == 1
     assert sum(payload["by_printer"].values()) == 5

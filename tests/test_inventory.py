@@ -45,6 +45,7 @@ from app.services.inventory_service import (
     get_current_stock,
     process_purchase_receipt,
 )
+from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
@@ -308,7 +309,8 @@ def test_recovered_stock_resolves_alert() -> None:
 
 
 def test_list_inventory_items_endpoint() -> None:
-    response = TestClient(app).get("/api/v1/inventory/items")
+    client = TestClient(app)
+    response = client.get("/api/v1/inventory/items", headers=auth_headers(client))
     assert response.status_code == 200
     items = response.json()
     assert all(item["id"] for item in items)
@@ -323,7 +325,10 @@ def test_list_inventory_items_endpoint() -> None:
 def test_get_inventory_item_stock_endpoint() -> None:
     with SessionLocal() as db:
         item_id = _item(db).id
-    response = TestClient(app).get(f"/api/v1/inventory/items/{item_id}/stock")
+    client = TestClient(app)
+    response = client.get(
+        f"/api/v1/inventory/items/{item_id}/stock", headers=auth_headers(client)
+    )
     assert response.status_code == 200
     stock = response.json()
     assert stock["inventory_item_id"] == item_id
@@ -344,7 +349,10 @@ def test_create_inventory_movement_endpoint() -> None:
             "reason": "QA ajuste entrada",
             "unit_cost_cents": 10,
         }
-    response = TestClient(app).post("/api/v1/inventory/movements", json=payload)
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/inventory/movements", json=payload, headers=auth_headers(client)
+    )
     assert response.status_code == 201
     assert Decimal(str(response.json()["signed_quantity_base"])) == 500
 
@@ -361,9 +369,12 @@ def test_inventory_movement_history_filters_and_calculates_stock() -> None:
         item_id = item.id
         db.commit()
 
-    response = TestClient(app).get(
+    client = TestClient(app)
+    headers = auth_headers(client)
+    response = client.get(
         "/api/v1/inventory/movements",
         params={"inventory_item_id": item_id, "source_type": "Manual", "limit": 1},
+        headers=headers,
     )
     assert response.status_code == 200
     payload = response.json()
@@ -374,9 +385,10 @@ def test_inventory_movement_history_filters_and_calculates_stock() -> None:
     assert payload[0]["item_name"]
     assert payload[0]["employee_name"]
 
-    second_page = TestClient(app).get(
+    second_page = client.get(
         "/api/v1/inventory/movements",
         params={"inventory_item_id": item_id, "limit": 1, "offset": 1},
+        headers=headers,
     )
     assert second_page.status_code == 200
     assert second_page.json()[0]["movement_type"] == "Ajuste entrada"
@@ -421,7 +433,12 @@ def test_process_purchase_receipt_endpoint() -> None:
                 }
             ],
         }
-    response = TestClient(app).post("/api/v1/inventory/purchase-receipts", json=payload)
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/inventory/purchase-receipts",
+        json=payload,
+        headers=auth_headers(client),
+    )
     assert response.status_code == 201
     assert response.json()["status"] == "Procesada"
     assert len(response.json()["lines"]) == 1
@@ -432,6 +449,9 @@ def test_list_active_stock_alerts_endpoint() -> None:
         item, admin = _item(db), _admin(db)
         create_inventory_movement(db, item.id, "Ajuste entrada", 500, admin.id, "QA")
         db.commit()
-    response = TestClient(app).get("/api/v1/inventory/stock-alerts/active")
+    client = TestClient(app)
+    response = client.get(
+        "/api/v1/inventory/stock-alerts/active", headers=auth_headers(client)
+    )
     assert response.status_code == 200
     assert len(response.json()) == 1

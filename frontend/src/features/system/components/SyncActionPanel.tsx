@@ -156,7 +156,6 @@ export function SyncActionPanel({
 
     void mutation
       .mutateAsync({
-        dry_run: false,
         confirm,
         force_pull_during_active_shift: forcePull,
       })

@@ -1,20 +1,40 @@
 from pathlib import Path
 
 import pytest
+from sqlalchemy import delete, select
 
 from app.core.database import SessionLocal
 from app.db.seed import run_seed
+from app.models import Product, ProductStationAssignment, ProductionStation
 from scripts.check_pre_sync_invariants import main
 from scripts.reset_operational_data import reset_operational_data
+
+
+QA_MISSING_RECIPE_SKU = "QA-MISSING-RECIPE"
+
+
+def _delete_missing_recipe_product() -> None:
+    with SessionLocal() as db:
+        product_id = db.scalar(select(Product.id).where(Product.sku == QA_MISSING_RECIPE_SKU))
+        if product_id is not None:
+            db.execute(
+                delete(ProductStationAssignment).where(
+                    ProductStationAssignment.product_id == product_id
+                )
+            )
+            db.execute(delete(Product).where(Product.id == product_id))
+        db.commit()
 
 
 @pytest.fixture(autouse=True)
 def clean_invariant_data() -> None:
     run_seed()
+    _delete_missing_recipe_product()
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()
     yield
+    _delete_missing_recipe_product()
     with SessionLocal() as db:
         reset_operational_data(db)
         db.commit()
@@ -23,6 +43,34 @@ def clean_invariant_data() -> None:
 def test_invariant_script_blocks_incomplete_recipe_seed(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    with SessionLocal() as db:
+        station_id = db.scalar(
+            select(ProductionStation.id)
+            .where(ProductionStation.active.is_(True))
+            .order_by(ProductionStation.id)
+        )
+        assert station_id is not None
+        product = Product(
+            sku=QA_MISSING_RECIPE_SKU,
+            product_type="Simple",
+            name="QA Missing Recipe",
+            display_name="QA Missing Recipe",
+            price_cents=100,
+            active=True,
+            visible_pos=True,
+        )
+        db.add(product)
+        db.flush()
+        db.add(
+            ProductStationAssignment(
+                product_id=product.id,
+                station_id=station_id,
+                is_primary=True,
+                active=True,
+            )
+        )
+        db.commit()
+
     assert main() == 1
     output = capsys.readouterr().out
     assert "PRE-SYNC PREFLIGHT: ERROR" in output
