@@ -16,6 +16,11 @@ from app.models import (
     Product,
     Ticket,
 )
+from scripts.prepare_production_database import (
+    CONFIRMATION,
+    main as production_main,
+    prepare_production_database,
+)
 from scripts.reset_operational_data import main, reset_operational_data
 
 sequence = count(1)
@@ -143,3 +148,36 @@ def test_reset_without_yes_does_not_delete_data(
     with SessionLocal() as db:
         assert db.scalar(select(func.count(Ticket.id))) == 1
         assert db.scalar(select(func.count(CashShift.id))) == 1
+
+def test_production_prepare_preview_does_not_delete_data(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _create_operations()
+    assert production_main([]) == 0
+    assert "PREVIEW ONLY" in capsys.readouterr().out
+    with SessionLocal() as db:
+        assert db.scalar(select(func.count(Ticket.id))) == 1
+
+
+def test_production_prepare_requires_confirmation() -> None:
+    with pytest.raises(SystemExit, match=CONFIRMATION):
+        production_main(["--execute", "--confirm", "WRONG"])
+
+
+def test_prepare_production_database_deletes_operations_and_preserves_catalogs() -> None:
+    _create_operations()
+    with SessionLocal() as db:
+        before_products = db.scalar(select(func.count(Product.id)))
+        result = prepare_production_database(db, reset_folios=True)
+        db.commit()
+
+        assert result["after"]["tickets"] == 0
+        assert result["after"]["cash_shifts"] == 0
+        assert result["after"]["payments"] == 0
+        assert result["after"]["print_jobs"] == 0
+        assert result["after"]["inventory_movements"] == 0
+        assert result["after"]["purchase_receipts"] == 0
+        assert result["after"]["stock_alerts"] == 0
+        assert result["after"]["inventory_items_with_nonzero_stock"] == 0
+        assert result["after"]["products"] == before_products
+        assert set(db.scalars(select(DiningTable.status_cache))) == {"Libre"}
