@@ -295,7 +295,7 @@ def test_add_simple_product_updates_ticket_and_captured_line() -> None:
         assert lines[0].line_total_cents == product.price_cents * 2
         assert lines[0].station_id_snapshot is not None
         assert ticket.subtotal_cents == product.price_cents * 2
-        assert ticket.total_cents == round(product.price_cents * 2 * 1.16)
+        assert ticket.total_cents == product.price_cents * 2
         assert (
             db.scalar(
                 select(AuditEvent.event_type).where(
@@ -353,7 +353,7 @@ def test_add_package_creates_parent_components_and_only_charges_parent() -> None
         assert all(line.line_total_cents == 0 for line in components)
         assert all(line.status == "Capturado" for line in components)
         assert ticket.subtotal_cents == package_product.price_cents * 2
-        assert ticket.total_cents == round(package_product.price_cents * 2 * 1.16)
+        assert ticket.total_cents == package_product.price_cents * 2
         assert (
             db.scalar(
                 select(AuditEvent.event_type).where(
@@ -387,7 +387,7 @@ def test_ticket_line_endpoints_add_and_list_product() -> None:
         employee_id = employee.id
         ticket_id = ticket.id
         product_id = product.id
-        expected_total = round(product.price_cents * 2 * 1.16)
+        expected_total = product.price_cents * 2
 
     headers = auth_headers(client)
     response = client.post(

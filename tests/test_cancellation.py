@@ -136,7 +136,7 @@ def test_cancel_captured_line_recalculates_totals() -> None:
         cancel_ticket_line(db, first.id, employee.id)
 
         assert ticket.subtotal_cents == second.line_total_cents
-        assert ticket.total_cents == round(second.line_total_cents * 1.16)
+        assert ticket.total_cents == second.line_total_cents
 
 
 def test_cancel_sent_line_creates_cancellation_print_job() -> None:

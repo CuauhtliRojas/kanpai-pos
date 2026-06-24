@@ -40,6 +40,5 @@ export type Ticket = {
   cancel_reason: string | null;
   subtotal_cents: number;
   discount_cents: number;
-  tax_cents: number;
   total_cents: number;
 };

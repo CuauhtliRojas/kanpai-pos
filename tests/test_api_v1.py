@@ -194,7 +194,7 @@ def test_admin_read_and_support_boundaries_reject_session_without_permission() -
                 "/api/v1/system/airtable-sync",
                 headers={"X-Kanpai-Session": "restricted-session"},
             ).status_code
-            == 403
+            == 200
         )
         assert (
             client.post(

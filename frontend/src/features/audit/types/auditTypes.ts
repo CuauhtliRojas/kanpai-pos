@@ -39,7 +39,6 @@ export type TicketAudit = {
     payment_status: string;
     subtotal_cents: number;
     discount_cents: number;
-    tax_cents: number;
     total_cents: number;
     opened_at: string;
     billing_started_at: string | null;

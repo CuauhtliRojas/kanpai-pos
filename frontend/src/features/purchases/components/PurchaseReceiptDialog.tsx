@@ -33,7 +33,6 @@ export function PurchaseReceiptDialog({
   const activeMethods = methods.filter((method) => method.active);
 
   const [supplier, setSupplier] = useState("");
-  const [invoice, setInvoice] = useState("");
   const [paid, setPaid] = useState("0");
   const [methodId, setMethodId] = useState("");
   const [note, setNote] = useState("");
@@ -80,7 +79,6 @@ export function PurchaseReceiptDialog({
     onSubmit({
       employee_id: employeeId,
       supplier_name: supplier.trim() || null,
-      invoice_reference: invoice.trim() || null,
       paid_amount_cents: paidCents,
       payment_method_id: paidCents > 0 ? Number(methodId) : null,
       note: note.trim() || null,
@@ -140,39 +138,21 @@ export function PurchaseReceiptDialog({
               <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--kp-muted)]">
                 1. Datos de compra
               </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="pr-supplier"
-                    className="block text-xs font-black uppercase tracking-[0.08em]"
-                  >
-                    Proveedor
-                  </label>
-                  <input
-                    id="pr-supplier"
-                    value={supplier}
-                    onChange={(e) => setSupplier(e.target.value)}
-                    disabled={isSaving}
-                    placeholder="Nombre del proveedor"
-                    className="mt-1 w-full border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-2 font-bold focus:outline-none focus:ring-4 focus:ring-[var(--kp-info)] disabled:opacity-50"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="pr-invoice"
-                    className="block text-xs font-black uppercase tracking-[0.08em]"
-                  >
-                    Factura o referencia
-                  </label>
-                  <input
-                    id="pr-invoice"
-                    value={invoice}
-                    onChange={(e) => setInvoice(e.target.value)}
-                    disabled={isSaving}
-                    placeholder="Número de factura o referencia"
-                    className="mt-1 w-full border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-2 font-bold focus:outline-none focus:ring-4 focus:ring-[var(--kp-info)] disabled:opacity-50"
-                  />
-                </div>
+              <div>
+                <label
+                  htmlFor="pr-supplier"
+                  className="block text-xs font-black uppercase tracking-[0.08em]"
+                >
+                  Proveedor
+                </label>
+                <input
+                  id="pr-supplier"
+                  value={supplier}
+                  onChange={(e) => setSupplier(e.target.value)}
+                  disabled={isSaving}
+                  placeholder="Nombre del proveedor"
+                  className="mt-1 w-full border-4 border-[var(--kp-ink)] bg-[var(--kp-surface-raised)] p-2 font-bold focus:outline-none focus:ring-4 focus:ring-[var(--kp-info)] disabled:opacity-50"
+                />
               </div>
             </section>
 

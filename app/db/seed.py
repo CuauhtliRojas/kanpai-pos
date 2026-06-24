@@ -128,10 +128,10 @@ def seed_business_settings(session: Session) -> None:
             currency="MXN",
             ticket_message="Gracias por su visita.",
             inventory_enabled=True,
-            tax_enabled=True,
-            tax_rate_bps=1600,
+            tax_enabled=False,
+            tax_rate_bps=0,
             tax_included=False,
-            tax_label="IVA",
+            tax_label="",
             timezone="America/Mexico_City",
             active=True,
         )

@@ -33,7 +33,6 @@ class TicketResponse(BaseModel):
     cancel_reason: str | None
     subtotal_cents: int
     discount_cents: int
-    tax_cents: int
     total_cents: int
 
 
@@ -94,7 +93,6 @@ class TicketLineResponse(BaseModel):
 class TicketTotalsResponse(BaseModel):
     subtotal_cents: int
     discount_cents: int
-    tax_cents: int
     total_cents: int
 
 

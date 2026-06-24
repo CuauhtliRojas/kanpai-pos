@@ -17,10 +17,6 @@
         "logo_path": "logo_path",
         "inventario_activo": "inventory_enabled",
         "zona_horaria": "timezone",
-        "impuestos_activos": "tax_enabled",
-        "tasa_impuesto_bps": "tax_rate_bps",
-        "impuesto_incluido": "tax_included",
-        "etiqueta_impuesto": "tax_label",
         "activo": "active"
       }
     },
@@ -235,7 +231,6 @@
         "estado_pago": "payment_status",
         "subtotal_centavos": "subtotal_cents",
         "descuento_centavos": "discount_cents",
-        "impuesto_centavos": "tax_cents",
         "total_centavos": "total_cents",
         "abierto_en": "opened_at",
         "pagado_en": "paid_at",

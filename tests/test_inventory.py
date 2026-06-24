@@ -115,7 +115,6 @@ def _receipt(db: Session, paid: int = 0) -> PurchaseReceipt:
         db,
         employee_id=admin.id,
         supplier_name="Proveedor QA",
-        invoice_reference="FAC-QA-001",
         paid_amount_cents=paid,
         payment_method_id=payment_method_id,
         note="Recepción QA",
@@ -421,7 +420,6 @@ def test_process_purchase_receipt_endpoint() -> None:
         payload = {
             "employee_id": _admin(db).id,
             "supplier_name": "Proveedor QA",
-            "invoice_reference": "FAC-QA-001",
             "paid_amount_cents": 0,
             "note": "Recepción QA",
             "lines": [

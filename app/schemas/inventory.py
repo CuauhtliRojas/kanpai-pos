@@ -92,7 +92,6 @@ class PurchaseReceiptLineRequest(BaseModel):
 class PurchaseReceiptCreateRequest(BaseModel):
     employee_id: int
     supplier_name: str | None = None
-    invoice_reference: str | None = None
     paid_amount_cents: int = 0
     payment_method_id: int | None = None
     note: str | None = None
@@ -116,7 +115,6 @@ class PurchaseReceiptResponse(BaseModel):
     registered_by_employee_id: int
     cash_expense_id: int | None
     supplier_name: str | None
-    invoice_reference: str | None
     paid_amount_cents: int
     payment_method_id: int | None
     note: str | None

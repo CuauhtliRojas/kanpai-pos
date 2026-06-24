@@ -55,16 +55,12 @@ mensaje_ticket
 logo_path
 inventario_activo
 zona_horaria
-impuestos_activos
-tasa_impuesto_bps
-impuesto_incluido
-etiqueta_impuesto
 activo
 campos_sync
 
 Uso:
 
-Airtable puede editar mensaje de ticket, logo, política fiscal y configuración visible. SQLite aplica estos valores localmente.
+Kanpai usa precios netos; no se aplican impuestos en el POS. Airtable puede editar mensaje de ticket, logo y configuración visible. SQLite aplica estos valores localmente.
 
 MetodosPago
 
@@ -534,7 +530,6 @@ cancelado_en
 motivo_cancelacion
 subtotal_centavos
 descuento_centavos
-impuesto_centavos
 total_centavos
 inventario_consumido_en
 campos_sync

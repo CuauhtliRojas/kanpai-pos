@@ -53,23 +53,6 @@
           "type": "singleLineText"
         },
         {
-          "name": "impuestos_activos",
-          "type": "checkbox"
-        },
-        {
-          "name": "tasa_impuesto_bps",
-          "type": "number",
-          "precision": 0
-        },
-        {
-          "name": "impuesto_incluido",
-          "type": "checkbox"
-        },
-        {
-          "name": "etiqueta_impuesto",
-          "type": "singleLineText"
-        },
-        {
           "name": "activo",
           "type": "checkbox"
         },
@@ -1993,12 +1976,6 @@
         },
         {
           "name": "descuento_centavos",
-          "type": "number",
-          "precision": 0,
-          "readonly": true
-        },
-        {
-          "name": "impuesto_centavos",
           "type": "number",
           "precision": 0,
           "readonly": true

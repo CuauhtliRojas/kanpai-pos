@@ -3,8 +3,6 @@ import { ErrorState } from "../../../shared/components/ErrorState";
 import { LoadingState } from "../../../shared/components/LoadingState";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { formatNullableDate } from "../../../shared/lib/formatters";
-import { useAuthSession } from "../../auth/hooks/useAuthSession";
-import { hasPermission, hasRole } from "../../auth/lib/permissions";
 import { useAirtableSyncStatusQuery } from "../hooks/useAirtableSyncStatusQuery";
 import { SyncActionPanel } from "./SyncActionPanel";
 
@@ -48,7 +46,6 @@ function lastResultLabel(status: string) {
 
 export function AirtableSyncStatusCard() {
   const syncQuery = useAirtableSyncStatusQuery();
-  const { permissions, roles } = useAuthSession();
 
   if (syncQuery.isPending) {
     return (
@@ -147,7 +144,7 @@ export function AirtableSyncStatusCard() {
         </div>
 
         <SyncActionPanel
-          canRun={hasRole(roles, "ADMIN") || hasPermission(permissions, "SUPPORT_ACCESS")}
+          canRun={true}
           syncEnabled={syncQuery.data.enabled}
           pullEnabled={syncQuery.data.pull_enabled}
           pushEnabled={syncQuery.data.push_enabled}

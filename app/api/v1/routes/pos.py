@@ -491,7 +491,6 @@ def add_product_to_ticket_endpoint(
             ticket_totals={
                 "subtotal_cents": ticket.subtotal_cents,
                 "discount_cents": ticket.discount_cents,
-                "tax_cents": ticket.tax_cents,
                 "total_cents": ticket.total_cents,
             },
         )

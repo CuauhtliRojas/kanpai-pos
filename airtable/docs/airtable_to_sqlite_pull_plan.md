@@ -26,7 +26,7 @@ Los nombres físicos SQLite están traducidos mediante `db_column`; el pull usa 
 | 12 | AsignacionesProductoEstacion | `asignaciones_estacion_producto` / `ProductStationAssignment` | producto + estación | producto, estación, principal, activo | `nombre_registro` solo identifica el registro remoto; no tiene destino local |
 | 13 | RecetasProducto | `recetas_producto` / `ProductRecipe` | producto + insumo | producto, insumo, cantidad base, merma, activo | `nombre_registro` solo identifica el registro remoto |
 | 14 | CanalesNotificacion | `canales_notificacion` / `NotificationChannel` | `clave_canal` | nombre, activo | historial SMS es operación local |
-| 15 | ConfiguracionNegocio | `configuracion_negocio` / `BusinessSetting` | `nombre_negocio` (singleton esperado) | moneda, mensaje, logo, inventario, zona horaria, impuestos, activo | no hay constraint único; más de un registro remoto o clave local duplicada bloquea la entidad |
+| 15 | ConfiguracionNegocio | `configuracion_negocio` / `BusinessSetting` | `nombre_negocio` (singleton esperado) | moneda, mensaje, logo, inventario, zona horaria, activo (precios netos; sin impuestos en POS) | no hay constraint único; más de un registro remoto o clave local duplicada bloquea la entidad |
 | -- | DestinatariosNotificacion | sin tabla SQLite | no aplicable | ninguno | pendiente de diseño; no se crean columnas o tabla en esta fase |
 
 `ConfiguracionNegocio` se aplica al final porque no es dependencia de otro catálogo y su ausencia no debe bloquear productos/operación. El orden restante respeta todas las claves foráneas detectadas.

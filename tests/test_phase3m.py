@@ -11,7 +11,6 @@ from app.domain.constants import DiscountType, TicketStatus
 from app.main import app
 from app.models import (
     AuditEvent,
-    BusinessSetting,
     DiningTable,
     Employee,
     PrintJob,
@@ -50,12 +49,6 @@ def clean_phase_3m_data() -> None:
     with SessionLocal() as db:
         reset_operational_data(db)
         db.execute(delete(Employee).where(Employee.employee_code.like("QA-NOPERM-%")))
-        setting = db.scalar(select(BusinessSetting))
-        assert setting
-        setting.tax_enabled = True
-        setting.tax_rate_bps = 1600
-        setting.tax_included = False
-        setting.tax_label = "IVA"
         db.commit()
     yield
     with SessionLocal() as db:
@@ -203,8 +196,8 @@ def test_apply_discount_variants(
 
         assert discount.amount_cents == expected
         assert ticket.discount_cents == expected
-        assert ticket.tax_cents == round((7000 - expected) * 0.16)
-        assert ticket.total_cents == 7000 - expected + ticket.tax_cents
+        assert ticket.tax_cents == 0
+        assert ticket.total_cents == max(7000 - expected, 0)
 
 
 def test_discount_requires_permission_and_cannot_exceed_subtotal() -> None:
@@ -221,22 +214,14 @@ def test_discount_requires_permission_and_cannot_exceed_subtotal() -> None:
             )
 
 
-def test_tax_policy_disabled_and_included_do_not_inflate_total() -> None:
+def test_net_price_total_is_subtotal_minus_discount() -> None:
     with SessionLocal() as db:
         _, ticket, _ = _context(db)
-        setting = db.scalar(select(BusinessSetting))
-        assert setting and setting.tax_enabled and setting.tax_rate_bps == 1600
-        assert ticket.tax_cents == 1120 and ticket.total_cents == 8120
-
-        setting.tax_enabled = False
+        assert ticket.tax_cents == 0
+        assert ticket.total_cents == ticket.subtotal_cents - ticket.discount_cents
         recalculate_ticket_totals(db, ticket)
-        assert ticket.tax_cents == 0 and ticket.total_cents == 7000
-
-        setting.tax_enabled = True
-        setting.tax_included = True
-        recalculate_ticket_totals(db, ticket)
-        assert ticket.total_cents == 7000
-        assert ticket.tax_cents == round(7000 - 7000 / 1.16)
+        assert ticket.tax_cents == 0
+        assert ticket.total_cents == ticket.subtotal_cents - ticket.discount_cents
 
 
 def test_reprint_requires_reason_permission_and_creates_audit() -> None:
@@ -284,7 +269,9 @@ def test_ticket_audit_and_openapi_expose_phase_3m_operations() -> None:
 
     response = TestClient(app).get("/api/v1/system/business-settings")
     assert response.status_code == 200
-    assert response.json()["tax_label"] == "IVA"
+    data = response.json()
+    assert "business_name" in data
+    assert "tax_label" not in data
 
 
 def test_operational_reset_deletes_phase_3m_transactions() -> None:

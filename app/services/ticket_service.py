@@ -13,7 +13,6 @@ from app.domain.constants import (
 )
 from app.models import (
     AuditEvent,
-    BusinessSetting,
     Employee,
     TableStatusEvent,
     Ticket,
@@ -51,7 +50,7 @@ def get_ticket(db: Session, ticket_id: int) -> Ticket:
 
 
 def recalculate_ticket_totals(db: Session, ticket: Ticket) -> None:
-    """Recalculate subtotal, discounts, tax component and payable total."""
+    """Recalculate subtotal, discounts and payable total. Kanpai uses net prices; tax_cents is always 0."""
     subtotal = db.execute(
         select(func.coalesce(func.sum(TicketLine.line_total_cents), 0)).where(
             TicketLine.ticket_id == ticket.id,
@@ -68,19 +67,8 @@ def recalculate_ticket_totals(db: Session, ticket: Ticket) -> None:
     ).scalar_one()
     ticket.subtotal_cents = int(subtotal)
     ticket.discount_cents = int(discount)
-    taxable_base = max(ticket.subtotal_cents - ticket.discount_cents, 0)
-    policy = db.scalar(select(BusinessSetting).where(BusinessSetting.active.is_(True)))
-    tax_enabled = policy.tax_enabled if policy is not None else True
-    rate = policy.tax_rate_bps if policy is not None else 1600
-    tax_included = policy.tax_included if policy is not None else False
-    if not tax_enabled or rate <= 0:
-        tax = 0
-    elif tax_included:
-        tax = round(taxable_base - taxable_base / (1 + rate / 10_000))
-    else:
-        tax = round(taxable_base * rate / 10_000)
-    ticket.tax_cents = int(tax)
-    ticket.total_cents = taxable_base if tax_included else taxable_base + ticket.tax_cents
+    ticket.tax_cents = 0
+    ticket.total_cents = max(ticket.subtotal_cents - ticket.discount_cents, 0)
 
 
 def open_ticket_for_table(

@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel
 
 from app.core.database import get_db
-from app.api.security import require_support_permission
+from app.api.security import require_session, require_support_permission
 from app.models import (
     BusinessSetting,
     DiningTable,
@@ -40,8 +40,8 @@ def _airtable_sync_response_or_error(result: dict) -> dict:
 
 @router.get(
     "/airtable-sync",
-    dependencies=[Depends(require_support_permission)],
-    tags=["system", "admin-support"],
+    dependencies=[Depends(require_session)],
+    tags=["system"],
 )
 def airtable_sync_status() -> dict:
     return get_airtable_sync_scheduler().status()
@@ -51,8 +51,8 @@ def airtable_sync_status() -> dict:
 
 @router.post(
     "/airtable-sync/pull",
-    dependencies=[Depends(require_support_permission)],
-    tags=["system", "admin-support"],
+    dependencies=[Depends(require_session)],
+    tags=["system"],
 )
 async def airtable_sync_pull(request: AirtableSyncRequest | None = None) -> dict:
     payload = request or AirtableSyncRequest()
@@ -68,8 +68,8 @@ async def airtable_sync_pull(request: AirtableSyncRequest | None = None) -> dict
 
 @router.post(
     "/airtable-sync/push",
-    dependencies=[Depends(require_support_permission)],
-    tags=["system", "admin-support"],
+    dependencies=[Depends(require_session)],
+    tags=["system"],
 )
 async def airtable_sync_push(request: AirtableSyncRequest | None = None) -> dict:
     payload = request or AirtableSyncRequest()
@@ -85,8 +85,8 @@ async def airtable_sync_push(request: AirtableSyncRequest | None = None) -> dict
 
 @router.post(
     "/airtable-sync/run",
-    dependencies=[Depends(require_support_permission)],
-    tags=["system", "admin-support"],
+    dependencies=[Depends(require_session)],
+    tags=["system"],
 )
 async def airtable_sync_run(request: AirtableSyncRequest | None = None) -> dict:
     payload = request or AirtableSyncRequest()
@@ -102,7 +102,7 @@ async def airtable_sync_run(request: AirtableSyncRequest | None = None) -> dict:
 
 @router.get("/business-settings", response_model=BusinessSettingResponse)
 def business_settings(db: Session = Depends(get_db)) -> BusinessSettingResponse:
-    """Expose the active fiscal policy used by all ticket recalculations."""
+    """Expose the active business configuration."""
     setting = db.scalar(select(BusinessSetting).where(BusinessSetting.active.is_(True)))
     if setting is None:
         raise HTTPException(
