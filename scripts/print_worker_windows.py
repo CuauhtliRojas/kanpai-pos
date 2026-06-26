@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import json
 import logging
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -54,6 +55,109 @@ def post_json(url: str, payload: dict, worker_key: str | None = None) -> dict:
     )
     with urlopen(request, timeout=10) as response:  # noqa: S310 - URL local configurada por operador
         return json.loads(response.read().decode())
+
+
+def get_json(url: str) -> dict:
+    """Lee JSON del backend con timeout corto para autodeteccion local."""
+    request = Request(url, headers={"Accept": "application/json"}, method="GET")
+    with urlopen(request, timeout=2) as response:  # noqa: S310 - URL local configurada por operador
+        raw = response.read().decode()
+        return json.loads(raw) if raw else {}
+
+
+def _kanpai_api_pids() -> set[int]:
+    """Obtiene PIDs de kanpai-api.exe sin dependencias externas."""
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq kanpai-api.exe", "/FO", "CSV", "/NH"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+            check=False,
+        )
+    except Exception:
+        return set()
+
+    pids: set[int] = set()
+    for line in result.stdout.splitlines():
+        clean = line.strip()
+        if not clean or clean.startswith("INFO:"):
+            continue
+        parts = [item.strip().strip('"') for item in clean.split('","')]
+        if len(parts) >= 2 and parts[0].lower() == "kanpai-api.exe":
+            try:
+                pids.add(int(parts[1]))
+            except ValueError:
+                continue
+    return pids
+
+
+def _listening_ports_for_pids(pids: set[int]) -> list[int]:
+    """Obtiene puertos TCP locales en LISTENING para los PIDs indicados."""
+    if not pids:
+        return []
+
+    try:
+        result = subprocess.run(
+            ["netstat", "-ano", "-p", "tcp"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        return []
+
+    ports: set[int] = set()
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        if len(parts) < 5:
+            continue
+        proto, local_address, _foreign_address, state, pid_text = parts[:5]
+        if proto.upper() != "TCP" or state.upper() != "LISTENING":
+            continue
+        try:
+            pid = int(pid_text)
+        except ValueError:
+            continue
+        if pid not in pids:
+            continue
+        if not local_address.startswith("127.0.0.1:"):
+            continue
+        try:
+            ports.add(int(local_address.rsplit(":", 1)[1]))
+        except ValueError:
+            continue
+
+    return sorted(ports)
+
+
+def discover_local_api_base_url() -> str:
+    """Detecta el backend local empaquetado cuando kanpai-api.exe usa puerto dinamico."""
+    ports = _listening_ports_for_pids(_kanpai_api_pids())
+
+    for port in ports:
+        base = f"http://127.0.0.1:{port}"
+        try:
+            get_json(f"{base}/health")
+            return base
+        except Exception:
+            continue
+
+    raise RuntimeError("No se encontro kanpai-api.exe local respondiendo /health.")
+
+
+def resolve_api_base_url(config: dict) -> str:
+    """Resuelve URL fija o autodetectada del backend."""
+    configured = str(config.get("api_base_url", "")).strip()
+
+    if configured.lower() in {"auto", "dynamic", "local-kanpai-api"} or config.get("auto_discover_api_base_url") is True:
+        return discover_local_api_base_url()
+
+    if not configured:
+        raise ValueError("Config del worker requiere api_base_url o api_base_url='auto'.")
+
+    return configured.rstrip("/")
 
 
 def encode_print_content(content: str) -> bytes:
@@ -196,7 +300,7 @@ def process_once(
     printer: Printer = print_configured_target,
 ) -> int:
     """Procesa como maximo un trabajo por clave y confirma siempre su resultado."""
-    base = config["api_base_url"].rstrip("/")
+    base = resolve_api_base_url(config)
     worker_id = config["worker_id"]
     worker_key = config.get("worker_key")
     processed = 0

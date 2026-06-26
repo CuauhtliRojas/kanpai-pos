@@ -1,5 +1,5 @@
-﻿{
-  "api_base_url": "http://127.0.0.1:8000",
+{
+  "api_base_url": "auto",
   "worker_id": "cnc-usb-direct-58mm-01",
   "worker_key": "CAMBIAR_EN_CNC",
   "poll_seconds": 2,
