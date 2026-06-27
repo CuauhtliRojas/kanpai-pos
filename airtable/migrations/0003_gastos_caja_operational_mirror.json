@@ -1,0 +1,122 @@
+{
+  "revision": "0003_gastos_caja_operational_mirror",
+  "down_revision": "0002_discount_presets",
+  "description": "Agrega GastosCaja como espejo operativo SQLite -> Airtable.",
+  "schema_version": "1.2.0",
+  "destructive": false,
+  "operations": [
+    {
+      "op": "ensure_table",
+      "table": "GastosCaja",
+      "ownership": "SQLITE_MASTER",
+      "source_table": "gastos_caja",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText"
+        },
+        {
+          "name": "descripcion",
+          "type": "singleLineText"
+        },
+        {
+          "name": "categoria",
+          "type": "singleLineText"
+        },
+        {
+          "name": "importe_centavos",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "Activo"
+              },
+              {
+                "name": "Cancelado"
+              }
+            ]
+          }
+        },
+        {
+          "name": "nota",
+          "type": "multilineText"
+        },
+        {
+          "name": "creado_en",
+          "type": "dateTime",
+          "options": {
+            "dateFormat": {
+              "name": "iso"
+            },
+            "timeFormat": {
+              "name": "24hour"
+            },
+            "timeZone": "America/Mexico_City"
+          }
+        },
+        {
+          "name": "id_sqlite",
+          "type": "number",
+          "options": {
+            "precision": 0
+          }
+        }
+      ]
+    },
+    {
+      "op": "ensure_field",
+      "table": "GastosCaja",
+      "field": {
+        "name": "corte_caja",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "CortesCaja",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_field",
+      "table": "GastosCaja",
+      "field": {
+        "name": "registrado_por",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_field",
+      "table": "GastosCaja",
+      "field": {
+        "name": "autorizado_por",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Empleados",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_field",
+      "table": "GastosCaja",
+      "field": {
+        "name": "metodo_pago",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "MetodosPago",
+          "linkedTableId": null
+        }
+      }
+    }
+  ]
+}

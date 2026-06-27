@@ -241,8 +241,7 @@
         "neto_total_centavos": "net_total_cents",
         "abierto_en": "opened_at",
         "cerrado_en": "closed_at",
-        "id_sqlite": "id",
-        "actualizado_sqlite_en": "updated_at"
+        "id_sqlite": "id"
       }
     },
     "Tickets": {
@@ -261,8 +260,7 @@
         "total_centavos": "total_cents",
         "abierto_en": "opened_at",
         "pagado_en": "paid_at",
-        "id_sqlite": "id",
-        "actualizado_sqlite_en": "updated_at"
+        "id_sqlite": "id"
       }
     },
     "LineasTicket": {
@@ -279,8 +277,7 @@
         "nombre_producto_snapshot": "product_name_snapshot",
         "estado": "status",
         "ronda": "round_number",
-        "id_sqlite": "id",
-        "actualizado_sqlite_en": "updated_at"
+        "id_sqlite": "id"
       }
     },
     "Pagos": {
@@ -298,8 +295,7 @@
         "cambio_centavos": "change_cents",
         "referencia": "reference",
         "estado": "status",
-        "id_sqlite": "id",
-        "actualizado_sqlite_en": "updated_at"
+        "id_sqlite": "id"
       }
     },
     "TrabajosImpresion": {
@@ -318,8 +314,7 @@
         "ultimo_error": "last_error",
         "impreso_en": "printed_at",
         "fallido_en": "failed_at",
-        "id_sqlite": "id",
-        "actualizado_sqlite_en": "updated_at"
+        "id_sqlite": "id"
       }
     },
     "HistorialSMS": {
@@ -406,6 +401,25 @@
         "visible_pos": "visible_pos",
         "orden": "sort_order",
         "activo": "active"
+      }
+    },
+    "GastosCaja": {
+      "direction": "push_to_airtable_readonly",
+      "sqlite_table": "gastos_caja",
+      "primary_key": "id_sqlite",
+      "fields": {
+        "folio": "folio",
+        "corte_caja": "cash_shift_id",
+        "registrado_por": "registered_by_employee_id",
+        "autorizado_por": "authorized_by_employee_id",
+        "metodo_pago": "payment_method_id",
+        "descripcion": "description",
+        "categoria": "category",
+        "importe_centavos": "amount_cents",
+        "estado": "status",
+        "nota": "note",
+        "creado_en": "created_at",
+        "id_sqlite": "id"
       }
     }
   }

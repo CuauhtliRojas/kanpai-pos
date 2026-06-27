@@ -43,6 +43,7 @@ OPERATIONAL_ALLOWLIST: tuple[str, ...] = (
     "Tickets",
     "LineasTicket",
     "Pagos",
+    "GastosCaja",
     "TrabajosImpresion",
     "HistorialSMS",
     "EventosAuditoria",

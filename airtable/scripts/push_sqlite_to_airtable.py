@@ -38,6 +38,7 @@ from airtable_records_client import (  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.models import (  # noqa: E402
     AuditEvent,
+    CashExpense,
     CashShift,
     DiningTable,
     Employee,
@@ -111,6 +112,16 @@ TABLE_SPECS = (
             "corte_caja": LinkSpec("CortesCaja", CashShift, "id", "id_sqlite", True),
             "metodo_pago": LinkSpec("MetodosPago", PaymentMethod, "method_key", "clave_metodo", True),
             "cajero": LinkSpec("Empleados", Employee, "employee_code", "codigo_empleado", True),
+        },
+    ),
+    TableSpec(
+        "GastosCaja",
+        CashExpense,
+        {
+            "corte_caja": LinkSpec("CortesCaja", CashShift, "id", "id_sqlite", True),
+            "registrado_por": LinkSpec("Empleados", Employee, "employee_code", "codigo_empleado", True),
+            "autorizado_por": LinkSpec("Empleados", Employee, "employee_code", "codigo_empleado"),
+            "metodo_pago": LinkSpec("MetodosPago", PaymentMethod, "method_key", "clave_metodo"),
         },
     ),
     TableSpec(

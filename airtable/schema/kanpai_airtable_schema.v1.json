@@ -970,23 +970,6 @@
           "id": "fldWMVx4EPApj9khq",
           "name": "id_sqlite",
           "description": "SQLite id usado como llave idempotente del espejo operativo."
-        },
-        {
-          "type": "dateTime",
-          "options": {
-            "dateFormat": {
-              "name": "iso",
-              "format": "YYYY-MM-DD"
-            },
-            "timeFormat": {
-              "name": "24hour",
-              "format": "HH:mm"
-            },
-            "timeZone": "America/Mexico_City"
-          },
-          "id": "fldiObjBYWZPqFicD",
-          "name": "actualizado_sqlite_en",
-          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -1068,23 +1051,6 @@
           "id": "flde0SmtBQkKj27SA",
           "name": "id_sqlite",
           "description": "SQLite id usado como llave idempotente del espejo operativo."
-        },
-        {
-          "type": "dateTime",
-          "options": {
-            "dateFormat": {
-              "name": "iso",
-              "format": "YYYY-MM-DD"
-            },
-            "timeFormat": {
-              "name": "24hour",
-              "format": "HH:mm"
-            },
-            "timeZone": "America/Mexico_City"
-          },
-          "id": "fldCLAtIfk79aQD8u",
-          "name": "actualizado_sqlite_en",
-          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -1165,23 +1131,6 @@
           "id": "fldiiH26QSIxdBMFp",
           "name": "id_sqlite",
           "description": "SQLite id usado como llave idempotente del espejo operativo."
-        },
-        {
-          "type": "dateTime",
-          "options": {
-            "dateFormat": {
-              "name": "iso",
-              "format": "YYYY-MM-DD"
-            },
-            "timeFormat": {
-              "name": "24hour",
-              "format": "HH:mm"
-            },
-            "timeZone": "America/Mexico_City"
-          },
-          "id": "fldqT6opa89WCcFQE",
-          "name": "actualizado_sqlite_en",
-          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -1279,23 +1228,6 @@
           "id": "fld9o7vriHZ7o6LU2",
           "name": "id_sqlite",
           "description": "SQLite id usado como llave idempotente del espejo operativo."
-        },
-        {
-          "type": "dateTime",
-          "options": {
-            "dateFormat": {
-              "name": "iso",
-              "format": "YYYY-MM-DD"
-            },
-            "timeFormat": {
-              "name": "24hour",
-              "format": "HH:mm"
-            },
-            "timeZone": "America/Mexico_City"
-          },
-          "id": "fldL8ZxC4rjhfnmZW",
-          "name": "actualizado_sqlite_en",
-          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -1387,23 +1319,6 @@
           "id": "fldGrBNCBI5du0Y1h",
           "name": "id_sqlite",
           "description": "SQLite id usado como llave idempotente del espejo operativo."
-        },
-        {
-          "type": "dateTime",
-          "options": {
-            "dateFormat": {
-              "name": "iso",
-              "format": "YYYY-MM-DD"
-            },
-            "timeFormat": {
-              "name": "24hour",
-              "format": "HH:mm"
-            },
-            "timeZone": "America/Mexico_City"
-          },
-          "id": "fldSM7zzmj0rm3Qk9",
-          "name": "actualizado_sqlite_en",
-          "description": "Timestamp SQLite para espejo operativo."
         }
       ]
     },
@@ -1615,6 +1530,107 @@
           "description": "SQLite id usado como llave idempotente del espejo operativo."
         }
       ]
+    },
+    {
+      "name": "GastosCaja",
+      "description": "Espejo operativo de gastos de caja para backoffice y análisis.",
+      "ownership": "SQLITE_MASTER",
+      "source_table": "gastos_caja",
+      "fields": [
+        {
+          "name": "folio",
+          "type": "singleLineText",
+          "readonly": true,
+          "description": "Folio operativo del gasto."
+        },
+        {
+          "name": "corte_caja",
+          "type": "link",
+          "target": "CortesCaja",
+          "readonly": true,
+          "description": "Corte de caja asociado al gasto."
+        },
+        {
+          "name": "registrado_por",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true,
+          "description": "Empleado que registró el gasto."
+        },
+        {
+          "name": "autorizado_por",
+          "type": "link",
+          "target": "Empleados",
+          "readonly": true,
+          "description": "Empleado que autorizó el gasto, si aplica."
+        },
+        {
+          "name": "metodo_pago",
+          "type": "link",
+          "target": "MetodosPago",
+          "readonly": true,
+          "description": "Método de pago asociado al gasto, si aplica."
+        },
+        {
+          "name": "descripcion",
+          "type": "singleLineText",
+          "description": "Descripción operativa del gasto."
+        },
+        {
+          "name": "categoria",
+          "type": "singleLineText",
+          "description": "Categoría operativa del gasto."
+        },
+        {
+          "name": "importe_centavos",
+          "type": "number",
+          "precision": 0,
+          "readonly": true,
+          "description": "Importe del gasto en centavos."
+        },
+        {
+          "name": "estado",
+          "type": "singleSelect",
+          "options": [
+            "Activo",
+            "Cancelado"
+          ],
+          "readonly": true,
+          "description": "Estado operativo del gasto."
+        },
+        {
+          "name": "nota",
+          "type": "multilineText",
+          "readonly": true,
+          "description": "Nota libre del gasto."
+        },
+        {
+          "name": "creado_en",
+          "type": "dateTime",
+          "readonly": true,
+          "description": "Fecha de creación del gasto.",
+          "options": {
+            "dateFormat": {
+              "name": "iso",
+              "format": "YYYY-MM-DD"
+            },
+            "timeFormat": {
+              "name": "24hour",
+              "format": "HH:mm"
+            },
+            "timeZone": "America/Mexico_City"
+          }
+        },
+        {
+          "type": "number",
+          "options": {
+            "precision": 0
+          },
+          "name": "id_sqlite",
+          "description": "SQLite id usado temporalmente como llave idempotente del espejo operativo."
+        }
+      ],
+      "key": "gastos_caja"
     }
   ]
 }

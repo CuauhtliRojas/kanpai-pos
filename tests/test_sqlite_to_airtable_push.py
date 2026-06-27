@@ -133,6 +133,7 @@ def test_dependency_order_is_explicit():
         "Tickets",
         "LineasTicket",
         "Pagos",
+        "GastosCaja",
         "TrabajosImpresion",
         "HistorialSMS",
         "EventosAuditoria",
