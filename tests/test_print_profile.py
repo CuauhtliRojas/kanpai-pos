@@ -7,7 +7,7 @@ def test_print_profile_defaults_when_file_missing(tmp_path) -> None:
     profile = get_print_profile(tmp_path / "missing.json")
 
     assert profile.brand_name == "SOMOS KANPAI"
-    assert "ありがとう" in profile.ticket_message
+    assert profile.ticket_message == "Gracias por su visita."
     assert profile.show_decimals is False
 
 
@@ -37,4 +37,5 @@ def test_print_profile_model_dump() -> None:
     payload = PrintProfile().model_dump()
 
     assert payload["brand_name"] == "SOMOS KANPAI"
-    assert "ticket_message" in payload
+    assert payload["ticket_message"] == "Gracias por su visita."
+

@@ -1,4 +1,4 @@
-﻿import { API_BASE_URL } from "./apiConfig";
+import { buildApiUrl } from "./apiConfig";
 
 import { readSession } from "../features/auth/lib/sessionStorage";
 
@@ -49,7 +49,8 @@ export async function apiRequest<T>(
       headers.set("X-Kanpai-Session", session.sessionToken);
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const url = await buildApiUrl(path);
+    const response = await fetch(url, {
       ...options,
       signal: controller.signal,
       headers,
@@ -87,4 +88,3 @@ export async function apiRequest<T>(
     window.clearTimeout(timeout);
   }
 }
-

@@ -37,7 +37,7 @@ def test_ticket_58mm_preview_width_and_content() -> None:
             "discount_cents": 1000,
             "total_cents": 11300,
             "payments": [{"method": "Efectivo", "amount_cents": 11300}],
-            "ticket_message": "ありがとうございました。またお待ちしております。",
+            "ticket_message": "Gracias por su visita.",
         }
     )
 

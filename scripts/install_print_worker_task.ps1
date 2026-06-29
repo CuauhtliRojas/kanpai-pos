@@ -16,11 +16,14 @@ if (-not (Test-Path $ConfigPath)) {
     throw "No existe config: $ConfigPath"
 }
 
+Get-Process KanpaiPrintWorker -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
 $Action = New-ScheduledTaskAction -Execute $ExePath -Argument "--config `"$ConfigPath`"" -WorkingDirectory $InstallDir
 $Trigger = New-ScheduledTaskTrigger -AtStartup
 $Principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
 $Settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
+    -StartWhenAvailable `
     -DontStopIfGoingOnBatteries `
     -RestartCount 999 `
     -RestartInterval (New-TimeSpan -Minutes 1) `

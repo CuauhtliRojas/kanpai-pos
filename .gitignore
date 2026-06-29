@@ -59,3 +59,11 @@ Thumbs.db
 
 # Airtable live import artifacts
 airtable/seeds/kanpai_seed.generated.json
+# Kanpai generated artifacts
+_release/
+frontend/dist/
+reports*/
+reports*.txt
+*.spec
+frontend/src-tauri/binaries/*.exe
+!frontend/src-tauri/binaries/.gitkeep

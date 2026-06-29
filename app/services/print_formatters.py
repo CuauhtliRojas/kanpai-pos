@@ -185,7 +185,7 @@ def format_ticket_58mm(data: Mapping[str, Any]) -> str:
             method = payment.get("method") or "Pago"
             lines.append(_money_row(method, payment.get("amount_cents"), width))
 
-    ticket_message = data.get("ticket_message") or "ありがとうございました。またお待ちしております。"
+    ticket_message = data.get("ticket_message") or "Gracias por su visita."
     lines.append(_hr(width))
     lines.extend(_wrap_text(ticket_message, width))
     lines.extend(["", "", ""])

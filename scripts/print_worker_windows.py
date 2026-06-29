@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import json
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -15,6 +16,9 @@ from ctypes import wintypes
 PrinterTarget = str | dict[str, Any]
 HttpPost = Callable[[str, dict, str | None], dict]
 Printer = Callable[[PrinterTarget, str], None]
+
+TICKET_COPY_DELAY_SECONDS = 3
+TICKET_COPY_WIDTH = 32
 
 
 def app_base_dir() -> Path:
@@ -132,19 +136,97 @@ def _listening_ports_for_pids(pids: set[int]) -> list[int]:
     return sorted(ports)
 
 
-def discover_local_api_base_url() -> str:
+def _candidate_startup_trace_paths(config: dict | None = None) -> list[Path]:
+    """Devuelve rutas candidatas del startup-trace.log de la app local."""
+    config = config or {}
+    candidates: list[Path] = []
+
+    explicit_paths = config.get("startup_trace_paths")
+    if isinstance(explicit_paths, list):
+        for value in explicit_paths:
+            if isinstance(value, str) and value.strip():
+                candidates.append(Path(value.strip()))
+
+    explicit_path = config.get("startup_trace_path")
+    if isinstance(explicit_path, str) and explicit_path.strip():
+        candidates.append(Path(explicit_path.strip()))
+
+    runtime_dir = config.get("runtime_dir") or os.environ.get("KANPAI_RUNTIME_DIR")
+    if isinstance(runtime_dir, str) and runtime_dir.strip():
+        candidates.append(Path(runtime_dir.strip()) / "logs" / "startup-trace.log")
+
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        candidates.append(Path(local_app_data) / "mx.kanpai.pos" / "logs" / "startup-trace.log")
+
+    system_drive = os.environ.get("SystemDrive", "C:")
+    users_dir = Path(system_drive + "\\Users")
+    try:
+        candidates.extend(users_dir.glob("*\\AppData\\Local\\mx.kanpai.pos\\logs\\startup-trace.log"))
+    except Exception:
+        pass
+
+    deduped: list[Path] = []
+    seen: set[str] = set()
+    for path in candidates:
+        key = str(path).lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(path)
+
+    return sorted(
+        deduped,
+        key=lambda path: path.stat().st_mtime if path.exists() else 0,
+        reverse=True,
+    )
+
+
+def _api_base_url_from_startup_trace(path: Path) -> str | None:
+    """Extrae el ultimo KANPAI_API_PORT de un startup-trace.log."""
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+
+    for line in reversed(lines):
+        marker = "KANPAI_API_PORT="
+        if marker not in line:
+            continue
+        port = line.split(marker, 1)[1].strip()
+        if port.isdigit():
+            return f"http://127.0.0.1:{port}"
+
+    return None
+
+
+def _health_ok(base_url: str) -> bool:
+    """Confirma que la API local responde health."""
+    try:
+        payload = get_json(f"{base_url.rstrip('/')}/health")
+    except Exception:
+        return False
+
+    return str(payload.get("status", "")).lower() == "ok"
+
+
+def discover_local_api_base_url(config: dict | None = None) -> str:
     """Detecta el backend local empaquetado cuando kanpai-api.exe usa puerto dinamico."""
+    for trace_path in _candidate_startup_trace_paths(config):
+        base = _api_base_url_from_startup_trace(trace_path)
+        if base and _health_ok(base):
+            return base
+
     ports = _listening_ports_for_pids(_kanpai_api_pids())
 
     for port in ports:
         base = f"http://127.0.0.1:{port}"
-        try:
-            get_json(f"{base}/health")
+        if _health_ok(base):
             return base
-        except Exception:
-            continue
 
     raise RuntimeError("No se encontro kanpai-api.exe local respondiendo /health.")
+
+
 
 
 def resolve_api_base_url(config: dict) -> str:
@@ -152,7 +234,7 @@ def resolve_api_base_url(config: dict) -> str:
     configured = str(config.get("api_base_url", "")).strip()
 
     if configured.lower() in {"auto", "dynamic", "local-kanpai-api"} or config.get("auto_discover_api_base_url") is True:
-        return discover_local_api_base_url()
+        return discover_local_api_base_url(config)
 
     if not configured:
         raise ValueError("Config del worker requiere api_base_url o api_base_url='auto'.")
@@ -292,6 +374,35 @@ def print_configured_target(printer_target: PrinterTarget, content: str) -> None
     raise ValueError(f"Modo de impresora no soportado: {mode}")
 
 
+def is_ticket_job(job: dict) -> bool:
+    """Identifica trabajos de ticket cliente sin afectar comandas/cortes."""
+    return str(job.get("job_type", "")).strip().upper() == "TICKET"
+
+
+def ticket_copy_content(content: str, label: str) -> str:
+    """Agrega encabezado de copia manteniendo el snapshot original intacto."""
+    header = label.strip().upper()[:TICKET_COPY_WIDTH].center(TICKET_COPY_WIDTH)
+    return f"{header}\n{str(content).rstrip()}\n"
+
+
+def print_job_content(
+    printer_target: PrinterTarget,
+    job: dict,
+    *,
+    printer: Printer = print_configured_target,
+) -> None:
+    """Imprime un trabajo. Los tickets salen en copia cliente y mostrador."""
+    content = str(job.get("content_snapshot") or "")
+
+    if not is_ticket_job(job):
+        printer(printer_target, content)
+        return
+
+    printer(printer_target, ticket_copy_content(content, "COPIA CLIENTE"))
+    time.sleep(TICKET_COPY_DELAY_SECONDS)
+    printer(printer_target, ticket_copy_content(content, "COPIA MOSTRADOR"))
+
+
 def process_once(
     config: dict,
     *,
@@ -322,7 +433,7 @@ def process_once(
             if dry_run:
                 logging.info("DRY-RUN job=%s printer=%s content=%r", job["id"], label, job["content_snapshot"])
             else:
-                printer(printer_target, job["content_snapshot"])
+                print_job_content(printer_target, job, printer=printer)
             http_post(f"{base}/api/v1/printing/jobs/{job['id']}/printed", {"worker_id": worker_id}, worker_key)
         except Exception as error:
             logging.exception("Fallo job=%s printer=%s", job["id"], label)
@@ -335,6 +446,32 @@ def process_once(
     return processed
 
 
+def acquire_single_instance_mutex() -> object | None:
+    """Evita dos ciclos logicos simultaneos del worker."""
+    if not hasattr(ctypes, "WinDLL"):
+        return object()
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+    kernel32.CreateMutexW.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+
+    handle = kernel32.CreateMutexW(None, False, "Global\\KanpaiPrintWorker")
+    if not handle:
+        logging.warning("No se pudo crear mutex del worker; continuando sin bloqueo de instancia.")
+        return object()
+
+    error_already_exists = 183
+    if ctypes.get_last_error() == error_already_exists:
+        kernel32.CloseHandle(handle)
+        logging.info("Ya existe otra instancia del Kanpai Print Worker; saliendo.")
+        return None
+
+    return handle
+
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Worker fisico de impresion Kanpai POS para Windows")
     parser.add_argument("--config", default=str(default_config_path()))
@@ -343,6 +480,10 @@ def main() -> None:
     args = parser.parse_args()
 
     configure_logging()
+    mutex_handle = acquire_single_instance_mutex()
+    if mutex_handle is None:
+        return
+
     config = json.loads(Path(args.config).read_text(encoding="utf-8-sig"))
 
     while True:

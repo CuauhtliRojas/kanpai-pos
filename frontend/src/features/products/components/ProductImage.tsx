@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "../../../api/apiConfig";
+import { buildApiUrl } from "../../../api/apiConfig";
 import { brandAssets } from "../../../shared/assets/brandAssets";
 
 type ProductImageProps = {
@@ -7,28 +7,52 @@ type ProductImageProps = {
   alt: string;
 };
 
-function resolveProductImageSource(imageUrl?: string | null): string | null {
+function isAbsoluteImageSource(value: string): boolean {
+  return /^(https?:|data:|blob:|file:)/i.test(value);
+}
+
+async function resolveProductImageSource(imageUrl?: string | null): Promise<string | null> {
   const value = imageUrl?.trim();
   if (!value) return null;
 
-  if (/^(https?:|data:|blob:|file:)/i.test(value)) {
+  if (isAbsoluteImageSource(value)) {
     return value;
   }
 
   if (value.startsWith("/")) {
-    return `${API_BASE_URL}${value}`;
+    return buildApiUrl(value);
   }
 
-  return `${API_BASE_URL}/${value.replace(/^\.\//, "")}`;
+  return buildApiUrl(`/${value.replace(/^\.\//, "")}`);
 }
 
 export function ProductImage({ imageUrl, alt }: ProductImageProps) {
   const [failed, setFailed] = useState(false);
-  const resolvedSource = resolveProductImageSource(imageUrl);
+  const [resolvedSource, setResolvedSource] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     setFailed(false);
-  }, [resolvedSource]);
+    setResolvedSource(null);
+
+    resolveProductImageSource(imageUrl)
+      .then((source) => {
+        if (!cancelled) {
+          setResolvedSource(source);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setResolvedSource(null);
+          setFailed(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
 
   const source = resolvedSource && !failed ? resolvedSource : brandAssets.productPlaceholder;
 

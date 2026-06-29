@@ -57,7 +57,6 @@ CONFIRM_TEXT = "PUSH_SQLITE_TO_AIRTABLE"
 DEFAULT_FIELD_MAP = Path("airtable/schema/field_map.v1.json")
 DEFAULT_AIRTABLE_SCHEMA = Path("airtable/schema/kanpai_airtable_schema.v1.json")
 DEFAULT_REPORT = Path("airtable/reports/sqlite_to_airtable_push_report.md")
-SYNC_STATE = "Sincronizado"
 PENDING_LINK_PREFIX = "pending:"
 SQLITE_LOCAL_TIMEZONE = timezone(timedelta(hours=-6), name="America/Mexico_City")
 
@@ -343,7 +342,6 @@ def _record_fields(
         else:
             value = _airtable_value(value)
         fields[remote_field] = value
-    fields["estado_sync"] = SYNC_STATE
     return fields, errors, warnings
 
 

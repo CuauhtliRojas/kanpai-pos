@@ -13,8 +13,8 @@ DEFAULT_PRINT_PROFILE_PATH = Path("config/print_profile.json")
 @dataclass(frozen=True)
 class PrintProfile:
     brand_name: str = "SOMOS KANPAI"
-    ticket_message: str = "ありがとうございました。またお待ちしております。"
-    ascii_ticket_message: str = "ARIGATO GOZAIMASHITA\nMATA O-MACHI SHITE ORIMASU"
+    ticket_message: str = "Gracias por su visita."
+    ascii_ticket_message: str = "Gracias por su visita."
     command_title: str = "COMANDA"
     cancel_title: str = "CANCELACION"
     modification_title: str = "MODIFICACION"
