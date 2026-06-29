@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,6 +11,21 @@ from app.services.airtable_sync_scheduler import get_airtable_sync_scheduler
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+
+def build_cors_origins() -> list[str]:
+    """Origenes permitidos para operar Kanpai POS local y empaquetado."""
+    origins = set(settings.cors_origin_list)
+    origins.update(
+        {
+            "tauri://localhost",
+            "http://tauri.localhost",
+            "https://tauri.localhost",
+            "http://localhost:1420",
+            "http://127.0.0.1:1420",
+        }
+    )
+    return sorted(origin for origin in origins if origin)
 
 
 @asynccontextmanager
@@ -38,14 +53,13 @@ app.mount(
     name="product-images",
 )
 
-if settings.cors_origin_list:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origin_list,
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=build_cors_origins(),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(api_router)
 
@@ -58,3 +72,5 @@ def health_check() -> dict[str, str]:
         "environment": settings.app_env,
         "database": "sqlite",
     }
+
+
