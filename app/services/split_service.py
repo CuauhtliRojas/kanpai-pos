@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -54,7 +55,7 @@ def cancel_ticket_splits(
             "Esta división ya tiene pagos. Termina el cobro o pide ayuda."
         )
 
-    now = datetime.utcnow()
+    now = local_now_naive()
     for split in active_splits:
         split.status = TicketSplitStatus.CANCELLED
         split.closed_at = now
@@ -185,7 +186,7 @@ def pay_split(db: Session, split_id: int, employee_id: int, payment_method_id: i
     payment = create_payment(db, split.ticket_id, employee_id, payment_method_id, amount_cents, received_cents, reference, ticket_split_id=split.id)
     if paid + amount_cents == split.amount_cents:
         split.status = TicketSplitStatus.PAID
-        split.closed_at = datetime.utcnow()
+        split.closed_at = local_now_naive()
     db.add(AuditEvent(
         event_type=audit_event("TICKET_SPLIT_PAYMENT"), entity_type="TicketSplit", entity_id=split.id,
         actor_employee_id=employee_id, cash_shift_id=split.ticket.cash_shift_id, ticket_id=split.ticket_id,

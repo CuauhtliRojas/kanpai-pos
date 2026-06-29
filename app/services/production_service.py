@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -80,7 +81,7 @@ def transition_station_order(
         )
     before = order.status
     order.status = target
-    setattr(order, timestamp_field, datetime.utcnow())
+    setattr(order, timestamp_field, local_now_naive())
     setattr(order, actor_field, employee.id)
     ticket = db.get(Ticket, order.ticket_id)
     db.add(

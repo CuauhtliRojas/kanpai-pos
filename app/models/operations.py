@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.core.time import local_now_naive
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
@@ -38,13 +39,13 @@ if TYPE_CHECKING:
 
 class TimestampMixin:
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
     updated_at: Mapped[datetime] = db_column(
         "updated_at",
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=local_now_naive,
+        onupdate=local_now_naive,
         nullable=False,
     )
 
@@ -127,7 +128,7 @@ class PosSession(TimestampMixin, Base):
         "status", String(32), default=TicketStatus.OPEN, nullable=False
     )
     opened_at: Mapped[datetime] = db_column(
-        "opened_at", DateTime, default=datetime.utcnow, nullable=False
+        "opened_at", DateTime, default=local_now_naive, nullable=False
     )
     closed_at: Mapped[Optional[datetime]] = db_column("closed_at", DateTime)
 
@@ -141,7 +142,7 @@ class EmployeeSession(Base):
     employee_id: Mapped[int] = db_column("employee_id", ForeignKey("empleados.id"), nullable=False)
     session_token: Mapped[str] = db_column("session_token", String(128), unique=True, nullable=False)
     status: Mapped[str] = db_column("status", String(32), default=EmployeeSessionStatus.ACTIVE, nullable=False)
-    created_at: Mapped[datetime] = db_column("created_at", DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = db_column("created_at", DateTime, default=local_now_naive, nullable=False)
     expires_at: Mapped[datetime] = db_column("expires_at", DateTime, nullable=False)
     closed_at: Mapped[Optional[datetime]] = db_column("closed_at", DateTime)
 
@@ -204,7 +205,7 @@ class TableStatusEvent(Base):
     to_status: Mapped[str] = db_column("to_status", String(32), nullable=False)
     reason: Mapped[Optional[str]] = db_column("reason", Text)
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
 
@@ -223,7 +224,7 @@ class CashShift(TimestampMixin, Base):
         "closed_by_employee_id", ForeignKey("empleados.id")
     )
     opened_at: Mapped[datetime] = db_column(
-        "opened_at", DateTime, default=datetime.utcnow, nullable=False
+        "opened_at", DateTime, default=local_now_naive, nullable=False
     )
     closed_at: Mapped[Optional[datetime]] = db_column("closed_at", DateTime)
     opening_cash_cents: Mapped[int] = db_column(
@@ -304,7 +305,7 @@ class Ticket(TimestampMixin, Base):
     )
     note: Mapped[Optional[str]] = db_column("note", Text)
     opened_at: Mapped[datetime] = db_column(
-        "opened_at", DateTime, default=datetime.utcnow, nullable=False
+        "opened_at", DateTime, default=local_now_naive, nullable=False
     )
     billing_started_at: Mapped[Optional[datetime]] = db_column(
         "billing_started_at", DateTime
@@ -452,7 +453,7 @@ class TicketLineNote(Base):
         "created_by_employee_id", ForeignKey("empleados.id"), nullable=False
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
     ticket_line: Mapped["TicketLine"] = relationship(back_populates="notes")
@@ -473,7 +474,7 @@ class TicketLineModification(Base):
         "created_by_employee_id", ForeignKey("empleados.id"), nullable=False
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
     print_job_id: Mapped[Optional[int]] = db_column(
         "print_job_id", ForeignKey("trabajos_impresion.id")
@@ -506,7 +507,7 @@ class TicketDiscount(Base):
         "created_by_employee_id", ForeignKey("empleados.id"), nullable=False
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
     ticket: Mapped["Ticket"] = relationship(back_populates="discounts")
@@ -618,7 +619,7 @@ class CommandBatch(Base):
         "created_by_employee_id", ForeignKey("empleados.id"), nullable=False
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
     station_orders: Mapped[list["StationOrder"]] = relationship(
@@ -661,7 +662,7 @@ class StationOrder(Base):
         "delivered_by_employee_id", ForeignKey("empleados.id")
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
     command_batch: Mapped["CommandBatch"] = relationship(
@@ -810,7 +811,7 @@ class Authorization(Base):
         "status", String(32), default=AuthorizationStatus.APPROVED, nullable=False
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
 
@@ -832,7 +833,7 @@ class AuditEvent(Base):
     after_snapshot: Mapped[Optional[str]] = db_column("after_snapshot", Text)
     reason: Mapped[Optional[str]] = db_column("reason", Text)
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
 
@@ -858,7 +859,7 @@ class SmsNotification(Base):
     test_mode: Mapped[bool] = db_column("test_mode", Boolean, default=True, nullable=False)
     response_payload: Mapped[Optional[str]] = db_column("response_payload", Text)
     error: Mapped[Optional[str]] = db_column("error", Text)
-    created_at: Mapped[datetime] = db_column("created_at", DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = db_column("created_at", DateTime, default=local_now_naive, nullable=False)
     sent_at: Mapped[Optional[datetime]] = db_column("sent_at", DateTime)
 
     channel: Mapped[Optional["NotificationChannel"]] = relationship()

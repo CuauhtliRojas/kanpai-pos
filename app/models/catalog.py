@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.core.time import local_now_naive
 from decimal import Decimal
 from typing import Optional
 
@@ -42,13 +43,13 @@ class RemoteCatalogMixin:
 
 class TimestampMixin:
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
     updated_at: Mapped[datetime] = db_column(
         "updated_at",
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=local_now_naive,
+        onupdate=local_now_naive,
         nullable=False,
     )
 

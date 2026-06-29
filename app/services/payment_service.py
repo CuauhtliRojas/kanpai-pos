@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -86,7 +87,7 @@ def _close_zero_total_courtesy_ticket(
     db: Session, ticket: Ticket, employee_id: int
 ) -> Ticket:
     """Cierra un ticket totalmente condonado sin crear pago monetario."""
-    now = datetime.utcnow()
+    now = local_now_naive()
     previous_status = ticket.status
     previous_payment_status = ticket.payment_status
 
@@ -159,7 +160,7 @@ def start_payment(db: Session, ticket_id: int, employee_id: int) -> Ticket:
         raise InvalidBusinessDataError("El ticket debe tener un total mayor a cero.")
 
     ticket.status = TicketStatus.IN_PAYMENT
-    ticket.billing_started_at = datetime.utcnow()
+    ticket.billing_started_at = local_now_naive()
     ticket.table.status_cache = TicketStatus.IN_PAYMENT
     db.add(
         AuditEvent(
@@ -255,7 +256,7 @@ def create_payment(
     if _has_captured_lines(db, ticket.id):
         raise InvalidBusinessDataError("El ticket tiene líneas capturadas pendientes.")
 
-    now = datetime.utcnow()
+    now = local_now_naive()
     ticket.status = TicketStatus.PAID
     ticket.payment_status = TicketPaymentStatus.PAID
     ticket.paid_at = now

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -199,7 +200,7 @@ def send_round(db: Session, ticket_id: int, employee_id: int) -> CommandBatch:
             )
         )
 
-    now = datetime.utcnow()
+    now = local_now_naive()
     station_line_ids = {line.id for lines in station_lines.values() for line in lines}
     for line in captured_lines:
         line.status = (

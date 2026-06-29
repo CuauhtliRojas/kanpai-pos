@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy import delete as sql_delete
 from sqlalchemy import func, select
@@ -263,7 +264,7 @@ def modify_ticket_line(
                         content_snapshot=content,
                         status=PrintStatus.PENDING,
                         attempts=0,
-                        idempotency_key=f"MODIFICACION:{line.id}:{datetime.utcnow().isoformat()}",
+                        idempotency_key=f"MODIFICACION:{line.id}:{local_now_naive().isoformat()}",
                     )
                     db.add(print_job)
                     db.flush()

@@ -3,6 +3,7 @@
 import base64
 import json
 from datetime import datetime
+from app.core.time import local_now_naive
 from typing import Callable
 from urllib.request import Request, urlopen
 
@@ -59,7 +60,7 @@ def send_sms(
     if not settings.sms_enabled:
         notification.status = SmsStatus.SIMULATED
         notification.response_payload = json.dumps({"simulated": True, "reason": "SMS_ENABLED=false"})
-        notification.sent_at = datetime.utcnow()
+        notification.sent_at = local_now_naive()
         db.flush()
         return notification
     try:
@@ -83,7 +84,7 @@ def send_sms(
             event_type=audit_event("SMS_FAILED"), entity_type="SmsNotification", entity_id=notification.id,
             actor_employee_id=employee_id, after_snapshot=json.dumps({"status": SmsStatus.FAILED, "error": notification.error}),
         ))
-    notification.sent_at = datetime.utcnow()
+    notification.sent_at = local_now_naive()
     db.flush()
     return notification
 

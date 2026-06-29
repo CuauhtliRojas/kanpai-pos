@@ -1,4 +1,5 @@
 from datetime import date, datetime, time, timedelta
+from app.core.time import local_now_naive
 
 from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.orm import Session
@@ -204,7 +205,7 @@ def claim_next_print_job(
     printer_key = _required_text(printer_key, "printer_key")
     worker_id = _required_text(worker_id, "worker_id")
     get_active_printer(db, printer_key)
-    now = datetime.utcnow()
+    now = local_now_naive()
     candidate_id = (
         select(PrintJob.id)
         .where(
@@ -248,7 +249,7 @@ def mark_print_job_printed(db: Session, print_job_id: int, worker_id: str) -> Pr
     """Finaliza como impreso un trabajo reclamado por el mismo worker."""
     print_job = _claimed_job(db, print_job_id, worker_id)
     print_job.status = PrintStatus.PRINTED
-    print_job.printed_at = datetime.utcnow()
+    print_job.printed_at = local_now_naive()
     print_job.last_error = None
     db.flush()
     return print_job
@@ -260,7 +261,7 @@ def mark_print_job_failed(
     """Registra un fallo de impresión y agenda su retry inicial a 60 segundos."""
     error_message = _required_text(error_message, "error_message")
     print_job = _claimed_job(db, print_job_id, worker_id)
-    now = datetime.utcnow()
+    now = local_now_naive()
     print_job.status = PrintStatus.FAILED
     print_job.failed_at = now
     print_job.last_error = error_message
@@ -283,7 +284,7 @@ def retry_failed_print_jobs(
         get_active_printer(db, printer_key)
         query = query.where(PrintJob.printer_key_snapshot == printer_key)
     if not reset_all:
-        query = query.where(PrintJob.next_retry_at <= datetime.utcnow())
+        query = query.where(PrintJob.next_retry_at <= local_now_naive())
 
     jobs = list(db.execute(query).scalars())
     for print_job in jobs:

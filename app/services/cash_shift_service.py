@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -241,7 +242,7 @@ def close_cash_shift(
     expected_cash = summary["expected_cash_cents"]
     cash_shift.status = CashShiftStatus.CLOSED
     cash_shift.closed_by_employee_id = employee_id
-    cash_shift.closed_at = datetime.utcnow()
+    cash_shift.closed_at = local_now_naive()
     cash_shift.declared_cash_cents = declared_cash_cents
     cash_shift.expected_cash_cents = expected_cash
     cash_shift.cash_difference_cents = declared_cash_cents - expected_cash

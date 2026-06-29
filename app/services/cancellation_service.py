@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -105,7 +106,7 @@ def cancel_ticket_line(
             ).scalars()
         )
 
-    now = datetime.utcnow()
+    now = local_now_naive()
     before_statuses = {target.id: target.status for target in targets}
     for target in targets:
         previous_status = target.status
@@ -167,7 +168,7 @@ def cancel_ticket(
         raise BusinessConflictError("El ticket ya está cancelado.")
 
     normalized_reason = _normalize_reason(reason)
-    now = datetime.utcnow()
+    now = local_now_naive()
     lines = list(
         db.execute(
             select(TicketLine)

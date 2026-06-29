@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.core.time import local_now_naive
 from typing import TYPE_CHECKING, Optional
 
 from decimal import Decimal
@@ -41,13 +42,13 @@ class UnitConversion(Base):
     factor: Mapped[Decimal] = db_column("factor", Numeric(18, 6), nullable=False)
     active: Mapped[bool] = db_column("active", default=True, nullable=False)
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
     updated_at: Mapped[datetime] = db_column(
         "updated_at",
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=local_now_naive,
+        onupdate=local_now_naive,
         nullable=False,
     )
 
@@ -85,7 +86,7 @@ class PurchaseReceipt(Base):
         "payment_method_id", ForeignKey("metodos_pago.id")
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
     processed_at: Mapped[Optional[datetime]] = db_column("processed_at", DateTime)
 
@@ -122,7 +123,7 @@ class PurchaseReceiptLine(Base):
     )
     error_code: Mapped[Optional[str]] = db_column("error_code", String(120))
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
     purchase_receipt: Mapped["PurchaseReceipt"] = relationship(back_populates="lines")
@@ -168,7 +169,7 @@ class InventoryMovement(Base):
     source_id: Mapped[Optional[int]] = db_column("source_id", Integer)
     reason: Mapped[Optional[str]] = db_column("reason", Text)
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
 
     purchase_receipt_line: Mapped[Optional["PurchaseReceiptLine"]] = relationship(
@@ -188,7 +189,7 @@ class StockAlert(Base):
         "status", String(32), default=StockAlertStatus.OPEN, nullable=False
     )
     opened_at: Mapped[datetime] = db_column(
-        "opened_at", DateTime, default=datetime.utcnow, nullable=False
+        "opened_at", DateTime, default=local_now_naive, nullable=False
     )
     acknowledged_at: Mapped[Optional[datetime]] = db_column("acknowledged_at", DateTime)
     resolved_at: Mapped[Optional[datetime]] = db_column("resolved_at", DateTime)

@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta
+from app.core.time import local_now_naive
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -46,7 +47,7 @@ def login_with_pin(db: Session, employee_code: str, pin: str) -> EmployeeSession
         raise BusinessConflictError("Credenciales inválidas.")
     if not verify_pin(pin, employee.pin_hash):
         raise BusinessConflictError("Credenciales inválidas.")
-    now = datetime.utcnow()
+    now = local_now_naive()
     employee.last_login_at = now
     session = EmployeeSession(
         employee_id=employee.id,
@@ -67,7 +68,7 @@ def logout(db: Session, session_token: str) -> EmployeeSession:
         raise EntityNotFoundError("La sesión no existe.")
     if session.status == EmployeeSessionStatus.ACTIVE:
         session.status = EmployeeSessionStatus.CLOSED
-        session.closed_at = datetime.utcnow()
+        session.closed_at = local_now_naive()
         db.flush()
     return session
 
@@ -81,9 +82,9 @@ def get_session_identity(db: Session, session_token: str) -> tuple[Employee, lis
     )
     if session is None:
         raise EntityNotFoundError("La sesión no existe.")
-    if session.status == EmployeeSessionStatus.ACTIVE and session.expires_at <= datetime.utcnow():
+    if session.status == EmployeeSessionStatus.ACTIVE and session.expires_at <= local_now_naive():
         session.status = EmployeeSessionStatus.EXPIRED
-        session.closed_at = datetime.utcnow()
+        session.closed_at = local_now_naive()
         db.flush()
     if session.status != EmployeeSessionStatus.ACTIVE or not session.employee.active:
         raise BusinessConflictError("La sesión no está activa.")

@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from app.core.time import local_now_naive
 from typing import Any
 
 from sqlalchemy import select
@@ -152,7 +153,7 @@ def build_command_content(
             "title": profile.command_title,
             "folio": ticket.folio,
             "table": ticket.table.display_name,
-            "created_at": datetime.utcnow(),
+            "created_at": local_now_naive(),
             "station": station.name,
             "round": round_number,
             "items": [_line_payload(line, include_total=False) for line in lines],
@@ -173,7 +174,7 @@ def build_cancellation_content(
             "title": profile.cancel_title,
             "folio": ticket.folio,
             "table": ticket.table.display_name,
-            "created_at": datetime.utcnow(),
+            "created_at": local_now_naive(),
             "station": station.name,
             "round": getattr(line, "round_number", None),
             "items": [_line_payload(line, include_total=False)],
@@ -195,7 +196,7 @@ def build_modification_content(
             "title": profile.modification_title,
             "folio": ticket.folio,
             "table": ticket.table.display_name,
-            "created_at": datetime.utcnow(),
+            "created_at": local_now_naive(),
             "station": station.name,
             "before_items": [_line_payload(line, include_total=False)],
             "after_items": [

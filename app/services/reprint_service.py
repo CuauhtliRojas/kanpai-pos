@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.core.time import local_now_naive
 
 from sqlalchemy.orm import Session
 
@@ -28,7 +29,7 @@ def request_reprint(
     reason = reason.strip()
     if not reason:
         raise InvalidBusinessDataError("El motivo de reimpresion es obligatorio.")
-    now = datetime.utcnow()
+    now = local_now_naive()
     reprint = PrintJob(
         folio=generate_folio(db, "IMPRESION"),
         job_type=original.job_type,

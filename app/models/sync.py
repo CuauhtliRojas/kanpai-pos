@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.core.time import local_now_naive
 from typing import Optional
 
 from sqlalchemy import DateTime, Integer, String, Text, UniqueConstraint
@@ -39,7 +40,7 @@ class SyncInbox(Base):
     )
     error: Mapped[Optional[str]] = db_column("error", Text)
     received_at: Mapped[datetime] = db_column(
-        "received_at", DateTime, default=datetime.utcnow, nullable=False
+        "received_at", DateTime, default=local_now_naive, nullable=False
     )
     applied_at: Mapped[Optional[datetime]] = db_column("applied_at", DateTime)
 
@@ -68,7 +69,7 @@ class SyncOutbox(Base):
         "airtable_record_id", String(64)
     )
     created_at: Mapped[datetime] = db_column(
-        "created_at", DateTime, default=datetime.utcnow, nullable=False
+        "created_at", DateTime, default=local_now_naive, nullable=False
     )
     sent_at: Mapped[Optional[datetime]] = db_column("sent_at", DateTime)
 
@@ -96,7 +97,7 @@ class SyncWatermark(Base):
     updated_at: Mapped[datetime] = db_column(
         "updated_at",
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=local_now_naive,
+        onupdate=local_now_naive,
         nullable=False,
     )

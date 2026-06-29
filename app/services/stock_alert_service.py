@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from app.core.time import local_now_naive
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -81,7 +82,7 @@ def evaluate_stock_alert(
 
     if active_alert is not None:
         active_alert.status = StockAlertStatus.RESOLVED
-        active_alert.resolved_at = datetime.utcnow()
+        active_alert.resolved_at = local_now_naive()
         active_alert.current_quantity = current
         active_alert.message = (
             f"Stock recuperado a {current} {stock['base_unit_name']}."

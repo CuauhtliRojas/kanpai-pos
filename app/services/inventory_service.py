@@ -1,5 +1,6 @@
 import json
 from datetime import date, datetime, time, timedelta
+from app.core.time import local_now_naive
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -458,7 +459,7 @@ def process_purchase_receipt(
         movement.cash_expense_id = expense.id if expense else None
 
     receipt.status = ReceiptStatus.PROCESSED
-    receipt.processed_at = datetime.utcnow()
+    receipt.processed_at = local_now_naive()
     db.flush()
     db.add(
         AuditEvent(

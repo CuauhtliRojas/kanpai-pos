@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.core.time import local_now_naive
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -152,7 +153,7 @@ def consume_inventory_for_paid_ticket(
                     )
                 )
 
-    ticket.inventory_consumed_at = datetime.utcnow()
+    ticket.inventory_consumed_at = local_now_naive()
     db.flush()
     return movements
 
