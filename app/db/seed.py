@@ -726,6 +726,9 @@ def seed_real_catalog(session: Session) -> None:
         recipe.active = True
         recipe.sync_status = CatalogStatus.ACTIVE
 
+    # PreparacionesInventario, RecetasPreparacion y RecetasOpcionVariante
+    # se sincronizan desde Airtable mediante pull_airtable_to_sqlite.py.
+    # El seed local histórico conserva compatibilidad sin inventar subrecetas.
 
     combo_groups: dict[tuple[str, str], ProductVariantGroup] = {}
     for record in result.tables.get("GruposVarianteProducto", []):

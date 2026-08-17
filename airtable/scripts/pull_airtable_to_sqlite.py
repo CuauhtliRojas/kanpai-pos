@@ -43,6 +43,7 @@ from app.models import (  # noqa: E402
     Employee,
     EmployeeRole,
     InventoryItem,
+    InventoryPreparation,
     MenuCategory,
     NotificationChannel,
     PaymentMethod,
@@ -51,6 +52,7 @@ from app.models import (  # noqa: E402
     ProductPackage,
     ProductPackageItem,
     ProductRecipe,
+    PreparationRecipe,
     ProductStationAssignment,
     ProductVariantGroup,
     ProductVariantOption,
@@ -58,6 +60,7 @@ from app.models import (  # noqa: E402
     Role,
     ServiceZone,
     Unit,
+    VariantOptionRecipe,
 )
 from app.services.product_image_service import (  # noqa: E402
     ProductImageDownloadError,
@@ -179,11 +182,38 @@ TABLE_SPECS = (
         },
     ),
     TableSpec(
+        "PreparacionesInventario",
+        InventoryPreparation,
+        ("preparation_code",),
+        {
+            "insumo_resultante": LinkSpec("InsumosInventario", required=True),
+            "unidad_resultado": LinkSpec("Unidades", required=True),
+        },
+    ),
+    TableSpec(
         "RecetasProducto",
         ProductRecipe,
         ("product_id", "inventory_item_id"),
         {
             "producto": LinkSpec("Productos", required=True),
+            "insumo": LinkSpec("InsumosInventario", required=True),
+        },
+    ),
+    TableSpec(
+        "RecetasPreparacion",
+        PreparationRecipe,
+        ("preparation_id", "inventory_item_id"),
+        {
+            "preparacion": LinkSpec("PreparacionesInventario", required=True),
+            "insumo": LinkSpec("InsumosInventario", required=True),
+        },
+    ),
+    TableSpec(
+        "RecetasOpcionVariante",
+        VariantOptionRecipe,
+        ("variant_option_id", "inventory_item_id"),
+        {
+            "opcion_variante": LinkSpec("OpcionesVarianteProducto", required=True),
             "insumo": LinkSpec("InsumosInventario", required=True),
         },
     ),

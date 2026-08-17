@@ -177,6 +177,10 @@ class ProductVariantOption(TimestampMixin, Base):
 
     variant_group: Mapped["ProductVariantGroup"] = relationship(back_populates="options")
     product: Mapped[Optional["Product"]] = relationship(foreign_keys=[product_id])
+    recipe_items: Mapped[list["VariantOptionRecipe"]] = relationship(
+        back_populates="variant_option",
+        cascade="all, delete-orphan",
+    )
 
 
 class DiscountPreset(RemoteCatalogMixin, TimestampMixin, Base):
@@ -353,6 +357,19 @@ class InventoryItem(RemoteCatalogMixin, TimestampMixin, Base):
         back_populates="inventory_item",
         cascade="all, delete-orphan",
     )
+    preparation_recipe_links: Mapped[list["PreparationRecipe"]] = relationship(
+        back_populates="inventory_item",
+        cascade="all, delete-orphan",
+        foreign_keys="PreparationRecipe.inventory_item_id",
+    )
+    variant_option_recipe_links: Mapped[list["VariantOptionRecipe"]] = relationship(
+        back_populates="inventory_item",
+        cascade="all, delete-orphan",
+    )
+    resulting_preparations: Mapped[list["InventoryPreparation"]] = relationship(
+        back_populates="result_inventory_item",
+        foreign_keys="InventoryPreparation.result_inventory_item_id",
+    )
 
 
 class ProductRecipe(RemoteCatalogMixin, TimestampMixin, Base):
@@ -383,6 +400,115 @@ class ProductRecipe(RemoteCatalogMixin, TimestampMixin, Base):
         back_populates="recipe_links"
     )
 
+
+class InventoryPreparation(RemoteCatalogMixin, TimestampMixin, Base):
+    __tablename__ = "preparaciones_inventario"
+    __table_args__ = (
+        UniqueConstraint("preparation_code", name="uq_inventory_preparation_code"),
+    )
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    preparation_code: Mapped[str] = db_column(
+        "preparation_code", String(80), nullable=False
+    )
+    name: Mapped[str] = db_column("name", String(160), nullable=False)
+    result_inventory_item_id: Mapped[int] = db_column(
+        "result_inventory_item_id",
+        ForeignKey("insumos_inventario.id"),
+        nullable=False,
+    )
+    yield_quantity_base: Mapped[Decimal] = db_column(
+        "yield_quantity_base", Numeric(18, 6), nullable=False
+    )
+    result_unit_id: Mapped[int] = db_column(
+        "result_unit_id", ForeignKey("unidades.id"), nullable=False
+    )
+    active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+
+    result_inventory_item: Mapped["InventoryItem"] = relationship(
+        back_populates="resulting_preparations",
+        foreign_keys=[result_inventory_item_id],
+    )
+    result_unit: Mapped["Unit"] = relationship()
+    recipe_items: Mapped[list["PreparationRecipe"]] = relationship(
+        back_populates="preparation",
+        cascade="all, delete-orphan",
+    )
+
+
+class PreparationRecipe(RemoteCatalogMixin, TimestampMixin, Base):
+    __tablename__ = "recetas_preparacion"
+    __table_args__ = (
+        UniqueConstraint(
+            "preparation_id",
+            "inventory_item_id",
+            name="uq_preparation_inventory_recipe",
+        ),
+    )
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    preparation_id: Mapped[int] = db_column(
+        "preparation_id",
+        ForeignKey("preparaciones_inventario.id"),
+        nullable=False,
+    )
+    inventory_item_id: Mapped[int] = db_column(
+        "inventory_item_id",
+        ForeignKey("insumos_inventario.id"),
+        nullable=False,
+    )
+    quantity_base: Mapped[Decimal] = db_column(
+        "quantity_base", Numeric(18, 6), nullable=False
+    )
+    waste_pct: Mapped[Decimal] = db_column(
+        "waste_pct", Numeric(18, 6), default=Decimal("0"), nullable=False
+    )
+    active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+
+    preparation: Mapped["InventoryPreparation"] = relationship(
+        back_populates="recipe_items"
+    )
+    inventory_item: Mapped["InventoryItem"] = relationship(
+        back_populates="preparation_recipe_links",
+        foreign_keys=[inventory_item_id],
+    )
+
+
+class VariantOptionRecipe(RemoteCatalogMixin, TimestampMixin, Base):
+    __tablename__ = "recetas_opcion_variante"
+    __table_args__ = (
+        UniqueConstraint(
+            "variant_option_id",
+            "inventory_item_id",
+            name="uq_variant_option_inventory_recipe",
+        ),
+    )
+
+    id: Mapped[int] = db_column("id", Integer, primary_key=True)
+    variant_option_id: Mapped[int] = db_column(
+        "variant_option_id",
+        ForeignKey("opciones_variante_producto.id"),
+        nullable=False,
+    )
+    inventory_item_id: Mapped[int] = db_column(
+        "inventory_item_id",
+        ForeignKey("insumos_inventario.id"),
+        nullable=False,
+    )
+    quantity_base: Mapped[Decimal] = db_column(
+        "quantity_base", Numeric(18, 6), nullable=False
+    )
+    waste_pct: Mapped[Decimal] = db_column(
+        "waste_pct", Numeric(18, 6), default=Decimal("0"), nullable=False
+    )
+    active: Mapped[bool] = db_column("active", Boolean, default=True, nullable=False)
+
+    variant_option: Mapped["ProductVariantOption"] = relationship(
+        back_populates="recipe_items"
+    )
+    inventory_item: Mapped["InventoryItem"] = relationship(
+        back_populates="variant_option_recipe_links"
+    )
 
 class Employee(RemoteCatalogMixin, TimestampMixin, Base):
     __tablename__ = "empleados"

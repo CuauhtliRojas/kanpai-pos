@@ -19,6 +19,7 @@ from app.models import (
     ProductVariantGroup,
     ProductVariantOption,
     Ticket,
+    VariantOptionRecipe,
     TicketLine,
     TicketLineVariantSelection,
 )
@@ -59,6 +60,7 @@ def consume_inventory_for_paid_ticket(
         )
     )
     recipes_by_product: dict[int, list[ProductRecipe]] = {}
+    recipes_by_variant_option: dict[int, list[VariantOptionRecipe]] = {}
     product_multipliers: dict[int, Decimal] = {}
     if lines:
         product_multipliers = {
@@ -79,6 +81,30 @@ def consume_inventory_for_paid_ticket(
         )
         for recipe in recipes:
             recipes_by_product.setdefault(recipe.product_id, []).append(recipe)
+
+        selection_option_ids = {
+            selection.variant_option_id
+            for selection in db.scalars(
+                select(TicketLineVariantSelection).where(
+                    TicketLineVariantSelection.ticket_line_id.in_(
+                        {line.id for line in lines}
+                    )
+                )
+            )
+        }
+        if selection_option_ids:
+            option_recipes = db.scalars(
+                select(VariantOptionRecipe)
+                .where(
+                    VariantOptionRecipe.variant_option_id.in_(selection_option_ids),
+                    VariantOptionRecipe.active.is_(True),
+                )
+                .order_by(VariantOptionRecipe.id)
+            )
+            for recipe in option_recipes:
+                recipes_by_variant_option.setdefault(
+                    recipe.variant_option_id, []
+                ).append(recipe)
 
     movements = []
     for line in lines:
@@ -114,26 +140,49 @@ def consume_inventory_for_paid_ticket(
         )
         for selection in selections:
             option = db.get(ProductVariantOption, selection.variant_option_id)
-            if option is None or option.product_id is None:
+            if option is None:
                 continue
-            option_recipes = db.scalars(
-                select(ProductRecipe).where(
-                    ProductRecipe.product_id == option.product_id,
-                    ProductRecipe.active.is_(True),
+            if option.product_id is not None:
+                option_recipes = db.scalars(
+                    select(ProductRecipe).where(
+                        ProductRecipe.product_id == option.product_id,
+                        ProductRecipe.active.is_(True),
+                    )
                 )
-            )
-            for recipe in option_recipes:
-                option_product = db.get(Product, option.product_id)
-                option_group = db.get(ProductVariantGroup, selection.variant_group_id)
-                option_multiplier = (
-                    Decimal("1")
-                    if option_group is not None and option_group.name == "BROCHETAS"
-                    else Decimal(option_product.inventory_recipe_multiplier or 1)
-                )
+                for recipe in option_recipes:
+                    option_product = db.get(Product, option.product_id)
+                    option_group = db.get(ProductVariantGroup, selection.variant_group_id)
+                    option_multiplier = (
+                        Decimal("1")
+                        if option_group is not None and option_group.name == "BROCHETAS"
+                        else Decimal(option_product.inventory_recipe_multiplier or 1)
+                    )
+                    quantity = (
+                        Decimal(line.quantity)
+                        * Decimal(selection.quantity)
+                        * option_multiplier
+                        * Decimal(recipe.quantity_base)
+                        * (Decimal("1") + Decimal(recipe.waste_pct or 0))
+                    )
+                    movements.append(
+                        create_inventory_movement(
+                            db,
+                            inventory_item_id=recipe.inventory_item_id,
+                            movement_type=InventoryMovementType.SALE_CONSUMPTION,
+                            quantity_base=quantity,
+                            employee_id=employee_id,
+                            reason=f"Variante {selection.name_snapshot} ticket {ticket.folio}",
+                            unit_cost_cents=recipe.inventory_item.unit_cost_cents,
+                            source_type=InventorySourceType.VARIANT_OPTION,
+                            source_id=selection.id,
+                            ticket_line_id=line.id,
+                            require_adjust_permission=False,
+                        )
+                    )
+            for recipe in recipes_by_variant_option.get(selection.variant_option_id, []):
                 quantity = (
                     Decimal(line.quantity)
                     * Decimal(selection.quantity)
-                    * option_multiplier
                     * Decimal(recipe.quantity_base)
                     * (Decimal("1") + Decimal(recipe.waste_pct or 0))
                 )
@@ -144,7 +193,10 @@ def consume_inventory_for_paid_ticket(
                         movement_type=InventoryMovementType.SALE_CONSUMPTION,
                         quantity_base=quantity,
                         employee_id=employee_id,
-                        reason=f"Variante {selection.name_snapshot} ticket {ticket.folio}",
+                        reason=(
+                            f"Receta opcion {selection.name_snapshot} "
+                            f"ticket {ticket.folio}"
+                        ),
                         unit_cost_cents=recipe.inventory_item.unit_cost_cents,
                         source_type=InventorySourceType.VARIANT_OPTION,
                         source_id=selection.id,

@@ -45,7 +45,10 @@ TABLE_ORDER = (
     "GruposVarianteProducto",
     "OpcionesVarianteProducto",
     "AsignacionesProductoEstacion",
+    "PreparacionesInventario",
     "RecetasProducto",
+    "RecetasPreparacion",
+    "RecetasOpcionVariante",
 )
 NATURAL_KEYS = {
     "Roles": "clave_rol",
@@ -64,7 +67,10 @@ NATURAL_KEYS = {
     "GruposVarianteProducto": ("producto", "nombre"),
     "OpcionesVarianteProducto": ("grupo_variante", "nombre"),
     "AsignacionesProductoEstacion": "nombre_registro",
+    "PreparacionesInventario": "codigo_preparacion",
     "RecetasProducto": "nombre_registro",
+    "RecetasPreparacion": "nombre_registro",
+    "RecetasOpcionVariante": "nombre_registro",
 }
 LINK_FIELDS = {
     "Impresoras": {"estacion": ("EstacionesProduccion", "clave_estacion")},
@@ -87,8 +93,20 @@ LINK_FIELDS = {
         "producto": ("Productos", "sku"),
         "estacion": ("EstacionesProduccion", "clave_estacion"),
     },
+    "PreparacionesInventario": {
+        "insumo_resultante": ("InsumosInventario", "codigo_insumo"),
+        "unidad_resultado": ("Unidades", "clave_unidad"),
+    },
     "RecetasProducto": {
         "producto": ("Productos", "sku"),
+        "insumo": ("InsumosInventario", "codigo_insumo"),
+    },
+    "RecetasPreparacion": {
+        "preparacion": ("PreparacionesInventario", "codigo_preparacion"),
+        "insumo": ("InsumosInventario", "codigo_insumo"),
+    },
+    "RecetasOpcionVariante": {
+        "opcion_variante": ("OpcionesVarianteProducto", ("grupo_variante", "nombre")),
         "insumo": ("InsumosInventario", "codigo_insumo"),
     },
 }

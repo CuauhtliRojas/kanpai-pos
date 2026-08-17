@@ -47,6 +47,7 @@ from tests.auth_helpers import auth_headers
 from app.services.print_service import sanitize_print_content
 from app.services.product_service import add_product_to_ticket
 from app.services.ticket_service import open_ticket_for_table
+from app.core.time import local_now_naive
 
 _job_sequence = count(1)
 
@@ -210,7 +211,7 @@ def test_mark_failed_records_error_and_retry_time() -> None:
         print_job = _job(db)
         db.commit()
         claim_next_print_job(db, "BARRA_FRIA", "worker")
-        before = datetime.utcnow() + timedelta(seconds=59)
+        before = local_now_naive() + timedelta(seconds=59)
         failed = mark_print_job_failed(db, print_job.id, "worker", "Sin papel")
         assert failed.status == "Fallido"
         assert failed.failed_at is not None
@@ -224,10 +225,10 @@ def test_retry_failed_requeues_due_jobs_and_preserves_error() -> None:
         print_job = _job(
             db,
             status="Fallido",
-            next_retry_at=datetime.utcnow() - timedelta(seconds=1),
+            next_retry_at=local_now_naive() - timedelta(seconds=1),
         )
         print_job.claimed_by = "worker"
-        print_job.claimed_at = datetime.utcnow()
+        print_job.claimed_at = local_now_naive()
         print_job.last_error = "Sin papel"
         db.commit()
         assert retry_failed_print_jobs(db) == 1

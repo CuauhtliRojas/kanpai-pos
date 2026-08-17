@@ -641,6 +641,124 @@
       ]
     },
     {
+      "key": "preparaciones_inventario",
+      "name": "PreparacionesInventario",
+      "source_table": "preparaciones_inventario",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "Preparaciones internas/subrecetas que producen un insumo preparado consumible.",
+      "primary_field": "codigo_preparacion",
+      "fields": [
+        {
+          "name": "codigo_preparacion",
+          "type": "singleLineText",
+          "unique": true
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "insumo_resultante",
+          "type": "link",
+          "target": "InsumosInventario"
+        },
+        {
+          "name": "rendimiento_cantidad_base",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "unidad_resultado",
+          "type": "link",
+          "target": "Unidades"
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        }
+      ]
+    },
+    {
+      "key": "recetas_preparacion",
+      "name": "RecetasPreparacion",
+      "source_table": "recetas_preparacion",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre_registro",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "readonly": false,
+          "description": "Receta preparacion-insumo"
+        },
+        {
+          "name": "preparacion",
+          "type": "link",
+          "target": "PreparacionesInventario"
+        },
+        {
+          "name": "insumo",
+          "type": "link",
+          "target": "InsumosInventario"
+        },
+        {
+          "name": "cantidad_base",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "porcentaje_merma",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        }
+      ]
+    },
+    {
+      "key": "recetas_opcion_variante",
+      "name": "RecetasOpcionVariante",
+      "source_table": "recetas_opcion_variante",
+      "ownership": "AIRTABLE_MASTER",
+      "description": "",
+      "primary_field": "nombre_registro",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText",
+          "readonly": false,
+          "description": "Receta opcion-variante-insumo"
+        },
+        {
+          "name": "opcion_variante",
+          "type": "link",
+          "target": "OpcionesVarianteProducto"
+        },
+        {
+          "name": "insumo",
+          "type": "link",
+          "target": "InsumosInventario"
+        },
+        {
+          "name": "cantidad_base",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "porcentaje_merma",
+          "type": "number",
+          "precision": 6
+        },
+        {
+          "name": "activo",
+          "type": "checkbox"
+        }
+      ]
+    },
+    {
       "key": "unidades",
       "name": "Unidades",
       "source_table": "unidades",

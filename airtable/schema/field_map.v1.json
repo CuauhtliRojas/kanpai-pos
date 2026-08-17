@@ -421,6 +421,49 @@
         "creado_en": "created_at",
         "id_sqlite": "id"
       }
+    },
+    "PreparacionesInventario": {
+      "sqlite_table": "preparaciones_inventario",
+      "direction": "pull_to_sqlite",
+      "primary_key": "codigo_preparacion",
+      "fields": {
+        "codigo_preparacion": "preparation_code",
+        "nombre": "name",
+        "insumo_resultante": "result_inventory_item_id",
+        "rendimiento_cantidad_base": "yield_quantity_base",
+        "unidad_resultado": "result_unit_id",
+        "activo": "active"
+      }
+    },
+    "RecetasPreparacion": {
+      "sqlite_table": "recetas_preparacion",
+      "direction": "pull_to_sqlite",
+      "primary_key": [
+        "preparacion",
+        "insumo"
+      ],
+      "fields": {
+        "preparacion": "preparation_id",
+        "insumo": "inventory_item_id",
+        "cantidad_base": "quantity_base",
+        "porcentaje_merma": "waste_pct",
+        "activo": "active"
+      }
+    },
+    "RecetasOpcionVariante": {
+      "sqlite_table": "recetas_opcion_variante",
+      "direction": "pull_to_sqlite",
+      "primary_key": [
+        "opcion_variante",
+        "insumo"
+      ],
+      "fields": {
+        "opcion_variante": "variant_option_id",
+        "insumo": "inventory_item_id",
+        "cantidad_base": "quantity_base",
+        "porcentaje_merma": "waste_pct",
+        "activo": "active"
+      }
     }
   }
 }

@@ -21,6 +21,8 @@ from app.models import (
     PrintJob,
     Product,
     ProductRecipe,
+    ProductVariantGroup,
+    ProductVariantOption,
     PurchaseReceipt,
     PurchaseReceiptLine,
     StationOrder,
@@ -30,7 +32,9 @@ from app.models import (
     Ticket,
     TicketDiscount,
     TicketLine,
+    TicketLineVariantSelection,
     TicketLineNote,
+    VariantOptionRecipe,
 )
 from app.services.cancellation_service import cancel_ticket, cancel_ticket_line
 from app.services.cash_shift_service import open_cash_shift
@@ -44,7 +48,7 @@ from tests.auth_helpers import auth_headers
 
 
 def _clean_operational_data(db: Session) -> None:
-    """Limpia operaciones en orden de dependencias y conserva catálogos seed."""
+    """Limpia operaciones en orden de dependencias y conserva catÃ¡logos seed."""
     for model in (
         StockAlert,
         InventoryMovement,
@@ -297,3 +301,90 @@ def test_cancelled_ticket_cannot_consume_inventory() -> None:
             consume_inventory_for_paid_ticket(db, ticket.id, _employee(db).id)
         assert ticket.inventory_consumed_at is None
         assert _sales_movements(db, ticket.id) == []
+
+
+def test_variant_option_recipe_consumes_without_optional_product() -> None:
+    with SessionLocal() as db:
+        product = _product(db, "DEV-CHELA")
+        product_recipes = list(
+            db.scalars(
+                select(ProductRecipe).where(ProductRecipe.product_id == product.id)
+            )
+        )
+        assert product_recipes
+        inventory_item_id = product_recipes[0].inventory_item_id
+        for recipe in product_recipes:
+            recipe.active = False
+
+        ticket = _open_ticket(db, quantity=2)
+        line = ticket.lines[0]
+
+        group = ProductVariantGroup(
+            product_id=product.id,
+            name="Preparacion QA",
+            min_select=0,
+            max_select=1,
+            required=False,
+            active=True,
+        )
+        db.add(group)
+        db.flush()
+
+        option = ProductVariantOption(
+            variant_group_id=group.id,
+            product_id=None,
+            name="Tempura QA",
+            sku="",
+            price_delta_cents=0,
+            active=True,
+        )
+        db.add(option)
+        db.flush()
+
+        db.add(
+            VariantOptionRecipe(
+                variant_option_id=option.id,
+                inventory_item_id=inventory_item_id,
+                quantity_base=Decimal("12.500000"),
+                waste_pct=Decimal("0.100000"),
+                active=True,
+            )
+        )
+        db.flush()
+
+        selection = TicketLineVariantSelection(
+            ticket_line_id=line.id,
+            variant_group_id=group.id,
+            variant_option_id=option.id,
+            quantity=3,
+            price_delta_cents_snapshot=0,
+            name_snapshot=option.name,
+            sku_snapshot=option.sku,
+            station_id_snapshot=None,
+        )
+        db.add(selection)
+        db.flush()
+
+        _pay_ticket(db, ticket)
+
+        movements = list(
+            db.scalars(
+                select(InventoryMovement).where(
+                    InventoryMovement.ticket_line_id == line.id,
+                    InventoryMovement.movement_type == "Consumo venta",
+                )
+            )
+        )
+
+        assert option.product_id is None
+        assert len(movements) == 1
+        assert movements[0].quantity_base == Decimal("82.500000")
+        assert movements[0].signed_quantity_base == Decimal("-82.500000")
+        assert movements[0].source_id == selection.id
+        assert "Receta opcion Tempura QA" in movements[0].reason
+
+        group.active = False
+        option.active = False
+        for recipe in product_recipes:
+            recipe.active = True
+        db.flush()
