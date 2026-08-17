@@ -1,0 +1,185 @@
+{
+  "revision": "0004_full_recipe_schema",
+  "down_revision": "0003_gastos_caja_operational_mirror",
+  "description": "Agrega tablas Airtable para preparaciones internas, recetas de preparacion y recetas por opcion variante.",
+  "schema_version": "1.3.0",
+  "base_name": "Kanpai POS",
+  "destructive": false,
+  "sqlite_dependency": {
+    "required": true,
+    "alembic_revision": "rec01_full_recipe_schema"
+  },
+  "operations": [
+    {
+      "op": "ensure_table",
+      "table": "PreparacionesInventario",
+      "ownership": "AIRTABLE_MASTER",
+      "source_table": "preparaciones_inventario",
+      "fields": [
+        {
+          "name": "codigo_preparacion",
+          "type": "singleLineText"
+        },
+        {
+          "name": "nombre",
+          "type": "singleLineText"
+        },
+        {
+          "name": "rendimiento_cantidad_base",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
+        }
+      ]
+    },
+    {
+      "op": "ensure_field",
+      "table": "PreparacionesInventario",
+      "field": {
+        "name": "insumo_resultante",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "InsumosInventario",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_field",
+      "table": "PreparacionesInventario",
+      "field": {
+        "name": "unidad_resultado",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "Unidades",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_table",
+      "table": "RecetasPreparacion",
+      "ownership": "AIRTABLE_MASTER",
+      "source_table": "recetas_preparacion",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText"
+        },
+        {
+          "name": "cantidad_base",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "porcentaje_merma",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
+        }
+      ]
+    },
+    {
+      "op": "ensure_field",
+      "table": "RecetasPreparacion",
+      "field": {
+        "name": "preparacion",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "PreparacionesInventario",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_field",
+      "table": "RecetasPreparacion",
+      "field": {
+        "name": "insumo",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "InsumosInventario",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_table",
+      "table": "RecetasOpcionVariante",
+      "ownership": "AIRTABLE_MASTER",
+      "source_table": "recetas_opcion_variante",
+      "fields": [
+        {
+          "name": "nombre_registro",
+          "type": "singleLineText"
+        },
+        {
+          "name": "cantidad_base",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "porcentaje_merma",
+          "type": "number",
+          "options": {
+            "precision": 6
+          }
+        },
+        {
+          "name": "activo",
+          "type": "checkbox",
+          "options": {
+            "icon": "check",
+            "color": "greenBright"
+          }
+        }
+      ]
+    },
+    {
+      "op": "ensure_field",
+      "table": "RecetasOpcionVariante",
+      "field": {
+        "name": "opcion_variante",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "OpcionesVarianteProducto",
+          "linkedTableId": null
+        }
+      }
+    },
+    {
+      "op": "ensure_field",
+      "table": "RecetasOpcionVariante",
+      "field": {
+        "name": "insumo",
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableName": "InsumosInventario",
+          "linkedTableId": null
+        }
+      }
+    }
+  ]
+}
